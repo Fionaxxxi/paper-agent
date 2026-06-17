@@ -1,0 +1,97 @@
+# =========================
+# Environment variables
+# =========================
+.env
+.env.*
+!.env.example
+
+# =========================
+# Python cache
+# =========================
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# =========================
+# Virtual environments
+# =========================
+venv/
+.venv/
+env/
+ENV/
+paper_agent/
+
+# =========================
+# Conda
+# =========================
+.conda/
+
+# =========================
+# IDE / Editor
+# =========================
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# =========================
+# OS files
+# =========================
+.DS_Store
+Thumbs.db
+
+# =========================
+# Logs
+# =========================
+*.log
+logs/
+
+# =========================
+# Build / Package
+# =========================
+build/
+dist/
+*.egg-info/
+
+# =========================
+# Jupyter
+# =========================
+.ipynb_checkpoints/
+
+# =========================
+# ChromaDB / Vector database
+# =========================
+chroma_db/
+chroma/
+.vectorstore/
+data/vectorstore/
+
+# =========================
+# Local data / downloaded papers
+# =========================
+data/papers/
+data/pdfs/
+downloads/
+*.pdf
+
+# =========================
+# Test / coverage
+# =========================
+.coverage
+htmlcov/
+coverage.xml
+
+# =========================
+# FastAPI / Uvicorn runtime
+# =========================
+*.pid
+
+
+# =========================
+# Temporary files
+# =========================
+tmp/
+temp/
