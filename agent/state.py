@@ -42,3 +42,5 @@ class AgentState(TypedDict, total=False):
     task_type: str
 
     node_timings: dict
+
+    trace_id: str

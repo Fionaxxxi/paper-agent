@@ -89,6 +89,9 @@ coverage.xml
 # =========================
 *.pid
 
+# Logs
+logs/
+*.log
 
 # =========================
 # Temporary files
