@@ -29,5 +29,16 @@ class AgentState(TypedDict, total=False):
     # 错误信息
     error_message: Optional[str]
 
+    # 是否通过安全检查
     is_valid: bool
+
+    # 错误信息
     error_message: Optional[str]
+
+    # 改写后的检索问题
+    rewritten_query: str
+
+    # 任务类型：qa / summarize / compare / recommend
+    task_type: str
+
+    node_timings: dict
