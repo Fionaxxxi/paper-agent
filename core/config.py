@@ -26,6 +26,9 @@ class Settings(BaseSettings):
     LOG_LEVEL: str = "INFO"
     LOG_FILE: str = "logs/paper_agent.log"
 
+    REASON_WITH_LLM: bool = True
+    REASON_CONFIDENCE_THRESHOLD: float = 0.75
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

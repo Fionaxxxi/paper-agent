@@ -30,6 +30,10 @@ def metrics_node(state: AgentState) -> AgentState:
     print(f"rewritten_query: {metrics['rewritten_query']}")
     print(f"skill_used: {state.get('paper_metadata', {}).get('skill_used', '')}")
     print(f"citation_format: {state.get('paper_metadata', {}).get('citation_format', '')}")
+    paper_metadata = state.get("paper_metadata", {})
+    print(f"reason_source: {paper_metadata.get('reason_source', '')}")
+    print(f"reason_confidence: {paper_metadata.get('reason_confidence', '')}")
+    print(f"rule_task_type: {paper_metadata.get('rule_task_type', '')}")
 
     print("\n=== Node Timings ===")
     for node_name, elapsed in node_timings.items():
