@@ -97,6 +97,10 @@ def generate_node(state: AgentState) -> AgentState:
     }
 
     skill = get_skill(skill_state)
+
+    if not skill.need_llm:
+        return skill.run(skill_state)
+
     prompt = skill.build_prompt(skill_state)
 
     try:

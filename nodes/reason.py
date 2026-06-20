@@ -11,7 +11,10 @@ def reason_node(state: AgentState) -> AgentState:
     """
     query = state.get("query", "").lower()
 
-    if any(word in query for word in ["比较", "对比", "区别", "差异", "compare"]):
+    if any(keyword in query for keyword in ["bibtex", "引用", "参考文献", "citation", "cite", "apa", "ieee"]):
+        task_type = "citation"
+
+    elif any(word in query for word in ["比较", "对比", "区别", "差异", "compare"]):
         task_type = "compare"
 
     elif any(word in query for word in ["总结", "概括", "summary", "summarize"]):

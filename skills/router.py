@@ -3,6 +3,7 @@ from skills.base import BaseSkill
 from skills.paper_summary_skill import PaperSummarySkill
 from skills.paper_compare_skill import PaperCompareSkill
 from skills.research_direction_skill import ResearchDirectionSkill
+from skills.citation_skill import CitationSkill
 from skills.qa_skill import QASkill
 
 
@@ -21,5 +22,8 @@ def get_skill(state: AgentState) -> BaseSkill:
 
     if task_type == "recommend":
         return ResearchDirectionSkill()
+
+    if task_type == "citation":
+        return CitationSkill()
 
     return QASkill()
