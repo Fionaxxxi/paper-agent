@@ -18,6 +18,15 @@ def retry_node(state: AgentState) -> AgentState:
         "retry_count": state.get("retry_count", 0) + 1,
     }
 
+def route_after_query_rewrite(state):
+    """
+    如果请求中包含 pdf_path，说明是 PDF 阅读任务，
+    直接进入 Reason Node，不再执行 Retrieve / Evaluate / Retry。
+    """
+    if state.get("pdf_path"):
+        return "reason"
+
+    return "retrieve"
 
 def build_graph():
     workflow = StateGraph(AgentState)
@@ -58,7 +67,14 @@ def build_graph():
     )
 
     workflow.add_edge(START, "query_rewrite")
-    workflow.add_edge("query_rewrite", "retrieve")
+    workflow.add_conditional_edges(
+        "query_rewrite",
+        route_after_query_rewrite,
+        {
+            "reason": "reason",
+            "retrieve": "retrieve",
+        },
+    )
     workflow.add_edge("retrieve", "evaluate")
 
     workflow.add_conditional_edges(

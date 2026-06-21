@@ -5,6 +5,7 @@ from skills.paper_compare_skill import PaperCompareSkill
 from skills.research_direction_skill import ResearchDirectionSkill
 from skills.citation_skill import CitationSkill
 from skills.qa_skill import QASkill
+from skills.pdf_reading_skill import PDFReadingSkill
 
 
 def get_skill(state: AgentState) -> BaseSkill:
@@ -13,6 +14,9 @@ def get_skill(state: AgentState) -> BaseSkill:
     """
 
     task_type = state.get("task_type", "qa")
+
+    if task_type == "pdf_reading":
+        return PDFReadingSkill()
 
     if task_type == "summarize":
         return PaperSummarySkill()

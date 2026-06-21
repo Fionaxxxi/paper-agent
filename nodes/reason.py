@@ -17,8 +17,8 @@ VALID_TASK_TYPES = {
     "compare",
     "recommend",
     "citation",
+    "pdf_reading",
 }
-
 
 def get_llm():
     return ChatOpenAI(
@@ -130,6 +130,19 @@ def llm_reason(query: str) -> str:
 
 def reason_node(state: AgentState) -> AgentState:
     query = state.get("query", "")
+
+    pdf_path = state.get("pdf_path", "")
+
+    if pdf_path:
+        return {
+            "task_type": "pdf_reading",
+            "paper_metadata": {
+                **state.get("paper_metadata", {}),
+                "reason_source": "pdf_path",
+                "reason_confidence": 1.0,
+                "rule_task_type": "pdf_reading",
+            },
+        }
 
     rule_task_type, confidence = rule_based_reason(query)
 
