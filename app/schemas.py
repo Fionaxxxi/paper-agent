@@ -5,6 +5,14 @@ from pydantic import BaseModel, Field
 
 class ChatRequest(BaseModel):
     query: str = Field(..., description="用户输入的论文相关问题")
+    conversation_id: Optional[str] = Field(
+        default=None,
+        description="会话 ID，用于多轮上下文记忆",
+    )
+    pdf_path: Optional[str] = Field(
+        default=None,
+        description="本地 PDF 文件路径，用于 PDF 论文阅读分析",
+    )
 
 
 class PaperInfo(BaseModel):
@@ -17,7 +25,7 @@ class PaperInfo(BaseModel):
     source: Optional[str] = None
 
 
-class ChatResponse(BaseModel):
+class ChatData(BaseModel):
     answer: str
     task_type: str
     retrieval_score: float
@@ -26,6 +34,24 @@ class ChatResponse(BaseModel):
     paper_metadata: Dict[str, Any]
     node_timings: Dict[str, float]
     trace_id: str
+    conversation_id: str
+    pdf_path: Optional[str] = None
+    pdf_page_count: Optional[int] = None
+
+
+class ChatResponse(BaseModel):
+    success: bool
+    code: str
+    message: str
+    data: ChatData
+    trace_id: str
+
+
+class ErrorResponse(BaseModel):
+    success: bool
+    code: str
+    message: str
+    trace_id: Optional[str] = None
 
 
 class HealthResponse(BaseModel):
