@@ -44,3 +44,12 @@ class AgentState(TypedDict, total=False):
     node_timings: dict
 
     trace_id: str
+
+    conversation_id: str
+    history: List[Dict[str, Any]]
+    history_text: str
+
+    pdf_path: str
+    pdf_text: str
+    pdf_page_count: int
+    pdf_error: str

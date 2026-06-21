@@ -84,16 +84,28 @@ def build_fallback_answer(state: AgentState, error_message: str = "") -> str:
 
 
 def generate_node(state: AgentState) -> AgentState:
-    if not state.get("documents"):
+    task_type = state.get("task_type", "qa")
+
+    if task_type != "pdf_reading" and not state.get("documents"):
         return {
             "answer": "没有检索到相关论文内容，请尝试换一个更具体的问题。"
         }
 
+    if task_type == "pdf_reading" and not state.get("pdf_text"):
+        return {
+            "answer": f"PDF 文本读取失败，无法进行论文全文分析。错误信息：{state.get('pdf_error', '')}",
+            "paper_metadata": {
+                **state.get("paper_metadata", {}),
+                "skill_used": "pdf_reading",
+                "pdf_error": state.get("pdf_error", ""),
+            },
+        }
     documents_text = build_documents_text(state)
 
     skill_state = {
         **state,
         "documents_text": documents_text,
+        "history_text": state.get("history_text", "无历史对话。"),
     }
 
     skill = get_skill(skill_state)
