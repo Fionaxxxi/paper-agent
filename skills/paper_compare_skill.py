@@ -9,6 +9,7 @@ class PaperCompareSkill(BaseSkill):
     def build_prompt(self, state: AgentState) -> str:
         query = state.get("query", "")
         documents_text = state.get("documents_text", "")
+        history_text = state.get("history_text", "无历史对话。")
 
         return f"""
 你是一个专业的科研论文对比分析助手。
@@ -18,6 +19,9 @@ class PaperCompareSkill(BaseSkill):
 
 检索到的论文内容：
 {documents_text}
+
+历史对话：
+{history_text}
 
 当前任务是：论文对比。
 

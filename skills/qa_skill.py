@@ -9,6 +9,7 @@ class QASkill(BaseSkill):
     def build_prompt(self, state: AgentState) -> str:
         query = state.get("query", "")
         documents_text = state.get("documents_text", "")
+        history_text = state.get("history_text", "无历史对话。")
 
         return f"""
 你是一个专业的科研论文分析助手。
@@ -18,6 +19,9 @@ class QASkill(BaseSkill):
 
 检索到的论文内容：
 {documents_text}
+
+历史对话：
+{history_text}
 
 请基于检索到的论文内容回答用户问题。
 
