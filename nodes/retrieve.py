@@ -1,5 +1,6 @@
 from agent.state import AgentState
 from core.config import settings
+from retrieval.cache import load_cached_papers, save_cached_papers
 from tools.arxiv_tool import search_arxiv_papers
 
 
@@ -60,24 +61,45 @@ def retrieve_node(state: AgentState) -> AgentState:
         max_results = min(max_results + 2, 8)
 
     retrieval_mode = settings.RETRIEVAL_MODE.lower()
+
     papers = []
     retrieval_source = retrieval_mode
+    cache_hit = False
 
     if retrieval_mode == "arxiv":
-        papers = search_arxiv_papers(
-            query=query,
-            max_results=max_results,
-        )
+        cached_papers = load_cached_papers(query)
 
-        if not papers:
-            print("\n[Retrieve Node] arXiv 无返回结果，使用 fallback papers。")
-            papers = FALLBACK_PAPERS
-            retrieval_source = "fallback"
+        if cached_papers is not None:
+            print("\n[Retrieve Node] Cache hit，使用本地缓存结果。")
+            papers = cached_papers
+            retrieval_source = "cache"
+            cache_hit = True
+
+        else:
+            print("\n[Retrieve Node] Cache miss，调用 arXiv 检索。")
+
+            papers = search_arxiv_papers(
+                query=query,
+                max_results=max_results,
+            )
+
+            if papers:
+                save_cached_papers(query, papers)
+                print("[Retrieve Node] arXiv 检索结果已写入缓存。")
+                retrieval_source = "arxiv"
+                cache_hit = False
+
+            else:
+                print("\n[Retrieve Node] arXiv 无返回结果，使用 fallback papers。")
+                papers = FALLBACK_PAPERS
+                retrieval_source = "fallback"
+                cache_hit = False
 
     else:
         print("\n[Retrieve Node] 当前使用 fallback 检索模式，不访问 arXiv。")
         papers = FALLBACK_PAPERS
         retrieval_source = "fallback"
+        cache_hit = False
 
     documents = convert_papers_to_documents(papers, retrieval_source)
 
@@ -90,5 +112,6 @@ def retrieve_node(state: AgentState) -> AgentState:
             "search_query": query,
             "paper_count": len(documents),
             "retrieval_mode": retrieval_mode,
+            "cache_hit": cache_hit,
         },
     }

@@ -98,3 +98,11 @@ logs/
 # =========================
 tmp/
 temp/
+
+# Local cache
+data/cache/
+data/papers/
+data/pdfs/
+
+# Local memory
+data/memory/

@@ -19,6 +19,9 @@ class Settings(BaseSettings):
     MAX_GENERATE_DOCS: int = 3
     DOC_CONTENT_LIMIT: int = 1000
 
+    # PDF
+    PDF_MAX_CHARS: int = 12000
+
     # Cache
     CACHE_DIR: str = "data/cache"
 
@@ -28,6 +31,9 @@ class Settings(BaseSettings):
 
     REASON_WITH_LLM: bool = True
     REASON_CONFIDENCE_THRESHOLD: float = 0.75
+
+    # Cache
+    CACHE_DIR: str = "data/cache"
 
     model_config = SettingsConfigDict(
         env_file=".env",
