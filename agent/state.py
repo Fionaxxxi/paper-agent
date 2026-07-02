@@ -53,3 +53,10 @@ class AgentState(TypedDict, total=False):
     pdf_text: str
     pdf_page_count: int
     pdf_error: str
+
+    #query_rewrite.py 增加 rewritten_query
+    # retrieve.py 增加 documents
+    # evaluate.py 增加 retrieval_score
+    # reason.py 增加 task_type
+    # generate.py 增加 answer
+    # metrics.py 增加 metrics
