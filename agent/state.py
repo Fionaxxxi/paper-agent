@@ -54,6 +54,10 @@ class AgentState(TypedDict, total=False):
     pdf_page_count: int
     pdf_error: str
 
+    sub_queries: list[str]
+    query_plan_enabled: bool
+    query_plan_reason: str
+
     #query_rewrite.py 增加 rewritten_query
     # retrieve.py 增加 documents
     # evaluate.py 增加 retrieval_score

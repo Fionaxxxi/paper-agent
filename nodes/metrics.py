@@ -1,5 +1,3 @@
-import time
-
 from agent.state import AgentState
 
 
@@ -12,6 +10,11 @@ def metrics_node(state: AgentState) -> AgentState:
 
     total_time = round(sum(node_timings.values()), 2)
 
+    sub_queries = paper_metadata.get(
+        "sub_queries",
+        state.get("sub_queries", []),
+    )
+
     metrics = {
         # Retrieval
         "retrieval_count": len(documents),
@@ -20,7 +23,42 @@ def metrics_node(state: AgentState) -> AgentState:
         "cache_hit": paper_metadata.get("cache_hit", False),
         "retry_count": state.get("retry_count", 0),
 
-        #Tasktype
+        # Agentic RAG / Query Planning
+        "query_plan_enabled": paper_metadata.get(
+            "query_plan_enabled",
+            state.get("query_plan_enabled", False),
+        ),
+        "agentic_rag_enabled": paper_metadata.get(
+            "agentic_rag_enabled",
+            False,
+        ),
+        "sub_query_count": paper_metadata.get(
+            "sub_query_count",
+            len(sub_queries),
+        ),
+        "sub_queries": sub_queries,
+        "raw_document_count": paper_metadata.get(
+            "raw_document_count",
+            len(documents),
+        ),
+        "merged_document_count": paper_metadata.get(
+            "merged_document_count",
+            len(documents),
+        ),
+        "deduplicated_count": paper_metadata.get(
+            "deduplicated_count",
+            0,
+        ),
+        "retrieval_sources": paper_metadata.get(
+            "retrieval_sources",
+            [],
+        ),
+        "cache_hit_count": paper_metadata.get(
+            "cache_hit_count",
+            0,
+        ),
+
+        # Task
         "task_type": task_type,
         "is_pdf_task": task_type == "pdf_reading",
 
@@ -29,7 +67,6 @@ def metrics_node(state: AgentState) -> AgentState:
         "tools_used": tools_used,
 
         # Reason / Skill
-        "task_type": state.get("task_type", "unknown"),
         "rewritten_query": state.get("rewritten_query", ""),
         "reason_source": paper_metadata.get("reason_source", ""),
         "reason_confidence": paper_metadata.get("reason_confidence", ""),
@@ -71,7 +108,19 @@ def print_metrics(metrics: dict) -> None:
     print(f"cache_hit: {metrics['cache_hit']}")
     print(f"retry_count: {metrics['retry_count']}")
 
+    print("\n[Agentic RAG]")
+    print(f"query_plan_enabled: {metrics['query_plan_enabled']}")
+    print(f"agentic_rag_enabled: {metrics['agentic_rag_enabled']}")
+    print(f"sub_query_count: {metrics['sub_query_count']}")
+    print(f"sub_queries: {metrics['sub_queries']}")
+    print(f"raw_document_count: {metrics['raw_document_count']}")
+    print(f"merged_document_count: {metrics['merged_document_count']}")
+    print(f"deduplicated_count: {metrics['deduplicated_count']}")
+    print(f"retrieval_sources: {metrics['retrieval_sources']}")
+    print(f"cache_hit_count: {metrics['cache_hit_count']}")
+
     print("\n[Task]")
+    print(f"task_type: {metrics['task_type']}")
     print(f"is_pdf_task: {metrics['is_pdf_task']}")
 
     print("\n[Tool]")
@@ -79,7 +128,6 @@ def print_metrics(metrics: dict) -> None:
     print(f"tools_used: {metrics['tools_used']}")
 
     print("\n[Reason / Skill]")
-    print(f"task_type: {metrics['task_type']}")
     print(f"rewritten_query: {metrics['rewritten_query']}")
     print(f"reason_source: {metrics['reason_source']}")
     print(f"reason_confidence: {metrics['reason_confidence']}")

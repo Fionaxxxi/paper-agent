@@ -126,17 +126,98 @@ def validate_result(
         if pdf_error:
             errors.append(f"pdf_error is not empty: {pdf_error}")
 
-    # 8. 针对 citation 任务调用 Citation Verifier
+    # 8. 校验 Agentic RAG / Query Planning 指标
+    expected_agentic_rag_enabled = expected.get("agentic_rag_enabled")
+    if expected_agentic_rag_enabled is not None:
+        paper_metadata = get_paper_metadata(result)
+        metrics = paper_metadata.get("metrics", {})
+
+        actual_agentic_rag_enabled = metrics.get(
+            "agentic_rag_enabled",
+            paper_metadata.get("agentic_rag_enabled", False),
+        )
+
+        if actual_agentic_rag_enabled != expected_agentic_rag_enabled:
+            errors.append(
+                f"agentic_rag_enabled expected={expected_agentic_rag_enabled}, "
+                f"actual={actual_agentic_rag_enabled}"
+            )
+
+    expected_query_plan_enabled = expected.get("query_plan_enabled")
+    if expected_query_plan_enabled is not None:
+        paper_metadata = get_paper_metadata(result)
+        metrics = paper_metadata.get("metrics", {})
+
+        actual_query_plan_enabled = metrics.get(
+            "query_plan_enabled",
+            paper_metadata.get("query_plan_enabled", False),
+        )
+
+        if actual_query_plan_enabled != expected_query_plan_enabled:
+            errors.append(
+                f"query_plan_enabled expected={expected_query_plan_enabled}, "
+                f"actual={actual_query_plan_enabled}"
+            )
+
+    sub_query_count_gt = expected.get("sub_query_count_gt")
+    if sub_query_count_gt is not None:
+        paper_metadata = get_paper_metadata(result)
+        metrics = paper_metadata.get("metrics", {})
+
+        actual_sub_query_count = metrics.get(
+            "sub_query_count",
+            paper_metadata.get("sub_query_count", 0),
+        )
+
+        if actual_sub_query_count <= sub_query_count_gt:
+            errors.append(
+                f"sub_query_count expected > {sub_query_count_gt}, "
+                f"actual={actual_sub_query_count}"
+            )
+
+    expected_retrieval_source = expected.get("retrieval_source")
+    if expected_retrieval_source:
+        paper_metadata = get_paper_metadata(result)
+        metrics = paper_metadata.get("metrics", {})
+
+        actual_retrieval_source = metrics.get(
+            "retrieval_source",
+            paper_metadata.get("retrieval_source", ""),
+        )
+
+        if actual_retrieval_source != expected_retrieval_source:
+            errors.append(
+                f"retrieval_source expected={expected_retrieval_source}, "
+                f"actual={actual_retrieval_source}"
+            )
+
+    merged_document_count_gt = expected.get("merged_document_count_gt")
+    if merged_document_count_gt is not None:
+        paper_metadata = get_paper_metadata(result)
+        metrics = paper_metadata.get("metrics", {})
+
+        actual_merged_document_count = metrics.get(
+            "merged_document_count",
+            paper_metadata.get("merged_document_count", 0),
+        )
+
+        if actual_merged_document_count <= merged_document_count_gt:
+            errors.append(
+                f"merged_document_count expected > {merged_document_count_gt}, "
+                f"actual={actual_merged_document_count}"
+            )
+
+    # 9. 针对 citation 任务调用 Citation Verifier
     if expected_task_type == "citation":
         passed, validator_errors = validate_citation_output(result)
         merge_errors(errors, passed, validator_errors)
 
-    # 9. 针对 PDF 任务调用 PDF Verifier
+    # 10. 针对 PDF 任务调用 PDF Verifier
     if expected_task_type == "pdf_reading":
         passed, validator_errors = validate_pdf_reading_output(result)
         merge_errors(errors, passed, validator_errors)
 
-    # 10. 普通非 PDF 任务调用 Retrieval Verifier
+    # 11. 普通非 PDF 任务调用 Retrieval Verifier
     if expected_task_type != "pdf_reading":
         passed, validator_errors = validate_retrieval_basic(result)
         merge_errors(errors, passed, validator_errors)
@@ -153,14 +234,52 @@ def validate_cache_hit(
 ) -> Tuple[bool, List[str]]:
     """
     Validate whether the second run of the same query hits cache.
+
+    Supports:
+    - single-query retrieval cache
+    - Agentic RAG multi-query cache
     """
 
     errors: List[str] = []
 
     second_metadata = get_paper_metadata(second_result)
-    cache_hit = second_metadata.get("cache_hit", False)
-    retrieval_source = second_metadata.get("retrieval_source", "")
+    metrics = second_metadata.get("metrics", {})
 
+    cache_hit = metrics.get(
+        "cache_hit",
+        second_metadata.get("cache_hit", False),
+    )
+
+    retrieval_source = metrics.get(
+        "retrieval_source",
+        second_metadata.get("retrieval_source", ""),
+    )
+
+    cache_hit_count = metrics.get(
+        "cache_hit_count",
+        second_metadata.get("cache_hit_count", 0),
+    )
+
+    retrieval_sources = metrics.get(
+        "retrieval_sources",
+        second_metadata.get("retrieval_sources", []),
+    )
+
+    # Agentic RAG multi-query mode:
+    # The overall retrieval_source is multi_query, while cache usage is
+    # represented by cache_hit_count and retrieval_sources.
+    if retrieval_source == "multi_query":
+        if cache_hit_count <= 0 and "cache" not in retrieval_sources:
+            errors.append(
+                "second run expected cache usage in multi_query mode, "
+                f"cache_hit_count={cache_hit_count}, "
+                f"retrieval_sources={retrieval_sources}"
+            )
+
+        return len(errors) == 0, errors
+
+    # Legacy single-query mode:
+    # The second run should directly hit cache.
     if cache_hit is not True:
         errors.append(f"second run cache_hit expected=True, actual={cache_hit}")
 

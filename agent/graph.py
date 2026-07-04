@@ -9,6 +9,7 @@ from nodes.evaluate import evaluate_node
 from nodes.reason import reason_node
 from nodes.generate import generate_node
 from nodes.metrics import metrics_node
+from nodes.query_plan import query_plan_node
 
 from utils.timer import timed_node
 
@@ -21,12 +22,12 @@ def retry_node(state: AgentState) -> AgentState:
 def route_after_query_rewrite(state):
     """
     如果请求中包含 pdf_path，说明是 PDF 阅读任务，
-    直接进入 Reason Node，不再执行 Retrieve / Evaluate / Retry。
+    直接进入 Reason Node，不再执行 Query Plan / Retrieve / Evaluate / Retry。
     """
     if state.get("pdf_path"):
         return "reason"
 
-    return "retrieve"
+    return "query_plan"
 
 def build_graph():
     workflow = StateGraph(AgentState)
@@ -34,6 +35,11 @@ def build_graph():
     workflow.add_node(
         "query_rewrite",
         timed_node("query_rewrite", query_rewrite_node),
+    )
+
+    workflow.add_node(
+        "query_plan",
+        timed_node("query_plan", query_plan_node),
     )
 
     workflow.add_node(
@@ -72,9 +78,11 @@ def build_graph():
         route_after_query_rewrite,
         {
             "reason": "reason",
-            "retrieve": "retrieve",
+            "query_plan": "query_plan",
         },
     )
+
+    workflow.add_edge("query_plan", "retrieve")
     workflow.add_edge("retrieve", "evaluate")
 
     workflow.add_conditional_edges(

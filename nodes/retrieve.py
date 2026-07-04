@@ -1,6 +1,9 @@
+from typing import Any, Dict, List
+
 from agent.state import AgentState
 from core.config import settings
 from retrieval.cache import load_cached_papers, save_cached_papers
+from retrieval.result_merger import merge_documents_with_stats
 from tools.arxiv_tool import search_arxiv_papers
 
 
@@ -32,7 +35,7 @@ FALLBACK_PAPERS = [
 ]
 
 
-def convert_papers_to_documents(papers, source: str):
+def convert_papers_to_documents(papers: List[Dict[str, Any]], source: str) -> List[Dict[str, Any]]:
     documents = []
 
     for paper in papers:
@@ -51,18 +54,34 @@ def convert_papers_to_documents(papers, source: str):
     return documents
 
 
-def retrieve_node(state: AgentState) -> AgentState:
-    query = state.get("rewritten_query") or state.get("query", "")
-    retry_count = state.get("retry_count", 0)
+def get_max_results(state: AgentState) -> int:
+    """
+    Decide max retrieval results according to retry count.
+    """
 
+    retry_count = state.get("retry_count", 0)
     max_results = settings.ARXIV_MAX_RESULTS
 
     if retry_count > 0:
         max_results = min(max_results + 2, 8)
 
+    return max_results
+
+
+def retrieve_by_query(query: str, state: AgentState) -> Dict[str, Any]:
+    """
+    Retrieve papers for a single query.
+
+    This function keeps the original retrieval behavior:
+    - use cache first
+    - call arXiv if cache misses
+    - use fallback papers if arXiv returns nothing
+    """
+
+    max_results = get_max_results(state)
     retrieval_mode = settings.RETRIEVAL_MODE.lower()
 
-    papers = []
+    papers: List[Dict[str, Any]] = []
     retrieval_source = retrieval_mode
     cache_hit = False
 
@@ -70,13 +89,13 @@ def retrieve_node(state: AgentState) -> AgentState:
         cached_papers = load_cached_papers(query)
 
         if cached_papers is not None:
-            print("\n[Retrieve Node] Cache hit，使用本地缓存结果。")
+            print(f"\n[Retrieve Node] Cache hit，使用本地缓存结果。query={query}")
             papers = cached_papers
             retrieval_source = "cache"
             cache_hit = True
 
         else:
-            print("\n[Retrieve Node] Cache miss，调用 arXiv 检索。")
+            print(f"\n[Retrieve Node] Cache miss，调用 arXiv 检索。query={query}")
 
             papers = search_arxiv_papers(
                 query=query,
@@ -105,13 +124,134 @@ def retrieve_node(state: AgentState) -> AgentState:
 
     return {
         "documents": documents,
-        "tools_used": state.get("tools_used", []) + [f"{retrieval_source}_retriever"],
+        "retrieval_source": retrieval_source,
+        "retrieval_mode": retrieval_mode,
+        "cache_hit": cache_hit,
+        "search_query": query,
+        "paper_count": len(documents),
+        "tools_used": [f"{retrieval_source}_retriever"],
+    }
+
+
+def retrieve_multi_query(state: AgentState, sub_queries: List[str]) -> AgentState:
+    """
+    Retrieve papers for multiple planned sub-queries and merge results.
+    """
+
+    document_groups: List[List[Dict[str, Any]]] = []
+    retrieval_sources: List[str] = []
+    search_queries: List[str] = []
+    cache_hit_count = 0
+    tools_used = list(state.get("tools_used", []))
+
+    for sub_query in sub_queries:
+        single_result = retrieve_by_query(sub_query, state)
+
+        documents = single_result.get("documents", [])
+        document_groups.append(documents)
+
+        retrieval_source = single_result.get("retrieval_source", "")
+        if retrieval_source:
+            retrieval_sources.append(retrieval_source)
+
+        search_query = single_result.get("search_query", "")
+        if search_query:
+            search_queries.append(search_query)
+
+        if single_result.get("cache_hit", False):
+            cache_hit_count += 1
+
+        for tool in single_result.get("tools_used", []):
+            if tool not in tools_used:
+                tools_used.append(tool)
+
+    merge_result = merge_documents_with_stats(
+        document_groups=document_groups,
+        max_documents=settings.ARXIV_MAX_RESULTS,
+    )
+
+    documents = merge_result["documents"]
+
+    if "agentic_rag_retriever" not in tools_used:
+        tools_used.append("agentic_rag_retriever")
+
+    return {
+        "documents": documents,
+        "tools_used": tools_used,
         "paper_metadata": {
             **state.get("paper_metadata", {}),
-            "retrieval_source": retrieval_source,
+            "retrieval_source": "multi_query",
+            "search_query": search_queries[0] if search_queries else "",
+            "search_queries": search_queries,
+            "paper_count": len(documents),
+            "retrieval_count": len(documents),
+            "retrieval_mode": settings.RETRIEVAL_MODE.lower(),
+            "cache_hit": False,
+            "cache_hit_count": cache_hit_count,
+            "sub_queries": sub_queries,
+            "sub_query_count": len(sub_queries),
+            "raw_document_count": merge_result["raw_document_count"],
+            "merged_document_count": merge_result["merged_document_count"],
+            "deduplicated_count": merge_result["deduplicated_count"],
+            "retrieval_sources": retrieval_sources,
+            "agentic_rag_enabled": True,
+        },
+    }
+
+
+def retrieve_node(state: AgentState) -> AgentState:
+    """
+    Retrieve papers for the current AgentState.
+
+    If sub_queries exist, use Agentic RAG multi-query retrieval.
+    Otherwise, keep the original single-query retrieval behavior.
+    """
+
+    task_type = state.get("task_type", "qa")
+
+    if task_type == "pdf_reading":
+        return {
+            "documents": [],
+            "tools_used": state.get("tools_used", []),
+            "paper_metadata": {
+                **state.get("paper_metadata", {}),
+                "retrieval_source": "pdf",
+                "search_query": "",
+                "paper_count": 0,
+                "retrieval_count": 0,
+                "retrieval_mode": "pdf",
+                "cache_hit": False,
+                "is_pdf_task": True,
+            },
+        }
+
+    paper_metadata = state.get("paper_metadata", {})
+    sub_queries = state.get("sub_queries") or paper_metadata.get("sub_queries", [])
+
+    if sub_queries:
+        return retrieve_multi_query(state, sub_queries)
+
+    query = state.get("rewritten_query") or state.get("query", "")
+
+    single_result = retrieve_by_query(query, state)
+    documents = single_result.get("documents", [])
+
+    tools_used = list(state.get("tools_used", []))
+    for tool in single_result.get("tools_used", []):
+        if tool not in tools_used:
+            tools_used.append(tool)
+
+    return {
+        "documents": documents,
+        "tools_used": tools_used,
+        "paper_metadata": {
+            **state.get("paper_metadata", {}),
+            "retrieval_source": single_result.get("retrieval_source", ""),
             "search_query": query,
             "paper_count": len(documents),
-            "retrieval_mode": retrieval_mode,
-            "cache_hit": cache_hit,
+            "retrieval_count": len(documents),
+            "retrieval_mode": single_result.get("retrieval_mode", settings.RETRIEVAL_MODE.lower()),
+            "cache_hit": single_result.get("cache_hit", False),
+            "agentic_rag_enabled": False,
         },
     }

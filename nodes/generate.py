@@ -27,20 +27,6 @@ def truncate_text(text: str, max_length: int = settings.DOC_CONTENT_LIMIT) -> st
     return text[:max_length] + "...[内容已截断]"
 
 
-def build_documents_text(state: AgentState) -> str:
-    documents = state.get("documents", [])[: settings.MAX_GENERATE_DOCS]
-
-    return "\n\n".join(
-        [
-            f"论文标题：{doc.get('title')}\n"
-            f"作者：{', '.join(doc.get('authors', []))}\n"
-            f"年份：{doc.get('year')}\n"
-            f"摘要：{truncate_text(doc.get('content', ''))}\n"
-            f"链接：{doc.get('pdf_url')}"
-            for doc in documents
-        ]
-    )
-
 
 def build_fallback_answer(state: AgentState, error_message: str = "") -> str:
     query = state.get("query", "")
@@ -118,7 +104,7 @@ def generate_node(state: AgentState) -> AgentState:
         return {
             "answer": response.content,
             "paper_metadata": {
-                **state.get("paper_metadata", {}),
+                **skill_state.get("paper_metadata", {}),
                 "skill_used": skill.name,
             },
         }
@@ -130,7 +116,7 @@ def generate_node(state: AgentState) -> AgentState:
             "answer": build_fallback_answer(state, error_message),
             "error_message": error_message,
             "paper_metadata": {
-                **state.get("paper_metadata", {}),
+                **skill_state.get("paper_metadata", {}),
                 "generate_error": error_message,
                 "skill_used": skill.name,
             },

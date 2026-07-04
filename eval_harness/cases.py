@@ -24,6 +24,20 @@ EVAL_CASES: List[Dict[str, Any]] = [
             "answer_contains_any": ["对比", "比较", "差异", "区别", "方法"],
         },
     },
+{
+    "name": "agentic_rag_compare",
+    "query": "比较 retrieval augmented generation 在 hallucination mitigation 和 long context QA 上的研究方法差异",
+    "expected": {
+        "task_type": "compare",
+        "skill_used": "paper_compare",
+        "agentic_rag_enabled": True,
+        "query_plan_enabled": True,
+        "sub_query_count_gt": 1,
+        "retrieval_source": "multi_query",
+        "merged_document_count_gt": 0,
+        "answer_contains_any": ["对比", "比较", "差异", "方法", "研究问题"],
+    },
+},
     {
         "name": "memory_first_turn",
         "query": "推荐几个 RAG 研究方向",
