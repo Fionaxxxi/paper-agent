@@ -3,6 +3,7 @@ from langchain_openai import ChatOpenAI
 from agent.state import AgentState
 from core.config import settings
 from skills.router import get_skill
+from context.context_builder import attach_skill_context
 
 
 def get_llm():
@@ -100,14 +101,9 @@ def generate_node(state: AgentState) -> AgentState:
                 "pdf_error": state.get("pdf_error", ""),
             },
         }
-    documents_text = build_documents_text(state)
 
-    skill_state = {
-        **state,
-        "documents_text": documents_text,
-        "history_text": state.get("history_text", "无历史对话。"),
-    }
 
+    skill_state = attach_skill_context(state)
     skill = get_skill(skill_state)
 
     if not skill.need_llm:
