@@ -10,6 +10,7 @@ from nodes.reason import reason_node
 from nodes.generate import generate_node
 from nodes.metrics import metrics_node
 from nodes.query_plan import query_plan_node
+from nodes.intent_router import intent_router_node
 
 from utils.timer import timed_node
 
@@ -18,6 +19,13 @@ def retry_node(state: AgentState) -> AgentState:
     return {
         "retry_count": state.get("retry_count", 0) + 1,
     }
+
+
+def route_after_intent(state: AgentState) -> str:
+    if state.get("input_intent") == "research":
+        return "query_rewrite"
+
+    return "end"
 
 def route_after_query_rewrite(state):
     """
@@ -31,6 +39,11 @@ def route_after_query_rewrite(state):
 
 def build_graph():
     workflow = StateGraph(AgentState)
+
+    workflow.add_node(
+        "intent_router",
+        timed_node("intent_router", intent_router_node),
+    )
 
     workflow.add_node(
         "query_rewrite",
@@ -72,7 +85,15 @@ def build_graph():
         timed_node("metrics", metrics_node),
     )
 
-    workflow.add_edge(START, "query_rewrite")
+    workflow.add_edge(START, "intent_router")
+    workflow.add_conditional_edges(
+        "intent_router",
+        route_after_intent,
+        {
+            "query_rewrite": "query_rewrite",
+            "end": END,
+        },
+    )
     workflow.add_conditional_edges(
         "query_rewrite",
         route_after_query_rewrite,

@@ -4,7 +4,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     # LLM
     OPENAI_BASE_URL: str = "https://dashscope.aliyuncs.com/compatible-mode/v1"
-    OPENAI_API_KEY: str = "sk-ws-H.RPMPEDD.Cuj7.MEUCIQCUwAgrylE4oGBFLwZSzfULXmKPHejwn7IDVoFyC4-2oQIgcQUtnVqQrvHcJUoIjS8JfTnsdDVOMG9B_WYWdl9J54o"
+    OPENAI_API_KEY: str = ""
     MODEL_NAME: str = "qwen-max"
 
     # Retrieval
@@ -31,9 +31,6 @@ class Settings(BaseSettings):
 
     REASON_WITH_LLM: bool = True
     REASON_CONFIDENCE_THRESHOLD: float = 0.75
-
-    # Cache
-    CACHE_DIR: str = "data/cache"
 
     model_config = SettingsConfigDict(
         env_file=".env",

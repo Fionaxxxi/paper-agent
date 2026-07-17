@@ -5,6 +5,8 @@ class AgentState(TypedDict, total=False):
     # 用户问题
     query: str
 
+    input_intent: str
+
     # 检索到的论文片段
     documents: List[Dict[str, Any]]
 
@@ -32,9 +34,6 @@ class AgentState(TypedDict, total=False):
     # 是否通过安全检查
     is_valid: bool
 
-    # 错误信息
-    error_message: Optional[str]
-
     # 改写后的检索问题
     rewritten_query: str
 
@@ -58,7 +57,7 @@ class AgentState(TypedDict, total=False):
     query_plan_enabled: bool
     query_plan_reason: str
 
-    #query_rewrite.py 增加 rewritten_query
+    # query_rewrite.py 增加 rewritten_query
     # retrieve.py 增加 documents
     # evaluate.py 增加 retrieval_score
     # reason.py 增加 task_type
