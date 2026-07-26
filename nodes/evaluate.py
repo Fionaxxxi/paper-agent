@@ -4,6 +4,11 @@ from langchain_openai import ChatOpenAI
 
 from agent.state import AgentState
 from core.config import settings
+from core.llm_usage import (
+    TrackedLLMError,
+    build_llm_usage_update,
+    invoke_llm_with_usage,
+)
 from prompts.evaluator import EVALUATOR_TEMPLATE
 
 
@@ -49,7 +54,7 @@ def rule_based_score(state: AgentState) -> float:
     return round(min(score, 1.0), 2)
 
 
-def llm_score(state: AgentState) -> float:
+def llm_score_with_usage(state: AgentState):
     query = state.get("query", "")
     documents = state.get("documents", [])[:3]
 
@@ -66,28 +71,51 @@ def llm_score(state: AgentState) -> float:
     )
 
     llm = get_llm()
-    response = llm.invoke(prompt)
+    response, usage_record = invoke_llm_with_usage(
+        llm=llm,
+        prompt=prompt,
+        node_name="evaluate",
+        model_name=settings.MODEL_NAME,
+    )
 
     text = response.content.strip()
     match = re.search(r"0(\.\d+)?|1(\.0+)?", text)
 
     if match:
-        return float(match.group())
+        return float(match.group()), usage_record
 
-    return 0.5
+    return 0.5, usage_record
+
+
+def llm_score(state: AgentState) -> float:
+    score, _ = llm_score_with_usage(state)
+    return score
 
 
 def evaluate_node(state: AgentState) -> AgentState:
+    usage_update = {}
+
     try:
         if settings.EVALUATE_WITH_LLM:
-            score = llm_score(state)
+            score, usage_record = llm_score_with_usage(state)
+            usage_update = build_llm_usage_update(state, usage_record)
         else:
             score = rule_based_score(state)
+
+    except TrackedLLMError as error:
+        usage_update = build_llm_usage_update(
+            state,
+            error.usage_record,
+        )
+        e = error.original_error
+        print(f"[Evaluate Node Error] {type(e).__name__}: {e}")
+        score = rule_based_score(state)
 
     except Exception as e:
         print(f"[Evaluate Node Error] {type(e).__name__}: {e}")
         score = rule_based_score(state)
 
     return {
+        **usage_update,
         "retrieval_score": max(0.0, min(score, 1.0)),
     }

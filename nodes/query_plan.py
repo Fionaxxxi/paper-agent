@@ -3,6 +3,46 @@ from typing import Any, Dict, List
 from agent.state import AgentState
 
 
+COMPLEX_TASK_TYPES = {"compare", "summarize", "recommend", "citation"}
+
+COMPLEX_QUERY_KEYWORDS = {
+    "compare",
+    "comparison",
+    "difference",
+    "differences",
+    "versus",
+    " vs ",
+    "survey",
+    "summarize",
+    "summary",
+    "review",
+    "limitations",
+    "challenges",
+    "future directions",
+    "research directions",
+    "open problems",
+    "recommend",
+    "recommendation",
+    "citation",
+    "bibtex",
+    "比较",
+    "对比",
+    "区别",
+    "差异",
+    "综述",
+    "总结",
+    "概括",
+    "局限",
+    "挑战",
+    "未来方向",
+    "研究方向",
+    "开放问题",
+    "推荐",
+    "引用",
+    "参考文献",
+}
+
+
 def deduplicate_queries(queries: List[str]) -> List[str]:
     """
     Deduplicate query strings while preserving order.
@@ -28,6 +68,48 @@ def deduplicate_queries(queries: List[str]) -> List[str]:
     return deduplicated
 
 
+def classify_query_complexity(state: Dict[str, Any]) -> Dict[str, str]:
+    """
+    Classify retrieval complexity without calling an LLM.
+
+    Explicit complex task types take priority. When task_type has not been
+    classified yet, the original user query provides a conservative signal.
+    Short single-purpose questions use one retrieval query by default.
+    """
+
+    task_type = state.get("task_type", "qa")
+    if task_type == "pdf_reading":
+        return {
+            "query_complexity": "not_applicable",
+            "complexity_reason": "pdf_reading skips external retrieval",
+        }
+
+    if task_type in COMPLEX_TASK_TYPES:
+        return {
+            "query_complexity": "complex",
+            "complexity_reason": f"complex task_type: {task_type}",
+        }
+
+    query = str(state.get("query", "")).strip().lower()
+    matched_keywords = sorted(
+        keyword.strip()
+        for keyword in COMPLEX_QUERY_KEYWORDS
+        if keyword in query
+    )
+    if matched_keywords:
+        return {
+            "query_complexity": "complex",
+            "complexity_reason": (
+                "complex query keyword: " + ", ".join(matched_keywords)
+            ),
+        }
+
+    return {
+        "query_complexity": "simple",
+        "complexity_reason": "single-purpose question",
+    }
+
+
 def build_rule_based_sub_queries(state: Dict[str, Any]) -> List[str]:
     """
     Build sub queries using lightweight rules.
@@ -41,6 +123,10 @@ def build_rule_based_sub_queries(state: Dict[str, Any]) -> List[str]:
     task_type = state.get("task_type", "qa")
 
     sub_queries = [rewritten_query]
+    complexity = classify_query_complexity(state)["query_complexity"]
+
+    if complexity == "simple":
+        return deduplicate_queries(sub_queries)
 
     if task_type == "compare":
         sub_queries.extend(
@@ -97,24 +183,36 @@ def query_plan_node(state: AgentState) -> AgentState:
     """
 
     task_type = state.get("task_type", "qa")
+    complexity_result = classify_query_complexity(state)
 
     if task_type == "pdf_reading":
         return {
             "sub_queries": [],
             "query_plan_enabled": False,
             "query_plan_reason": "pdf_reading task does not require retrieval planning",
+            **complexity_result,
         }
 
     sub_queries = build_rule_based_sub_queries(state)
+    query_complexity = complexity_result["query_complexity"]
+    query_plan_reason = (
+        "single_query_for_simple_question"
+        if query_complexity == "simple"
+        else "multi_query_for_complex_question"
+    )
 
     return {
         "sub_queries": sub_queries,
         "query_plan_enabled": True,
-        "query_plan_reason": "rule_based_query_plan",
+        "query_plan_reason": query_plan_reason,
+        **complexity_result,
         "paper_metadata": {
             **state.get("paper_metadata", {}),
             "sub_queries": sub_queries,
             "sub_query_count": len(sub_queries),
+            "planned_query_count": len(sub_queries),
             "query_plan_enabled": True,
+            "query_plan_reason": query_plan_reason,
+            **complexity_result,
         },
     }

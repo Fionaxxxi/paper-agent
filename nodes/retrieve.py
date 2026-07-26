@@ -228,10 +228,14 @@ def retrieve_node(state: AgentState) -> AgentState:
     paper_metadata = state.get("paper_metadata", {})
     sub_queries = state.get("sub_queries") or paper_metadata.get("sub_queries", [])
 
-    if sub_queries:
+    if len(sub_queries) > 1:
         return retrieve_multi_query(state, sub_queries)
 
-    query = state.get("rewritten_query") or state.get("query", "")
+    query = (
+        sub_queries[0]
+        if sub_queries
+        else state.get("rewritten_query") or state.get("query", "")
+    )
 
     single_result = retrieve_by_query(query, state)
     documents = single_result.get("documents", [])

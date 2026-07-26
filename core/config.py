@@ -6,6 +6,8 @@ class Settings(BaseSettings):
     OPENAI_BASE_URL: str = "https://dashscope.aliyuncs.com/compatible-mode/v1"
     OPENAI_API_KEY: str = ""
     MODEL_NAME: str = "qwen-max"
+    MODEL_INPUT_COST_PER_1M_TOKENS: float = 0.0
+    MODEL_OUTPUT_COST_PER_1M_TOKENS: float = 0.0
 
     # Retrieval
     RETRIEVAL_MODE: str = "arxiv"

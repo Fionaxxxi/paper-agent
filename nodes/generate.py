@@ -2,6 +2,11 @@ from langchain_openai import ChatOpenAI
 
 from agent.state import AgentState
 from core.config import settings
+from core.llm_usage import (
+    TrackedLLMError,
+    build_llm_usage_update,
+    invoke_llm_with_usage,
+)
 from skills.router import get_skill
 from context.context_builder import attach_skill_context
 
@@ -99,12 +104,38 @@ def generate_node(state: AgentState) -> AgentState:
 
     try:
         llm = get_llm()
-        response = llm.invoke(prompt)
+        response, usage_record = invoke_llm_with_usage(
+            llm=llm,
+            prompt=prompt,
+            node_name="generate",
+            model_name=settings.MODEL_NAME,
+        )
+        usage_update = build_llm_usage_update(state, usage_record)
 
         return {
+            **usage_update,
             "answer": response.content,
             "paper_metadata": {
                 **skill_state.get("paper_metadata", {}),
+                "skill_used": skill.name,
+            },
+        }
+
+    except TrackedLLMError as error:
+        usage_update = build_llm_usage_update(
+            state,
+            error.usage_record,
+        )
+        e = error.original_error
+        error_message = f"{type(e).__name__}: {e}"
+
+        return {
+            **usage_update,
+            "answer": build_fallback_answer(state, error_message),
+            "error_message": error_message,
+            "paper_metadata": {
+                **skill_state.get("paper_metadata", {}),
+                "generate_error": error_message,
                 "skill_used": skill.name,
             },
         }

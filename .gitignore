@@ -106,3 +106,7 @@ data/pdfs/
 
 # Local memory
 data/memory/
+
+# Generated benchmark reports and spreadsheet artifacts
+eval_harness/reports/*.json
+outputs/

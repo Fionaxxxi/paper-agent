@@ -19,8 +19,13 @@ class AgentState(TypedDict, total=False):
     # 工具调用记录
     tools_used: List[str]
 
-    # token 统计，第一版先不真实统计
+    # LLM 调用与 token 统计
     token_usage: int
+    input_token_usage: int
+    output_token_usage: int
+    llm_call_count: int
+    llm_failed_call_count: int
+    llm_usage: List[Dict[str, Any]]
 
     # 重新检索次数
     retry_count: int
@@ -56,6 +61,8 @@ class AgentState(TypedDict, total=False):
     sub_queries: list[str]
     query_plan_enabled: bool
     query_plan_reason: str
+    query_complexity: str
+    complexity_reason: str
 
     # query_rewrite.py 增加 rewritten_query
     # retrieve.py 增加 documents

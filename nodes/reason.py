@@ -4,6 +4,11 @@ from langchain_openai import ChatOpenAI
 
 from agent.state import AgentState
 from core.config import settings
+from core.llm_usage import (
+    TrackedLLMError,
+    build_llm_usage_update,
+    invoke_llm_with_usage,
+)
 from prompts.reason import REASON_TEMPLATE
 
 #原来的关键词判断升级为三层：
@@ -110,7 +115,16 @@ def rule_based_reason(query: str) -> Tuple[str, float]:
     return "qa", 0.5
 
 
-def llm_reason(query: str) -> str:
+def parse_llm_task_type(content: str) -> str:
+    task_type = content.strip().lower()
+
+    if task_type not in VALID_TASK_TYPES:
+        return "qa"
+
+    return task_type
+
+
+def llm_reason_with_usage(query: str):
     """
     当规则判断置信度较低时，调用 LLM 进行任务分类。只负责分类，不生成答案
     """
@@ -118,13 +132,17 @@ def llm_reason(query: str) -> str:
     prompt = REASON_TEMPLATE.format(query=query)
 
     llm = get_llm()
-    response = llm.invoke(prompt)
+    response, usage_record = invoke_llm_with_usage(
+        llm=llm,
+        prompt=prompt,
+        node_name="reason",
+        model_name=settings.MODEL_NAME,
+    )
+    return parse_llm_task_type(response.content), usage_record
 
-    task_type = response.content.strip().lower()
 
-    if task_type not in VALID_TASK_TYPES:
-        return "qa"
-
+def llm_reason(query: str) -> str:
+    task_type, _ = llm_reason_with_usage(query)
     return task_type
 
 
@@ -148,14 +166,26 @@ def reason_node(state: AgentState) -> AgentState:
 
     task_type = rule_task_type
     reason_source = "rule"
+    usage_update = {}
 
     if (
         settings.REASON_WITH_LLM
         and confidence < settings.REASON_CONFIDENCE_THRESHOLD
     ):
         try:
-            task_type = llm_reason(query)
+            task_type, usage_record = llm_reason_with_usage(query)
+            usage_update = build_llm_usage_update(state, usage_record)
             reason_source = "llm"
+
+        except TrackedLLMError as error:
+            usage_update = build_llm_usage_update(
+                state,
+                error.usage_record,
+            )
+            e = error.original_error
+            print(f"[Reason Node Error] LLM fallback failed: {type(e).__name__}: {e}")
+            task_type = rule_task_type
+            reason_source = "rule_fallback"
 
         except Exception as e:
             print(f"[Reason Node Error] LLM fallback failed: {type(e).__name__}: {e}")
@@ -163,6 +193,7 @@ def reason_node(state: AgentState) -> AgentState:
             reason_source = "rule_fallback"
 
     return {
+        **usage_update,
         "task_type": task_type,
         "paper_metadata": {
             **state.get("paper_metadata", {}),

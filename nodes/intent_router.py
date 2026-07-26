@@ -87,6 +87,11 @@ def intent_router_node(state: AgentState) -> AgentState:
         "retrieval_score": 0.0,
         "tools_used": list(state.get("tools_used", [])),
         "token_usage": state.get("token_usage", 0),
+        "input_token_usage": state.get("input_token_usage", 0),
+        "output_token_usage": state.get("output_token_usage", 0),
+        "llm_call_count": state.get("llm_call_count", 0),
+        "llm_failed_call_count": state.get("llm_failed_call_count", 0),
+        "llm_usage": list(state.get("llm_usage", [])),
         "paper_metadata": {
             **metadata,
             "agentic_rag_enabled": False,
