@@ -22,6 +22,7 @@
 - 尚未建立完整的本地 RAG 链路，当前优化主要属于 LangGraph 查询规划、多查询检索、结果合并和有限重试；
 - 当前只注册了 arXiv 一个原生工具，尚未接入多数据源和 MCP 工具；
 - Tool Router 仍是确定性来源映射，尚未加入数据源可用性、成本、限流和质量驱动选择；
+- 当前入口意图仅对高置信度闲聊做精确规则匹配，查询改写和复杂度规划也主要依赖规则；`reason` 位于检索之后，查询规划通常无法直接利用正式 `task_type`，尚未建立规则与 LLM 协作的统一任务分析器；
 - LangGraph 尚未配置持久化检查点；
 - 当前会话记忆使用 `data/memory/{conversation_id}.json` 文件保存，只读取最近 6 条消息；尚无摘要、语义召回、并发写入保护、过期、删除和隐私生命周期管理；
 - 评估主要关注检索质量，还没有完整评估最终答案质量；
@@ -98,7 +99,7 @@ GraphRAG 工程
 | Eval Harness | 部分完成 | 已有离线 Benchmark、案例、Runner、Validator、报告和 Excel 测试结果 | 增加服务级、在线和 CI 回归评测 |
 | Verifier | 部分完成 | 已有答案、引用、PDF 依据和检索 Validator | 接入最终答案流程，补充统一评分与失败路由 |
 | Context Engineering | 部分完成 | 已有 Context Builder、Policy 和文档格式化 | 增加证据选择、压缩、上下文预算与效果对比 |
-| Agentic RAG / Query Planning | 第一版完成 | 已有复杂度分类、多查询规划、检索合并与重试 | 增加重排、多源检索和失败类型驱动的重新规划 |
+| Agentic RAG / Query Planning | 第一版完成 | 已有规则复杂度分类、多查询规划、检索合并与重试 | 增加可评测的规则 + LLM 混合任务分析、重排、多源检索和失败类型驱动的重新规划 |
 | Structured Memory | 未完成 | 已有基础对话历史 | 增加摘要、重要事实、活跃论文、研究偏好和策略记忆 |
 | Tool Governance | 第一版完成 | 已有统一协议、Registry、Router、Executor、只读 Policy、arXiv Adapter、指标与离线 Benchmark | 增加多源路由、限流、细粒度授权和 MCP Adapter |
 | MCP | 未开始 | 无 | 先实现 MCP Client Adapter，后暴露 PaperAgent MCP Server |
@@ -207,6 +208,121 @@ PaperAgent 主图
 - 候选图相对基线图的能力提升与关键回归数量。
 
 Graph Engineering 的价值不能以节点数量衡量。只有在固定数据集上证明新分支、循环或子图改善质量、可靠性或成本，且没有引入关键回归时，才能进入默认主图。
+
+## 智能任务分析、查询优化与 Skill 路由升级计划
+
+### 当前基线
+
+- `IntentRouter` 使用本地精确规则识别问候、感谢和身份问题，未命中时进入研究流程；简单输入不调用 LLM。
+- `QueryRewrite` 使用关键词和固定英文模板改写查询，不调用 LLM。
+- `QueryPlan` 使用任务类型和复杂关键词判断简单或复杂任务，再按固定模板生成子查询，不调用 LLM。
+- `Reason` 先进行规则任务分类；仅当规则置信度低于阈值时调用 LLM，将结果限制在允许的 `task_type` 枚举内。
+- `SkillRouter` 本身不调用 LLM，只根据经过校验的 `task_type` 确定性映射到已有 Skill。
+- 当前 `reason` 位于 `retrieve/evaluate` 之后，因此查询规划通常只能依赖原始问题关键词，不能稳定使用正式任务分类结果。
+
+### 升级原则
+
+- 保留规则优先和简单任务短路，不允许为了“智能化”让 `hi`、感谢或明确单一问题强制调用 LLM。
+- 仅在规则低置信度、条件复杂、中文长问题、多目标、多约束或需要查询分解时启用 LLM。
+- 优先评测一次结构化 `TaskAnalyzer` 调用同时完成任务分类、复杂度分析、查询改写和规划，避免四个节点分别调用 LLM。
+- LLM 只生成受 Schema 约束的候选分析；查询数量、长度、权限、成本、枚举和偏题检查由确定性 Validator 控制。
+- Skill 选择继续采用“受限任务分类 + 确定性映射”，不允许模型自由选择不存在的 Skill 或直接生成可执行工具名。
+- 所有候选能力均保留关闭开关、规则基线和失败回退；只有评测证明净收益后才进入默认流程。
+
+### 候选目标流程
+
+```text
+用户问题
+→ 高置信度本地意图规则
+   ├─ 问候 / 感谢 / 身份问题 → 本地回答并结束
+   └─ 研究问题或规则不确定 → Task Analyzer
+→ Task Analyzer
+   ├─ 简单且规则明确 → 使用规则分析，不调用 LLM
+   └─ 含糊或复杂 → 一次 LLM 结构化分析
+→ Plan Validator
+   → 校验任务类型、复杂度、查询数量、约束、问题偏离和预算
+→ 查询计划
+   → 原始问题 + 改写查询 + 子查询 + 数据源建议
+→ Tool Router / Retrieve / Evaluate
+→ 确定性 Skill Router
+→ Skill 执行与答案生成
+```
+
+### 统一结构化分析结果
+
+候选 `TaskAnalysis` 至少包含：
+
+```json
+{
+  "intent": "research",
+  "task_type": "compare",
+  "confidence": 0.91,
+  "complexity": "complex",
+  "complexity_reasons": ["需要比较两个方法", "包含效果、成本和局限三个维度"],
+  "core_topic": "GraphRAG 与 LightRAG",
+  "entities": ["GraphRAG", "LightRAG"],
+  "constraints": {"domain": "academic research"},
+  "rewritten_query": "GraphRAG LightRAG academic research comparison",
+  "search_dimensions": ["architecture", "retrieval quality", "cost", "limitations"],
+  "sub_queries": [],
+  "recommended_query_count": 4
+}
+```
+
+具体字段和技术实现不得预先写死；应先建立 Pydantic / JSON Schema 和候选接口，再通过测试决定哪些字段能稳定提升检索与回答质量。
+
+### 分模块升级策略
+
+#### 意图判断
+
+- 保留高置信度本地白名单作为零 Token 快速路径。
+- 只有规则无法判断时，才允许轻量模型在 `smalltalk`、`paper_research`、`pdf_reading`、`unsupported` 等受限枚举中分类。
+- 必须记录短路率、误拦截率、研究问题错误短路数、LLM 调用数和避免的 Token。
+
+#### 查询改写
+
+- 简单专业术语继续使用规则或原查询。
+- 中文长问题、多条件、时间范围、方法名、数据集和评价指标等复杂约束可进入 LLM 改写候选。
+- 始终保留原始问题，并检查改写结果是否遗漏约束、添加不存在的条件或偏离研究主题。
+- LLM 失败、超时、结构校验失败或偏题时回退到规则结果。
+
+#### 复杂度判断与查询规划
+
+- 明确的简单问题保持单查询；明确命中比较、综述、局限和未来方向等规则时可以直接生成有限模板计划。
+- 规则冲突或复杂问题允许 LLM 给出复杂度、理由、检索维度和建议查询数量。
+- 简单任务和复杂任务都设置查询数量硬上限、去重、长度限制、工具调用预算和提前停止条件。
+- 评测当前图与“任务分析提前到查询规划之前”的候选图，依据数据决定是否调整 `reason` 节点位置或拆分轻量 `TaskAnalyzer` 子图。
+
+#### Skill 选择
+
+- 规则高置信度时直接得到 `task_type`；低置信度时由 LLM 在允许枚举中辅助分类。
+- 分类结果经过 Schema 和白名单校验后，再由本地 `SkillRouter` 确定性映射到 QA、总结、比较、推荐、引用、PDF 阅读及未来科研 Skill。
+- 无效分类、低置信度或不存在的 Skill 一律回退到 `QASkill` 或进入明确的澄清路径。
+- 后续即使增加 Multi-Agent，也必须先由复杂度门控决定是否升级执行模式，普通任务继续走单 Agent + Skill 路径。
+
+### 专项评测与晋升门槛
+
+至少建立以下对照组：
+
+```text
+A：当前纯规则改写与规划基线
+B：各节点分别使用 LLM
+C：一次结构化 Task Analyzer + 确定性 Validator
+D：规则优先、低置信度才调用 Task Analyzer 的混合方案
+```
+
+评测至少包含：
+
+- 意图准确率、研究问题误短路率和简单任务短路率；
+- `task_type` 与 Skill 路由准确率；
+- 复杂度准确率、查询计划有效率、约束保留率和查询偏题率；
+- Recall@K、MRR、nDCG@K、结果覆盖维度和重复论文比例；
+- 最终答案正确性、完整性、Faithfulness 和引用有效率；
+- 每个请求的 LLM 调用数、Token、成本、P50/P95 延迟和工具调用数；
+- LLM 失败、超时、非法结构和规则回退成功率；
+- 不同语言、短问句、长问题、多实体、多约束和对抗性输入的鲁棒性。
+
+候选方案只有在研究问题误短路不增加、关键质量指标达到门槛、简单任务成本没有明显回归，并且单位质量提升对应的 Token 与延迟可接受时，才能晋升为默认路径。测试用例、指标定义和每次结果继续写入中文文档、Benchmark 与 Excel 报告。
 
 ## 阶段 1：统一 Tool 工具层
 
