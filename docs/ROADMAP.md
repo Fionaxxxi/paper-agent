@@ -1323,16 +1323,17 @@ Push / Pull Request
 
 ## 推荐的下一项开发工作
 
-阶段 1 和阶段 2 的第二原生数据源工程基础已完成。下一项只建立 arXiv / OpenAlex 在线多源评测集，暂不同时引入 RAG、MCP、Redis 或 Agent Loop：
+arXiv / OpenAlex 在线多源评测集 v1、排名指标、逐题报告、缓存和限流恢复已经完成。2026-08-05 续跑后 arXiv 网络失败归零、2 题正常零结果；OpenAlex 仍因缺少 API Key 被跳过，因此尚未产生多数据源选型结论。
+
+下一项优先完成一次可比较的正式多源运行：
 
 ```text
-建立包含简单主题、复杂比较、中文查询、正式出版物和预印本的固定问题集
-→ 为每个问题标注相关论文 DOI / arXiv ID 和必要覆盖维度
-→ 分别运行 arXiv、OpenAlex 和 multi 三个配置
-→ 比较 Recall@K、MRR、nDCG@K、独有有效论文数和重复率
-→ 同时记录请求数、缓存命中、P50/P95 延迟、限流、失败和额度成本
-→ 保存逐问题结果、失败案例、Commit、配置和数据集版本
-→ 只有真实质量与可靠性收益达到门槛后才考虑把 multi 晋升为默认路线
+配置 OpenAlex API Key
+→ 配置 OpenAlex API Key 后完成同版本在线检索，并单独分析 arXiv 的 2 个正常零结果
+→ 用同一数据集版本完成 arXiv、OpenAlex 和 multi 三配置
+→ 审核逐题误匹配、漏标与必要覆盖维度
+→ 只有失败数归零且质量/可靠性收益达到门槛，才考虑把 multi 晋升为默认路线
+→ 若多源收益有限，再比较查询路由优化或 Semantic Scholar；若收益稳定，则进入本地 RAG 标注集和 Dense 基线
 ```
 
 完成在线多源评测后，再依据数据判断继续接入 Semantic Scholar、开始本地 RAG 标注集，或先优化数据源路由；MCP、Agent Loop、LLM Wiki 和 Agent 自进化继续建立在统一 Tool 与 Harness 接口之上。

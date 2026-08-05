@@ -379,6 +379,66 @@ TEST_CASE_CATALOG: dict[str, CaseDescription] = {
         "两个 Tool 都执行，三条原始记录合并为两篇并记录一次去重。",
         "多源模式可能只调用一个来源、保留重复论文或统计不一致。",
     ),
+    "tests/test_retrieval_online_eval.py::test_retrieval_dataset_loads_versioned_twenty_case_gold_standard": _description(
+        "验证在线检索评测集具有固定版本、20 个唯一问题、统一 K 值和非空金标准论文。",
+        "评测输入可追溯且结构完整，不会因重复问题或缺少相关论文而污染指标。",
+        "评测集版本、规模或标注结构发生意外变化，历史结果将失去可比性。",
+    ),
+    "tests/test_retrieval_online_eval.py::test_retrieval_dataset_rejects_duplicate_case_ids": _description(
+        "验证评测集拒绝重复 case id，避免同一问题被重复计分。",
+        "重复标识会在加载阶段被明确拒绝。",
+        "重复问题可能被静默纳入平均值，造成检索质量指标偏差。",
+    ),
+    "tests/test_retrieval_online_eval.py::test_paper_identity_normalizes_doi_arxiv_id_and_title": _description(
+        "验证 DOI、arXiv ID 和标题能被归一化为稳定的论文身份键。",
+        "不同 URL、大小写和标点形式仍能识别为同一论文。",
+        "同一论文可能无法匹配金标准或无法跨来源去重。",
+    ),
+    "tests/test_retrieval_online_eval.py::test_ranking_metrics_calculate_recall_precision_mrr_ndcg_and_dimensions": _description(
+        "用手工可验证的排名检查 Recall、Precision、MRR、nDCG 和维度覆盖率公式。",
+        "相关论文位于第 2 名时，各项指标与预先计算值完全一致。",
+        "至少一个核心检索指标计算错误，在线来源对比结论不可信。",
+    ),
+    "tests/test_retrieval_online_eval.py::test_duplicate_rate_handles_zero_and_merged_counts": _description(
+        "验证空结果和存在重复结果时的重复率计算边界。",
+        "空结果返回 0%，4 条合并为 3 条时返回 25%。",
+        "重复率可能除零或错误反映多来源结果冗余。",
+    ),
+    "tests/test_retrieval_online_eval.py::test_multi_profile_deduplicates_and_records_partial_provider_failure": _description(
+        "验证多来源评测在一个来源失败时仍合并成功来源，并保留失败原因。",
+        "结果标记为部分成功，相关论文仍被命中，TIMEOUT 明细可追踪。",
+        "单来源故障可能拖垮整个评测，或错误被隐藏为正常空结果。",
+    ),
+    "tests/test_retrieval_online_eval.py::test_successful_zero_result_is_empty_instead_of_failed": _description(
+        "验证来源正常响应但没有论文时标记为 empty，而不是网络或执行失败。",
+        "空结果与工具故障采用不同状态，且不会产生虚假的来源错误。",
+        "失败率会混入正常零结果，导致可靠性与检索覆盖问题无法区分。",
+    ),
+    "tests/test_retrieval_online_eval.py::test_online_benchmark_reuses_provider_results_across_profiles": _description(
+        "验证同一问题的原始来源响应会在 arXiv、OpenAlex 和 multi 配置间复用。",
+        "每个来源只调用一次，三种配置基于相同快照比较，避免浪费 API 配额。",
+        "同一轮对比可能重复联网，增加耗时、限流风险并破坏公平性。",
+    ),
+    "tests/test_retrieval_online_eval.py::test_missing_openalex_key_is_explicitly_skipped_without_network": _description(
+        "验证缺少 OpenAlex API Key 时明确跳过该来源且不发起网络请求。",
+        "报告记录 MISSING_API_KEY，实际 API 调用数保持为零。",
+        "无凭据运行可能消耗匿名额度，或把配置缺失误报为检索质量差。",
+    ),
+    "tests/test_retrieval_online_eval.py::test_arxiv_pacing_waits_only_for_remaining_interval": _description(
+        "验证在线评测在连续 arXiv 请求之间只等待尚未满足的全局间隔，并能识别 HTTP 429。",
+        "已过去 2.5 秒时只等待剩余 3.5 秒，OpenAlex 不受该节流影响，429 可触发恢复。",
+        "评测可能请求过快触发限流，或不必要地拖慢其他论文来源。",
+    ),
+    "tests/test_retrieval_online_eval.py::test_online_report_writes_json_summary_case_and_paper_tables": _description(
+        "验证在线评测可同时输出机器可读 JSON 及总览、逐题、论文明细 CSV。",
+        "四类报告文件均成功生成并可重新读取。",
+        "评测结果无法沉淀为可审计数据，Excel 和历史对比也无法稳定生成。",
+    ),
+    "tests/test_retrieval_online_eval.py::test_arxiv_network_failure_propagates_to_tool_executor": _description(
+        "验证 arXiv 网络异常会传递给 Tool Executor，而不是被伪装成零篇论文。",
+        "连接失败保留异常语义，可由统一执行层记录、重试或降级。",
+        "真实故障可能被误判为正常无结果，导致失败率和恢复指标失真。",
+    ),
     "tests/test_multi_source_retrieval.py::test_multi_source_retrieval_keeps_success_when_one_provider_fails": _description(
         "验证一个论文来源超时时，多源检索仍使用另一个成功来源。",
         "保留 OpenAlex 论文和 arXiv TIMEOUT 明细，不错误触发静态兜底。",

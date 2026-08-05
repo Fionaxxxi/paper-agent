@@ -6,8 +6,8 @@ def search_arxiv_papers(query: str, max_results: int = 5) -> List[Dict[str, Any]
     """
     Search papers from arXiv.
 
-    If arXiv network request fails, return an empty list instead of crashing
-    the whole LangGraph workflow.
+    Network failures are re-raised so ToolExecutor can record a structured
+    failure; Retrieve Node remains responsible for fallback behavior.
     """
     try:
         client = arxiv.Client(
@@ -49,8 +49,8 @@ def search_arxiv_papers(query: str, max_results: int = 5) -> List[Dict[str, Any]
     except Exception as e:
         print("\n[arXiv Tool Error] arXiv 检索失败：")
         print(e)
-        return []
+        raise
 
     # 1. 设置 page_size，避免默认请求 100 条
     # 2. 捕获 arXiv / SSL / 网络异常
-    # 3. 网络失败时返回空列表，不让整个程序崩溃
+    # 3. 网络失败交给 ToolExecutor 统一记录，Retrieve Node 再执行降级
