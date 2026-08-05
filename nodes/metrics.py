@@ -40,6 +40,7 @@ def metrics_node(state: AgentState) -> AgentState:
     paper_metadata = state.get("paper_metadata", {})
     task_type = state.get("task_type", "unknown")
     llm_usage = state.get("llm_usage", [])
+    tool_executions = paper_metadata.get("tool_executions", [])
 
     total_time = round(sum(node_timings.values()), 2)
     input_token_usage = state.get("input_token_usage", 0)
@@ -122,6 +123,23 @@ def metrics_node(state: AgentState) -> AgentState:
         # Tool
         "tool_count": len(tools_used),
         "tools_used": tools_used,
+        "tool_execution_count": len(tool_executions),
+        "tool_success_count": sum(
+            execution.get("tool_success", False)
+            for execution in tool_executions
+        ),
+        "tool_failure_count": sum(
+            not execution.get("tool_success", False)
+            for execution in tool_executions
+        ),
+        "tool_latency_seconds": round(
+            sum(
+                execution.get("tool_latency_seconds", 0.0)
+                for execution in tool_executions
+            ),
+            4,
+        ),
+        "tool_executions": tool_executions,
 
         # LLM usage
         "llm_call_count": state.get("llm_call_count", 0),
@@ -212,6 +230,10 @@ def print_metrics(metrics: dict) -> None:
     print("\n[Tool]")
     print(f"tool_count: {metrics['tool_count']}")
     print(f"tools_used: {metrics['tools_used']}")
+    print(f"tool_execution_count: {metrics['tool_execution_count']}")
+    print(f"tool_success_count: {metrics['tool_success_count']}")
+    print(f"tool_failure_count: {metrics['tool_failure_count']}")
+    print(f"tool_latency_seconds: {metrics['tool_latency_seconds']}")
 
     print("\n[LLM Usage]")
     print(f"llm_call_count: {metrics['llm_call_count']}")

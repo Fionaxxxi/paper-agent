@@ -21,6 +21,7 @@ def test_baseline_and_candidate_cover_the_same_modules():
         "result_merger",
         "retry_router",
         "llm_usage",
+        "tool_execution",
     }
 
 
@@ -78,6 +79,19 @@ def test_llm_usage_benchmark_tracks_success_failure_and_tokens():
     assert usage["tracked_input_tokens"] == 120
     assert usage["tracked_output_tokens"] == 45
     assert usage["tracked_total_tokens"] == 165
+
+
+def test_tool_execution_benchmark_measures_contracts_errors_and_recovery():
+    baseline = run_profile("baseline")["tool_execution"]
+    candidate = run_profile("candidate")["tool_execution"]
+
+    assert baseline["execution_accuracy_pct"] == 16.67
+    assert candidate["execution_accuracy_pct"] == 100.0
+    assert candidate["structured_error_count"] == 4
+    assert candidate["invalid_input_block_count"] == 1
+    assert candidate["invalid_output_block_count"] == 1
+    assert candidate["permission_block_count"] == 1
+    assert candidate["recovered_retry_count"] == 1
 
 
 def test_benchmark_report_can_be_written_as_utf8_json(tmp_path):

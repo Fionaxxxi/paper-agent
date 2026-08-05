@@ -26,7 +26,7 @@ def _description(
 TEST_CASE_CATALOG: dict[str, CaseDescription] = {
     "tests/test_benchmark.py::test_baseline_and_candidate_cover_the_same_modules": _description(
         "确认旧基线与当前候选实现使用完全相同的能力模块，保证能力对比口径一致。",
-        "两组结果都覆盖意图路由、查询规划、结果合并、重试路由和 LLM 用量五个模块。",
+        "两组结果都覆盖意图路由、查询规划、结果合并、重试路由、LLM 用量和工具执行六个模块。",
         "基线与候选的测试范围不同，能力提升数据不能直接比较。",
     ),
     "tests/test_benchmark.py::test_candidate_improves_deterministic_router_and_merger_accuracy": _description(
@@ -48,6 +48,11 @@ TEST_CASE_CATALOG: dict[str, CaseDescription] = {
         "验证离线基准能准确统计成功/失败调用以及输入、输出和总 Token。",
         "三次调用、一次失败和 120/45/165 Token 均被准确记录。",
         "LLM 成本或失败率统计可能漏记、重复计算或口径错误。",
+    ),
+    "tests/test_benchmark.py::test_tool_execution_benchmark_measures_contracts_errors_and_recovery": _description(
+        "验证离线基准能够量化统一 Tool 层的协议、错误和恢复能力。",
+        "候选实现达到 100%，能够拦截权限、输入和输出错误、结构化四类失败并恢复一次临时错误。",
+        "Tool 层能力提升没有可重复数据支持，或错误门控、重试行为出现回归。",
     ),
     "tests/test_benchmark.py::test_benchmark_report_can_be_written_as_utf8_json": _description(
         "验证完整能力基准报告可以用 UTF-8 JSON 保存并重新读取。",
@@ -243,6 +248,76 @@ TEST_CASE_CATALOG: dict[str, CaseDescription] = {
         "强制每个测试函数都登记作用、通过含义和失败含义，并清理失效记录。",
         "测试源码中的函数集合与说明目录完全一致，且三个说明字段均非空。",
         "存在未说明的新测试、已删除测试的遗留记录，或说明字段不完整。",
+    ),
+    "tests/test_tool_layer.py::test_registry_registers_discovers_and_filters_tools": _description(
+        "验证 Tool Registry 可以注册、按名称发现并按能力筛选工具。",
+        "工具注册顺序稳定，paper 等能力可以通过统一入口发现，不依赖业务节点直接导入。",
+        "后续多数据源或 MCP 工具可能无法可靠注册、发现或路由。",
+    ),
+    "tests/test_tool_layer.py::test_registry_rejects_duplicate_tool_names": _description(
+        "验证 Registry 拒绝相同稳定名称的重复工具。",
+        "重复注册会明确报错，避免工具实现被静默覆盖。",
+        "同名工具可能覆盖旧实现，导致实际执行版本不可追踪。",
+    ),
+    "tests/test_tool_layer.py::test_executor_returns_structured_error_for_unknown_tool": _description(
+        "验证执行不存在的工具时返回标准化错误而不是抛出未处理异常。",
+        "结果包含 TOOL_NOT_FOUND、零执行次数和可观测延迟。",
+        "错误路由可能让 LangGraph 整体崩溃或产生无法分类的失败。",
+    ),
+    "tests/test_tool_layer.py::test_executor_rejects_invalid_input_without_invoking_tool": _description(
+        "验证 Tool Executor 在执行前使用 Pydantic 校验输入参数。",
+        "非法参数被 INVALID_INPUT 拦截，底层工具完全没有执行。",
+        "错误参数可能进入外部 API，浪费调用额度或触发不可控行为。",
+    ),
+    "tests/test_tool_layer.py::test_executor_blocks_non_read_only_tool_before_invocation": _description(
+        "验证默认 ToolPolicy 在调用前拒绝非只读工具。",
+        "写工具返回 PERMISSION_DENIED、执行次数为零，底层函数没有运行。",
+        "风险等级可能只被记录而未执行，导致未授权写操作进入外部系统。",
+    ),
+    "tests/test_tool_layer.py::test_executor_validates_output_and_records_execution_metadata": _description(
+        "验证成功工具调用会校验输出并记录版本、来源、能力、风险和延迟。",
+        "标准数据、工具版本、一次执行和只读风险元数据全部准确返回。",
+        "下游可能收到不可信结构，或无法审计工具版本、来源和成本。",
+    ),
+    "tests/test_tool_layer.py::test_executor_retries_retryable_failure_then_returns_success": _description(
+        "验证临时执行错误可以按照有限 RetryPolicy 重试。",
+        "第一次连接错误后只重试一次并成功，attempt_count 准确记录为 2。",
+        "临时错误可能无法恢复，或工具发生无上限重复调用。",
+    ),
+    "tests/test_tool_layer.py::test_executor_returns_timeout_after_bounded_wait": _description(
+        "验证工具超过配置时间后返回结构化超时错误。",
+        "执行在有限等待后返回 TIMEOUT，并准确记录一次尝试。",
+        "外部工具可能无限阻塞请求，或超时无法被失败路由识别。",
+    ),
+    "tests/test_tool_layer.py::test_executor_rejects_output_that_breaks_tool_contract": _description(
+        "验证工具返回值不符合输出 Schema 时被拒绝。",
+        "缺失 doubled 字段的输出返回 INVALID_OUTPUT，不会传给下游节点。",
+        "外部 API 或 MCP 结构变化可能静默污染 AgentState。",
+    ),
+    "tests/test_tool_layer.py::test_router_resolves_registered_capability_and_source": _description(
+        "验证 Tool Router 根据能力与数据源选择稳定工具名称。",
+        "arXiv 路由正确，未注册的 OpenAlex 路由明确失败。",
+        "数据源选择可能错误或在无实现时静默调用其他工具。",
+    ),
+    "tests/test_tool_layer.py::test_arxiv_adapter_preserves_native_search_behavior": _description(
+        "验证 arXiv Adapter 保留现有查询词、数量和论文字段。",
+        "适配器把相同参数传给原生函数，并完整返回论文标识。",
+        "工具层改造可能改变原有 arXiv 行为或丢失论文字段。",
+    ),
+    "tests/test_tool_layer.py::test_metrics_reports_tool_execution_success_failure_and_latency": _description(
+        "验证 Metrics 汇总每次工具调用的成功、失败、耗时和错误明细。",
+        "两次调用准确统计为一成功、一失败、总耗时 2 秒，并保留 TIMEOUT。",
+        "工具观测数据可能漏记或汇总错误，无法支持多数据源和 MCP 评测。",
+    ),
+    "tests/test_retrieve_tool_integration.py::test_cache_miss_uses_tool_runtime_and_records_execution": _description(
+        "验证缓存未命中时 Retrieve Node 通过 Router 和 Executor 调用 arXiv。",
+        "统一工具名称、查询参数、论文结果、缓存写入和执行指标全部正确。",
+        "检索节点可能仍直接依赖 arXiv，或工具结果无法进入现有缓存和文档流程。",
+    ),
+    "tests/test_retrieve_tool_integration.py::test_tool_failure_uses_existing_fallback_and_keeps_error_metadata": _description(
+        "验证统一工具执行失败后沿用现有 fallback，并保留失败原因。",
+        "超时不会使图崩溃，静态兜底文档可用且 TIMEOUT 元数据未丢失。",
+        "外部工具失败可能中断流程，或降级后无法定位原始错误。",
     ),
 }
 

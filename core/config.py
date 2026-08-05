@@ -13,6 +13,9 @@ class Settings(BaseSettings):
     RETRIEVAL_MODE: str = "arxiv"
     ARXIV_MAX_RESULTS: int = 5
 
+    # Tool execution
+    TOOL_TIMEOUT_SECONDS: float = 45.0
+
     # Evaluation
     EVALUATE_WITH_LLM: bool = False
 

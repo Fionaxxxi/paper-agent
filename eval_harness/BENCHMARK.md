@@ -34,7 +34,9 @@ candidate（当前候选实现）
 ├─ 使用当前 Intent Router（意图路由）
 ├─ 使用当前规则型 Query Planner（查询规划）
 ├─ 使用当前 Result Merger（结果合并）
-└─ 使用当前检索重试路由
+├─ 使用当前检索重试路由
+├─ 使用当前 LLM 用量追踪
+└─ 使用统一 Tool 协议、执行器和有限恢复
 ```
 
 ## 指标解释
@@ -46,6 +48,12 @@ candidate（当前候选实现）
 - `route_accuracy_pct`：路由准确率。
 - `local_response_count`：本地直接响应数量。
 - `estimated_llm_calls_avoided`：预计避免的 LLM 调用数量。
+- `execution_accuracy_pct`：工具参数、结果、错误和重试行为准确率。
+- `structured_error_count`：被转换为标准错误码的失败数量。
+- `invalid_input_block_count`：执行前拦截的非法输入数量。
+- `invalid_output_block_count`：进入下游前拦截的非法输出数量。
+- `permission_block_count`：执行前拒绝的未授权风险工具数量。
+- `recovered_retry_count`：通过有限重试恢复的临时失败数量。
 
 数值越低越好：
 

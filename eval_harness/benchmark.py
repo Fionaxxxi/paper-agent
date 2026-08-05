@@ -5,6 +5,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Dict, Iterable, List
 
+from pydantic import BaseModel, Field
+
 from agent.router import route_after_evaluate
 from eval_harness.benchmark_cases import (
     INTENT_CASES,
@@ -12,11 +14,15 @@ from eval_harness.benchmark_cases import (
     QUERY_PLAN_CASES,
     RESULT_MERGER_CASES,
     RETRY_CASES,
+    TOOL_EXECUTION_CASES,
 )
 from nodes.intent_router import classify_input_intent
 from nodes.query_plan import build_rule_based_sub_queries
 from retrieval.result_merger import build_document_key, merge_documents_with_stats
 from core.llm_usage import build_llm_usage_update
+from tools.contracts import RetryPolicy, ToolRiskLevel, ToolSpec
+from tools.executor import ToolExecutor
+from tools.registry import ToolRegistry
 
 
 BENCHMARK_VERSION = "1.0"
@@ -82,6 +88,81 @@ def baseline_usage_tracker(
         "output_token_usage": 0,
         "token_usage": 0,
         "llm_usage": [],
+    }
+
+
+class BenchmarkToolInput(BaseModel):
+    value: int = Field(ge=1)
+
+
+class BenchmarkToolOutput(BaseModel):
+    doubled: int
+
+
+def execute_tool_case_behavior(
+    behavior: str,
+    value: int,
+    attempt: int,
+) -> Dict[str, Any]:
+    if behavior == "execution_error":
+        raise ConnectionError("offline benchmark failure")
+    if behavior == "fail_once" and attempt == 1:
+        raise ConnectionError("temporary offline benchmark failure")
+    if behavior == "invalid_output":
+        return {"unexpected": value}
+    return {"doubled": value * 2}
+
+
+def baseline_tool_runner(case: Dict[str, Any]) -> Dict[str, Any]:
+    """Legacy direct-call behavior without schemas or structured recovery."""
+
+    try:
+        execute_tool_case_behavior(
+            case["behavior"],
+            case["arguments"].get("value", 0),
+            1,
+        )
+        return {"success": True, "error_code": "", "attempt_count": 1}
+    except Exception:
+        return {"success": False, "error_code": "", "attempt_count": 1}
+
+
+def candidate_tool_runner(case: Dict[str, Any]) -> Dict[str, Any]:
+    attempts = 0
+
+    class BenchmarkTool:
+        spec = ToolSpec(
+            name="benchmark.tool",
+            version="1.0.0",
+            description="Offline deterministic benchmark tool.",
+            input_model=BenchmarkToolInput,
+            output_model=BenchmarkToolOutput,
+            provider="offline",
+            capabilities=("benchmark",),
+            risk_level=ToolRiskLevel(case.get("risk_level", "read_only")),
+            timeout_seconds=1.0,
+            retry_policy=RetryPolicy(max_attempts=case["max_attempts"]),
+        )
+
+        def invoke(self, arguments):
+            nonlocal attempts
+            attempts += 1
+            return execute_tool_case_behavior(
+                case["behavior"],
+                arguments.value,
+                attempts,
+            )
+
+    registry = ToolRegistry()
+    registry.register(BenchmarkTool())
+    result = ToolExecutor(registry).execute(
+        "benchmark.tool",
+        case["arguments"],
+    )
+    return {
+        "success": result.success,
+        "error_code": result.error_code,
+        "attempt_count": result.attempt_count,
     }
 
 
@@ -326,6 +407,54 @@ def evaluate_llm_usage(
     }
 
 
+def evaluate_tool_execution(
+    runner: Callable[[Dict[str, Any]], Dict[str, Any]],
+) -> Dict[str, Any]:
+    case_results = []
+
+    for case in TOOL_EXECUTION_CASES:
+        actual = runner(case)
+        expected = case["expected"]
+        case_results.append(
+            {
+                "id": case["id"],
+                "expected": expected,
+                "actual": actual,
+                "passed": actual == expected,
+            }
+        )
+
+    passed = sum(result["passed"] for result in case_results)
+    return {
+        "case_count": len(case_results),
+        "passed_count": passed,
+        "execution_accuracy_pct": percentage(passed, len(case_results)),
+        "structured_error_count": sum(
+            bool(result["actual"]["error_code"])
+            for result in case_results
+            if not result["actual"]["success"]
+        ),
+        "invalid_input_block_count": sum(
+            result["actual"]["error_code"] == "INVALID_INPUT"
+            for result in case_results
+        ),
+        "invalid_output_block_count": sum(
+            result["actual"]["error_code"] == "INVALID_OUTPUT"
+            for result in case_results
+        ),
+        "permission_block_count": sum(
+            result["actual"]["error_code"] == "PERMISSION_DENIED"
+            for result in case_results
+        ),
+        "recovered_retry_count": sum(
+            result["actual"]["success"]
+            and result["actual"]["attempt_count"] > 1
+            for result in case_results
+        ),
+        "cases": case_results,
+    }
+
+
 def run_profile(profile: str) -> Dict[str, Any]:
     if profile == "baseline":
         return {
@@ -336,6 +465,7 @@ def run_profile(profile: str) -> Dict[str, Any]:
             ),
             "retry_router": evaluate_retry_router(baseline_retry_router),
             "llm_usage": evaluate_llm_usage(baseline_usage_tracker),
+            "tool_execution": evaluate_tool_execution(baseline_tool_runner),
         }
 
     if profile == "candidate":
@@ -352,6 +482,7 @@ def run_profile(profile: str) -> Dict[str, Any]:
             ),
             "retry_router": evaluate_retry_router(route_after_evaluate),
             "llm_usage": evaluate_llm_usage(build_llm_usage_update),
+            "tool_execution": evaluate_tool_execution(candidate_tool_runner),
         }
 
     raise ValueError(f"unknown benchmark profile: {profile}")
@@ -386,6 +517,14 @@ COMPARISON_METRICS = {
         "tracked_input_tokens",
         "tracked_output_tokens",
         "tracked_total_tokens",
+    ],
+    "tool_execution": [
+        "execution_accuracy_pct",
+        "structured_error_count",
+        "invalid_input_block_count",
+        "invalid_output_block_count",
+        "permission_block_count",
+        "recovered_retry_count",
     ],
 }
 

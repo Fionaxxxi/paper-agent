@@ -146,6 +146,77 @@ RETRY_CASES: List[Dict[str, Any]] = [
 ]
 
 
+TOOL_EXECUTION_CASES: List[Dict[str, Any]] = [
+    {
+        "id": "valid_success",
+        "arguments": {"value": 2},
+        "behavior": "success",
+        "max_attempts": 1,
+        "expected": {
+            "success": True,
+            "error_code": "",
+            "attempt_count": 1,
+        },
+    },
+    {
+        "id": "write_tool_blocked",
+        "arguments": {"value": 2},
+        "behavior": "success",
+        "risk_level": "write",
+        "max_attempts": 1,
+        "expected": {
+            "success": False,
+            "error_code": "PERMISSION_DENIED",
+            "attempt_count": 0,
+        },
+    },
+    {
+        "id": "invalid_input_blocked",
+        "arguments": {"value": 0},
+        "behavior": "success",
+        "max_attempts": 1,
+        "expected": {
+            "success": False,
+            "error_code": "INVALID_INPUT",
+            "attempt_count": 0,
+        },
+    },
+    {
+        "id": "execution_error_structured",
+        "arguments": {"value": 2},
+        "behavior": "execution_error",
+        "max_attempts": 1,
+        "expected": {
+            "success": False,
+            "error_code": "EXECUTION_ERROR",
+            "attempt_count": 1,
+        },
+    },
+    {
+        "id": "temporary_failure_recovered",
+        "arguments": {"value": 2},
+        "behavior": "fail_once",
+        "max_attempts": 2,
+        "expected": {
+            "success": True,
+            "error_code": "",
+            "attempt_count": 2,
+        },
+    },
+    {
+        "id": "invalid_output_blocked",
+        "arguments": {"value": 2},
+        "behavior": "invalid_output",
+        "max_attempts": 1,
+        "expected": {
+            "success": False,
+            "error_code": "INVALID_OUTPUT",
+            "attempt_count": 1,
+        },
+    },
+]
+
+
 LLM_USAGE_CASES: List[Dict[str, Any]] = [
     {
         "id": "reason_and_generate_success",

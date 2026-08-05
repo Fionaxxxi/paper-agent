@@ -4,7 +4,7 @@ from agent.state import AgentState
 from core.config import settings
 from retrieval.cache import load_cached_papers, save_cached_papers
 from retrieval.result_merger import merge_documents_with_stats
-from tools.arxiv_tool import search_arxiv_papers
+from tools.runtime import paper_tool_executor, paper_tool_router
 
 
 FALLBACK_PAPERS = [
@@ -84,6 +84,7 @@ def retrieve_by_query(query: str, state: AgentState) -> Dict[str, Any]:
     papers: List[Dict[str, Any]] = []
     retrieval_source = retrieval_mode
     cache_hit = False
+    tool_execution = {}
 
     if retrieval_mode == "arxiv":
         cached_papers = load_cached_papers(query)
@@ -97,9 +98,30 @@ def retrieve_by_query(query: str, state: AgentState) -> Dict[str, Any]:
         else:
             print(f"\n[Retrieve Node] Cache miss，调用 arXiv 检索。query={query}")
 
-            papers = search_arxiv_papers(
-                query=query,
-                max_results=max_results,
+            tool_name = paper_tool_router.resolve(
+                capability="paper.search",
+                source="arxiv",
+            )
+            tool_result = paper_tool_executor.execute(
+                tool_name=tool_name,
+                arguments={
+                    "query": query,
+                    "max_results": max_results,
+                },
+            )
+            tool_execution = {
+                "tool_name": tool_result.tool_name,
+                "tool_version": tool_result.tool_version,
+                "tool_success": tool_result.success,
+                "tool_error_code": tool_result.error_code,
+                "tool_error_message": tool_result.error_message,
+                "tool_latency_seconds": tool_result.latency_seconds,
+                "tool_attempt_count": tool_result.attempt_count,
+            }
+            papers = (
+                tool_result.data.get("papers", [])
+                if tool_result.success and isinstance(tool_result.data, dict)
+                else []
             )
 
             if papers:
@@ -122,6 +144,11 @@ def retrieve_by_query(query: str, state: AgentState) -> Dict[str, Any]:
 
     documents = convert_papers_to_documents(papers, retrieval_source)
 
+    tools_used = [f"{retrieval_source}_retriever"]
+    tool_name = tool_execution.get("tool_name", "")
+    if tool_name and tool_name not in tools_used:
+        tools_used.append(tool_name)
+
     return {
         "documents": documents,
         "retrieval_source": retrieval_source,
@@ -129,7 +156,8 @@ def retrieve_by_query(query: str, state: AgentState) -> Dict[str, Any]:
         "cache_hit": cache_hit,
         "search_query": query,
         "paper_count": len(documents),
-        "tools_used": [f"{retrieval_source}_retriever"],
+        "tools_used": tools_used,
+        "tool_execution": tool_execution,
     }
 
 
@@ -140,6 +168,7 @@ def retrieve_multi_query(state: AgentState, sub_queries: List[str]) -> AgentStat
 
     document_groups: List[List[Dict[str, Any]]] = []
     retrieval_sources: List[str] = []
+    tool_executions: List[Dict[str, Any]] = []
     search_queries: List[str] = []
     cache_hit_count = 0
     tools_used = list(state.get("tools_used", []))
@@ -160,6 +189,10 @@ def retrieve_multi_query(state: AgentState, sub_queries: List[str]) -> AgentStat
 
         if single_result.get("cache_hit", False):
             cache_hit_count += 1
+
+        tool_execution = single_result.get("tool_execution", {})
+        if tool_execution:
+            tool_executions.append(tool_execution)
 
         for tool in single_result.get("tools_used", []):
             if tool not in tools_used:
@@ -195,6 +228,7 @@ def retrieve_multi_query(state: AgentState, sub_queries: List[str]) -> AgentStat
             "deduplicated_count": merge_result["deduplicated_count"],
             "retrieval_sources": retrieval_sources,
             "agentic_rag_enabled": True,
+            "tool_executions": tool_executions,
         },
     }
 
@@ -257,5 +291,10 @@ def retrieve_node(state: AgentState) -> AgentState:
             "retrieval_mode": single_result.get("retrieval_mode", settings.RETRIEVAL_MODE.lower()),
             "cache_hit": single_result.get("cache_hit", False),
             "agentic_rag_enabled": False,
+            "tool_executions": (
+                [single_result["tool_execution"]]
+                if single_result.get("tool_execution")
+                else []
+            ),
         },
     }

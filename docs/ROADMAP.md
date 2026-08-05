@@ -9,6 +9,7 @@
 - 对问候、感谢和身份问题进行本地意图路由；
 - 基于规则的查询复杂度分类与动态查询规划；
 - 带本地 JSON 缓存和静态兜底文档的 arXiv 检索；
+- 统一 ToolSpec、ToolResult、Tool Registry、Tool Router、Tool Executor、只读 ToolPolicy 和 arXiv Native Adapter；
 - 多查询结果合并与去重；
 - 带有限重试的检索质量评估；
 - QA、总结、比较、引用、研究方向推荐和 PDF 阅读技能；
@@ -19,8 +20,8 @@
 
 - 外部论文搜索仅支持 arXiv；
 - 尚未建立完整的本地 RAG 链路，当前优化主要属于 LangGraph 查询规划、多查询检索、结果合并和有限重试；
-- 检索节点直接依赖 `tools/arxiv_tool.py`；
-- 没有统一的工具注册、执行入口、权限策略和工具数据协议；
+- 当前只注册了 arXiv 一个原生工具，尚未接入多数据源和 MCP 工具；
+- Tool Router 仍是确定性来源映射，尚未加入数据源可用性、成本、限流和质量驱动选择；
 - LangGraph 尚未配置持久化检查点；
 - 当前会话记忆使用 `data/memory/{conversation_id}.json` 文件保存，只读取最近 6 条消息；尚无摘要、语义召回、并发写入保护、过期、删除和隐私生命周期管理；
 - 评估主要关注检索质量，还没有完整评估最终答案质量；
@@ -99,7 +100,7 @@ GraphRAG 工程
 | Context Engineering | 部分完成 | 已有 Context Builder、Policy 和文档格式化 | 增加证据选择、压缩、上下文预算与效果对比 |
 | Agentic RAG / Query Planning | 第一版完成 | 已有复杂度分类、多查询规划、检索合并与重试 | 增加重排、多源检索和失败类型驱动的重新规划 |
 | Structured Memory | 未完成 | 已有基础对话历史 | 增加摘要、重要事实、活跃论文、研究偏好和策略记忆 |
-| Tool Governance | 未完成 | 只有直接调用的 arXiv 工具 | 增加统一协议、Registry、Executor、Policy 和指标 |
+| Tool Governance | 第一版完成 | 已有统一协议、Registry、Router、Executor、只读 Policy、arXiv Adapter、指标与离线 Benchmark | 增加多源路由、限流、细粒度授权和 MCP Adapter |
 | MCP | 未开始 | 无 | 先实现 MCP Client Adapter，后暴露 PaperAgent MCP Server |
 | Reflection / Reflexion / Agent Loop | 未完成 | 只有检索分数重试 | 先增加单次任务内反思与分类型修复，再将经过验证的反思写入情节记忆供后续任务复用 |
 | 新科研 Skill | 未开始 | 已有 QA、总结、比较、推荐、引用和 PDF 阅读 | 增加实验方案、综述、批判分析和报告生成 |
@@ -212,6 +213,20 @@ Graph Engineering 的价值不能以节点数量衡量。只有在固定数据�
 ### 目标
 
 在增加更多数据源或 MCP Server 前，将 LangGraph 节点与具体 API 解耦，建立一套可审计的工具执行协议。
+
+### 当前完成情况（2026-08-05）
+
+- 已实现 `ToolSpec`、`RetryPolicy`、`ToolResult` 和统一错误码；
+- 已实现 `ToolRegistry`、确定性 `ToolRouter` 和 `ToolExecutor`；
+- 已实现默认只允许只读工具的 `ToolPolicy`，未授权写工具在执行前被拒绝；
+- 已使用 Pydantic 对工具输入和输出进行双向校验；
+- 已实现有限超时、有限重试、错误标准化、来源、版本、风险和延迟记录；
+- 已将原有 arXiv 函数包装为 `paper.search.arxiv` Native Adapter；
+- `retrieve_node` 已通过 Router 与 Executor 调用 arXiv，并保留原有缓存与 fallback 行为；
+- Metrics 已汇总工具成功、失败、耗时和执行明细；
+- 已增加单元、检索集成、测试说明和离线基线/候选 Benchmark。
+
+第一版离线 Tool Benchmark：执行准确率 `16.67% → 100%`，非法输入、非法输出、未授权写工具和执行错误均被结构化处理，并能通过有限重试恢复一次临时失败。
 
 ### 计划组件
 
@@ -1178,16 +1193,17 @@ Push / Pull Request
 
 ## 推荐的下一项开发工作
 
-先只实现阶段 1：
+阶段 1 第一版已完成，下一项只实现阶段 2 的“第二个原生论文数据源接入”，暂不同时引入 RAG、MCP、Redis 或 Agent Loop：
 
 ```text
-定义工具数据协议
-→ 包装现有 arXiv 搜索
-→ 增加 Tool Registry 与 Tool Executor
-→ 让 retrieve_node 通过统一工具入口检索
-→ 保持现有行为不变
-→ 增加协议、错误、超时和指标测试
-→ 运行基线与候选版本 Benchmark
+选择一个只读候选数据源（OpenAlex 或 Semantic Scholar）
+→ 通过统一 Tool 协议实现 Native Adapter
+→ 定义统一 PaperDocument 字段与跨源错误映射
+→ 增加确定性 Tool Router 路由规则
+→ 保持 arXiv 单源模式作为关闭开关和基线
+→ 增加正常、空结果、限流、超时和字段缺失测试
+→ 使用固定论文查询集比较覆盖率、去重、延迟和工具调用成本
+→ 只有数据证明有收益后才晋升默认多源路线
 ```
 
-完成这一阶段后，多数据源检索、MCP、Agent Loop、LLM Wiki 和 Agent 自进化都能建立在稳定接口上，不需要在首次升级中同时引入高风险变化。
+完成第二个原生数据源后，再判断继续扩展多源检索还是开始本地 RAG 标注集；MCP、Agent Loop、LLM Wiki 和 Agent 自进化继续建立在统一 Tool 与 Harness 接口之上。
