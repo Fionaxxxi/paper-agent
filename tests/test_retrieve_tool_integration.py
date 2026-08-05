@@ -47,11 +47,15 @@ def test_cache_miss_uses_tool_runtime_and_records_execution(monkeypatch):
         )
     )
     saved = []
-    monkeypatch.setattr(retrieve_module, "load_cached_papers", lambda query: None)
+    monkeypatch.setattr(
+        retrieve_module,
+        "load_cached_papers",
+        lambda query, source="": None,
+    )
     monkeypatch.setattr(
         retrieve_module,
         "save_cached_papers",
-        lambda query, papers: saved.append((query, papers)),
+        lambda query, papers, source="": saved.append((query, papers, source)),
     )
     monkeypatch.setattr(retrieve_module, "paper_tool_router", router)
     monkeypatch.setattr(retrieve_module, "paper_tool_executor", executor)
@@ -71,6 +75,7 @@ def test_cache_miss_uses_tool_runtime_and_records_execution(monkeypatch):
     assert result["tool_execution"]["tool_latency_seconds"] == 0.12
     assert "paper.search.arxiv" in result["tools_used"]
     assert saved[0][0] == "tool agents"
+    assert saved[0][2] == "arxiv"
 
 
 def test_tool_failure_uses_existing_fallback_and_keeps_error_metadata(monkeypatch):
@@ -87,7 +92,11 @@ def test_tool_failure_uses_existing_fallback_and_keeps_error_metadata(monkeypatc
             attempt_count=1,
         )
     )
-    monkeypatch.setattr(retrieve_module, "load_cached_papers", lambda query: None)
+    monkeypatch.setattr(
+        retrieve_module,
+        "load_cached_papers",
+        lambda query, source="": None,
+    )
     monkeypatch.setattr(retrieve_module, "paper_tool_router", router)
     monkeypatch.setattr(retrieve_module, "paper_tool_executor", executor)
 

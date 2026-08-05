@@ -17,10 +17,16 @@ def build_document_key(document: Dict[str, Any]) -> str:
     Build a stable deduplication key for a document.
 
     Priority:
-    1. entry_id
-    2. pdf_url
-    3. title
+    1. DOI, which is stable across data providers
+    2. entry_id
+    3. pdf_url
+    4. title
     """
+
+    doi = normalize_text(document.get("doi"))
+    if doi:
+        doi = doi.removeprefix("https://doi.org/").removeprefix("http://doi.org/")
+        return f"doi:{doi}"
 
     entry_id = normalize_text(document.get("entry_id"))
     if entry_id:
@@ -35,6 +41,27 @@ def build_document_key(document: Dict[str, Any]) -> str:
         return f"title:{title}"
 
     return ""
+
+
+def build_document_keys(document: Dict[str, Any]) -> List[str]:
+    """Return every usable identity so cross-provider records can overlap."""
+
+    keys = []
+    doi = normalize_text(document.get("doi"))
+    if doi:
+        doi = doi.removeprefix("https://doi.org/").removeprefix("http://doi.org/")
+        keys.append(f"doi:{doi}")
+
+    for field, prefix in (
+        ("entry_id", "entry_id"),
+        ("pdf_url", "pdf_url"),
+        ("title", "title"),
+    ):
+        value = normalize_text(document.get(field))
+        if value:
+            keys.append(f"{prefix}:{value}")
+
+    return keys
 
 
 def merge_documents(
@@ -54,13 +81,12 @@ def merge_documents(
 
     for documents in document_groups:
         for document in documents:
-            key = build_document_key(document)
+            keys = build_document_keys(document)
 
-            if key and key in seen_keys:
+            if any(key in seen_keys for key in keys):
                 continue
 
-            if key:
-                seen_keys.add(key)
+            seen_keys.update(keys)
 
             merged_documents.append(document)
 

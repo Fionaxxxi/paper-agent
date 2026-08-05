@@ -200,14 +200,24 @@ TEST_CASE_CATALOG: dict[str, CaseDescription] = {
         "同一文档可能因格式差异无法去重，或空值引发异常。",
     ),
     "tests/test_result_merger.py::test_build_document_key_uses_stable_priority": _description(
-        "验证文档唯一键按 entry_id、PDF URL、标题的稳定优先级选择。",
-        "每种可用标识生成预期键，无标识文档返回空键。",
+        "验证文档唯一键按 DOI、entry_id、PDF URL、标题的稳定优先级选择。",
+        "跨源 DOI 优先，每种后备标识生成预期键，无标识文档返回空键。",
         "同一论文可能生成不稳定键，导致重复或误合并。",
     ),
     "tests/test_result_merger.py::test_merge_documents_deduplicates_across_groups_and_preserves_priority": _description(
         "验证多查询结果跨组去重，并保留首次出现的高优先级版本。",
         "重复 entry_id 只保留 first，第二篇独立论文仍保留。",
         "合并结果可能含重复论文或被后到的低优先级数据覆盖。",
+    ),
+    "tests/test_result_merger.py::test_merge_documents_deduplicates_cross_source_records_by_doi": _description(
+        "验证 arXiv 与 OpenAlex 使用不同平台 ID 时仍能通过 DOI 识别同一论文。",
+        "大小写和 DOI URL 表示不同的两条记录只保留优先来源版本。",
+        "多源检索可能重复展示同一论文并浪费上下文 Token。",
+    ),
+    "tests/test_result_merger.py::test_merge_documents_deduplicates_cross_source_title_when_doi_is_missing": _description(
+        "验证没有 DOI 的同一预印本可通过归一化标题跨来源去重。",
+        "不同平台 ID、标题大小写和空格不同的记录只保留 arXiv 优先版本。",
+        "无 DOI 预印本可能因平台 ID 不同而在多源结果中重复出现。",
     ),
     "tests/test_result_merger.py::test_merge_documents_keeps_documents_without_a_deduplication_key": _description(
         "验证缺少稳定标识的匿名结果不会被错误互相合并。",
@@ -284,6 +294,11 @@ TEST_CASE_CATALOG: dict[str, CaseDescription] = {
         "第一次连接错误后只重试一次并成功，attempt_count 准确记录为 2。",
         "临时错误可能无法恢复，或工具发生无上限重复调用。",
     ),
+    "tests/test_tool_layer.py::test_executor_returns_structured_rate_limit_after_finite_retries": _description(
+        "验证数据源限流经过有限次数重试后返回独立标准错误码。",
+        "执行两次后停止并返回 RATE_LIMITED，不会无限消耗 API 额度。",
+        "429 可能被误记为普通异常、无法触发正确恢复，或产生无限重试。",
+    ),
     "tests/test_tool_layer.py::test_executor_returns_timeout_after_bounded_wait": _description(
         "验证工具超过配置时间后返回结构化超时错误。",
         "执行在有限等待后返回 TIMEOUT，并准确记录一次尝试。",
@@ -309,6 +324,11 @@ TEST_CASE_CATALOG: dict[str, CaseDescription] = {
         "两次调用准确统计为一成功、一失败、总耗时 2 秒，并保留 TIMEOUT。",
         "工具观测数据可能漏记或汇总错误，无法支持多数据源和 MCP 评测。",
     ),
+    "tests/test_benchmark.py::test_multi_source_benchmark_measures_coverage_deduplication_and_recovery": _description(
+        "验证离线 Benchmark 对比单源基线与多源候选的覆盖、去重和故障恢复。",
+        "候选三类场景达到 100%，调用两个来源、无残留重复并恢复一次局部失败。",
+        "多源能力可能只有功能测试，没有可比较的质量与可靠性提升数据。",
+    ),
     "tests/test_retrieve_tool_integration.py::test_cache_miss_uses_tool_runtime_and_records_execution": _description(
         "验证缓存未命中时 Retrieve Node 通过 Router 和 Executor 调用 arXiv。",
         "统一工具名称、查询参数、论文结果、缓存写入和执行指标全部正确。",
@@ -318,6 +338,51 @@ TEST_CASE_CATALOG: dict[str, CaseDescription] = {
         "验证统一工具执行失败后沿用现有 fallback，并保留失败原因。",
         "超时不会使图崩溃，静态兜底文档可用且 TIMEOUT 元数据未丢失。",
         "外部工具失败可能中断流程，或降级后无法定位原始错误。",
+    ),
+    "tests/test_openalex_tool.py::test_reconstruct_abstract_orders_openalex_inverted_positions": _description(
+        "验证 OpenAlex 倒排摘要能够按照词位还原为可读文本。",
+        "乱序词典被恢复为正确句子，缺失摘要安全返回空串。",
+        "论文摘要可能词序错乱，污染相关性评分和最终答案。",
+    ),
+    "tests/test_openalex_tool.py::test_normalize_openalex_work_maps_stable_paper_fields": _description(
+        "验证 OpenAlex Work 的作者、摘要、链接、DOI 和引用数映射到统一论文结构。",
+        "嵌套 API 字段被完整转换，来源明确标记为 openalex。",
+        "多数据源字段可能丢失或以不一致结构进入 LangGraph。",
+    ),
+    "tests/test_openalex_tool.py::test_openalex_client_sends_search_limits_identity_and_optional_key": _description(
+        "验证 OpenAlex Client 使用官方 search 参数、数量限制、身份头和可选凭据。",
+        "请求 URL、per-page、API key、mailto、超时和 User-Agent 均符合配置。",
+        "请求可能使用过期参数、泄漏配置或绕过调用预算和超时。",
+    ),
+    "tests/test_openalex_tool.py::test_openalex_client_maps_rate_limit_for_executor_recovery": _description(
+        "验证限流等 HTTP 错误不会被伪装成正常空结果。",
+        "429 被转换成 ToolRateLimitError，交给 Tool Executor 统一重试和记录。",
+        "网络失败可能被误判为无论文，导致无法观测、重试或定位问题。",
+    ),
+    "tests/test_openalex_tool.py::test_openalex_adapter_delegates_to_injected_client": _description(
+        "验证 OpenAlex Adapter 保持统一 Tool 输入并调用可替换 Client。",
+        "查询词和最大数量不变，输出满足统一论文来源约定。",
+        "Adapter 可能篡改参数、耦合网络实现或返回非标准结构。",
+    ),
+    "tests/test_openalex_tool.py::test_default_runtime_registers_and_routes_openalex_tool": _description(
+        "验证默认 Tool Runtime 同时注册并可路由 OpenAlex 原生工具。",
+        "paper.search/openalex 稳定解析到 paper.search.openalex。",
+        "代码虽有 Adapter，但实际 LangGraph 运行时可能无法发现或调用。",
+    ),
+    "tests/test_openalex_tool.py::test_cache_keys_are_isolated_by_paper_source": _description(
+        "验证同一查询在 arXiv 与 OpenAlex 使用独立缓存键。",
+        "来源不同得到不同键，同来源大小写和空格归一化后键保持一致。",
+        "不同数据源的论文可能互相污染缓存并产生虚假命中。",
+    ),
+    "tests/test_multi_source_retrieval.py::test_multi_source_retrieval_calls_both_tools_and_deduplicates_by_doi": _description(
+        "验证 multi 模式调用 arXiv 与 OpenAlex，并按 DOI 合并重复论文。",
+        "两个 Tool 都执行，三条原始记录合并为两篇并记录一次去重。",
+        "多源模式可能只调用一个来源、保留重复论文或统计不一致。",
+    ),
+    "tests/test_multi_source_retrieval.py::test_multi_source_retrieval_keeps_success_when_one_provider_fails": _description(
+        "验证一个论文来源超时时，多源检索仍使用另一个成功来源。",
+        "保留 OpenAlex 论文和 arXiv TIMEOUT 明细，不错误触发静态兜底。",
+        "局部数据源故障可能拖垮整个检索，或掩盖成功结果与失败原因。",
     ),
 }
 

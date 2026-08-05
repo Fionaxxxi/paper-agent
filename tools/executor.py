@@ -10,7 +10,7 @@ from typing import Any
 from pydantic import ValidationError
 
 from tools.base import Tool
-from tools.contracts import ToolErrorCode, ToolResult
+from tools.contracts import ToolErrorCode, ToolRateLimitError, ToolResult
 from tools.policy import ToolPolicy
 from tools.registry import ToolRegistry
 
@@ -106,6 +106,9 @@ class ToolExecutor:
                 last_error_message = (
                     f"tool execution exceeded {spec.timeout_seconds} seconds"
                 )
+            except ToolRateLimitError as error:
+                last_error_code = ToolErrorCode.RATE_LIMITED.value
+                last_error_message = str(error)
             except Exception as error:
                 last_error_code = ToolErrorCode.EXECUTION_ERROR.value
                 last_error_message = f"{type(error).__name__}: {error}"

@@ -20,6 +20,7 @@ class ToolErrorCode(str, Enum):
     PERMISSION_DENIED = "PERMISSION_DENIED"
     INVALID_INPUT = "INVALID_INPUT"
     TIMEOUT = "TIMEOUT"
+    RATE_LIMITED = "RATE_LIMITED"
     EXECUTION_ERROR = "EXECUTION_ERROR"
     INVALID_OUTPUT = "INVALID_OUTPUT"
 
@@ -29,6 +30,7 @@ class RetryPolicy:
     max_attempts: int = 1
     retryable_error_codes: tuple[str, ...] = (
         ToolErrorCode.TIMEOUT.value,
+        ToolErrorCode.RATE_LIMITED.value,
         ToolErrorCode.EXECUTION_ERROR.value,
     )
 
@@ -70,3 +72,7 @@ class ToolResult(BaseModel):
     attempt_count: int = Field(default=0, ge=0)
     cache_hit: bool = False
     metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class ToolRateLimitError(RuntimeError):
+    """Raised when a provider refuses a request because its quota is exhausted."""

@@ -34,6 +34,9 @@ def search_arxiv_papers(query: str, max_results: int = 5) -> List[Dict[str, Any]
                     "summary": result.summary,
                     "pdf_url": result.pdf_url,
                     "entry_id": result.entry_id,
+                    "doi": result.doi or "",
+                    "cited_by_count": 0,
+                    "landing_page_url": result.entry_id,
                     "source": "arxiv",
                 }
             )

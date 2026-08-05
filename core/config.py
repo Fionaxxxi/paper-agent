@@ -12,6 +12,14 @@ class Settings(BaseSettings):
     # Retrieval
     RETRIEVAL_MODE: str = "arxiv"
     ARXIV_MAX_RESULTS: int = 5
+    MULTI_SOURCE_PROVIDERS: str = "arxiv,openalex"
+    MULTI_SOURCE_MAX_RESULTS: int = 8
+
+    # OpenAlex
+    OPENALEX_BASE_URL: str = "https://api.openalex.org"
+    OPENALEX_API_KEY: str = ""
+    OPENALEX_MAILTO: str = ""
+    OPENALEX_MAX_RESULTS: int = 5
 
     # Tool execution
     TOOL_TIMEOUT_SECONDS: float = 45.0

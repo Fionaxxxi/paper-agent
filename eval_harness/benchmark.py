@@ -11,6 +11,7 @@ from agent.router import route_after_evaluate
 from eval_harness.benchmark_cases import (
     INTENT_CASES,
     LLM_USAGE_CASES,
+    MULTI_SOURCE_RETRIEVAL_CASES,
     QUERY_PLAN_CASES,
     RESULT_MERGER_CASES,
     RETRY_CASES,
@@ -18,7 +19,7 @@ from eval_harness.benchmark_cases import (
 )
 from nodes.intent_router import classify_input_intent
 from nodes.query_plan import build_rule_based_sub_queries
-from retrieval.result_merger import build_document_key, merge_documents_with_stats
+from retrieval.result_merger import build_document_keys, merge_documents_with_stats
 from core.llm_usage import build_llm_usage_update
 from tools.contracts import RetryPolicy, ToolRiskLevel, ToolSpec
 from tools.executor import ToolExecutor
@@ -88,6 +89,31 @@ def baseline_usage_tracker(
         "output_token_usage": 0,
         "token_usage": 0,
         "llm_usage": [],
+    }
+
+
+def baseline_multi_source_runner(case: Dict[str, Any]) -> Dict[str, Any]:
+    """Represent the former single-provider path using only the first source."""
+
+    source = case["sources"][0]
+    documents = list(source.get("documents", []))
+    return {
+        "documents": documents,
+        "provider_call_count": 1,
+        "structured_failure_count": 0,
+        "partial_failure_recovered": False,
+    }
+
+
+def candidate_multi_source_runner(case: Dict[str, Any]) -> Dict[str, Any]:
+    groups = [source.get("documents", []) for source in case["sources"]]
+    merged = merge_documents_with_stats(groups, max_documents=8)
+    failures = [source for source in case["sources"] if source.get("error_code")]
+    return {
+        "documents": merged["documents"],
+        "provider_call_count": len(case["sources"]),
+        "structured_failure_count": len(failures),
+        "partial_failure_recovered": bool(failures and merged["documents"]),
     }
 
 
@@ -171,13 +197,13 @@ def count_duplicate_documents(documents: Iterable[Dict[str, Any]]) -> int:
     duplicates = 0
 
     for document in documents:
-        key = build_document_key(document)
-        if not key:
+        keys = build_document_keys(document)
+        if not keys:
             continue
-        if key in seen:
+        if any(key in seen for key in keys):
             duplicates += 1
         else:
-            seen.add(key)
+            seen.update(keys)
 
     return duplicates
 
@@ -455,6 +481,51 @@ def evaluate_tool_execution(
     }
 
 
+def evaluate_multi_source_retrieval(
+    runner: Callable[[Dict[str, Any]], Dict[str, Any]],
+) -> Dict[str, Any]:
+    case_results = []
+
+    for case in MULTI_SOURCE_RETRIEVAL_CASES:
+        result = runner(case)
+        documents = result["documents"]
+        actual = {
+            "document_count": len(documents),
+            "provider_call_count": result["provider_call_count"],
+            "duplicate_count": count_duplicate_documents(documents),
+            "partial_failure_recovered": result["partial_failure_recovered"],
+            "structured_failure_count": result["structured_failure_count"],
+        }
+        case_results.append(
+            {
+                "id": case["id"],
+                "expected": case["expected"],
+                "actual": actual,
+                "passed": actual == case["expected"],
+            }
+        )
+
+    passed = sum(result["passed"] for result in case_results)
+    return {
+        "case_count": len(case_results),
+        "passed_count": passed,
+        "retrieval_accuracy_pct": percentage(passed, len(case_results)),
+        "provider_call_count": sum(
+            result["actual"]["provider_call_count"] for result in case_results
+        ),
+        "remaining_duplicate_count": sum(
+            result["actual"]["duplicate_count"] for result in case_results
+        ),
+        "partial_failure_recovery_count": sum(
+            result["actual"]["partial_failure_recovered"] for result in case_results
+        ),
+        "structured_failure_count": sum(
+            result["actual"]["structured_failure_count"] for result in case_results
+        ),
+        "cases": case_results,
+    }
+
+
 def run_profile(profile: str) -> Dict[str, Any]:
     if profile == "baseline":
         return {
@@ -466,6 +537,9 @@ def run_profile(profile: str) -> Dict[str, Any]:
             "retry_router": evaluate_retry_router(baseline_retry_router),
             "llm_usage": evaluate_llm_usage(baseline_usage_tracker),
             "tool_execution": evaluate_tool_execution(baseline_tool_runner),
+            "multi_source_retrieval": evaluate_multi_source_retrieval(
+                baseline_multi_source_runner
+            ),
         }
 
     if profile == "candidate":
@@ -483,6 +557,9 @@ def run_profile(profile: str) -> Dict[str, Any]:
             "retry_router": evaluate_retry_router(route_after_evaluate),
             "llm_usage": evaluate_llm_usage(build_llm_usage_update),
             "tool_execution": evaluate_tool_execution(candidate_tool_runner),
+            "multi_source_retrieval": evaluate_multi_source_retrieval(
+                candidate_multi_source_runner
+            ),
         }
 
     raise ValueError(f"unknown benchmark profile: {profile}")
@@ -525,6 +602,13 @@ COMPARISON_METRICS = {
         "invalid_output_block_count",
         "permission_block_count",
         "recovered_retry_count",
+    ],
+    "multi_source_retrieval": [
+        "retrieval_accuracy_pct",
+        "provider_call_count",
+        "remaining_duplicate_count",
+        "partial_failure_recovery_count",
+        "structured_failure_count",
     ],
 }
 

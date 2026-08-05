@@ -10,6 +10,7 @@ from tools.contracts import (
     ToolErrorCode,
     ToolRiskLevel,
     ToolSpec,
+    ToolRateLimitError,
 )
 from tools.executor import ToolExecutor
 from tools.paper_models import PaperSearchInput
@@ -145,6 +146,24 @@ def test_executor_retries_retryable_failure_then_returns_success():
 
     assert result.success is True
     assert result.data == {"doubled": 6}
+    assert result.attempt_count == 2
+    assert attempts == [3, 3]
+
+
+def test_executor_returns_structured_rate_limit_after_finite_retries():
+    attempts = []
+
+    def behavior(request):
+        attempts.append(request.value)
+        raise ToolRateLimitError("provider quota exhausted")
+
+    registry = ToolRegistry()
+    registry.register(FakeTool(behavior, max_attempts=2))
+
+    result = ToolExecutor(registry).execute("demo.tool", {"value": 3})
+
+    assert result.success is False
+    assert result.error_code == ToolErrorCode.RATE_LIMITED.value
     assert result.attempt_count == 2
     assert attempts == [3, 3]
 

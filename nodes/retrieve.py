@@ -4,6 +4,7 @@ from agent.state import AgentState
 from core.config import settings
 from retrieval.cache import load_cached_papers, save_cached_papers
 from retrieval.result_merger import merge_documents_with_stats
+from tools.contracts import ToolErrorCode
 from tools.runtime import paper_tool_executor, paper_tool_router
 
 
@@ -47,6 +48,9 @@ def convert_papers_to_documents(papers: List[Dict[str, Any]], source: str) -> Li
                 "content": paper.get("summary") or paper.get("content", ""),
                 "pdf_url": paper.get("pdf_url"),
                 "entry_id": paper.get("entry_id"),
+                "doi": paper.get("doi", ""),
+                "cited_by_count": paper.get("cited_by_count", 0),
+                "landing_page_url": paper.get("landing_page_url", ""),
                 "source": paper.get("source", source),
             }
         )
@@ -54,13 +58,17 @@ def convert_papers_to_documents(papers: List[Dict[str, Any]], source: str) -> Li
     return documents
 
 
-def get_max_results(state: AgentState) -> int:
+def get_max_results(state: AgentState, source: str = "arxiv") -> int:
     """
     Decide max retrieval results according to retry count.
     """
 
     retry_count = state.get("retry_count", 0)
-    max_results = settings.ARXIV_MAX_RESULTS
+    max_results = (
+        settings.OPENALEX_MAX_RESULTS
+        if source == "openalex"
+        else settings.ARXIV_MAX_RESULTS
+    )
 
     if retry_count > 0:
         max_results = min(max_results + 2, 8)
@@ -68,86 +76,161 @@ def get_max_results(state: AgentState) -> int:
     return max_results
 
 
+def get_retrieval_sources(retrieval_mode: str) -> List[str]:
+    """Resolve configured native providers without changing the default mode."""
+
+    if retrieval_mode in {"arxiv", "openalex"}:
+        return [retrieval_mode]
+    if retrieval_mode in {"multi", "multi_source"}:
+        return [
+            source.strip().lower()
+            for source in settings.MULTI_SOURCE_PROVIDERS.split(",")
+            if source.strip()
+        ]
+    return []
+
+
+def _tool_execution_metadata(tool_result) -> Dict[str, Any]:
+    return {
+        "tool_name": tool_result.tool_name,
+        "tool_version": tool_result.tool_version,
+        "tool_success": tool_result.success,
+        "tool_error_code": tool_result.error_code,
+        "tool_error_message": tool_result.error_message,
+        "tool_latency_seconds": tool_result.latency_seconds,
+        "tool_attempt_count": tool_result.attempt_count,
+    }
+
+
+def retrieve_from_source(
+    query: str,
+    state: AgentState,
+    source: str,
+) -> Dict[str, Any]:
+    """Retrieve one query from one provider with a source-scoped cache."""
+
+    cached_papers = load_cached_papers(query, source=source)
+    if cached_papers is not None:
+        return {
+            "papers": cached_papers,
+            "provider": source,
+            "retrieval_source": "cache",
+            "cache_hit": True,
+            "tools_used": [f"{source}_cache_retriever"],
+            "tool_execution": {},
+        }
+
+    try:
+        tool_name = paper_tool_router.resolve(
+            capability="paper.search",
+            source=source,
+        )
+    except KeyError as error:
+        return {
+            "papers": [],
+            "provider": source,
+            "retrieval_source": source,
+            "cache_hit": False,
+            "tools_used": [],
+            "tool_execution": {
+                "tool_name": "",
+                "tool_version": "",
+                "tool_success": False,
+                "tool_error_code": ToolErrorCode.TOOL_NOT_FOUND.value,
+                "tool_error_message": str(error),
+                "tool_latency_seconds": 0.0,
+                "tool_attempt_count": 0,
+            },
+        }
+
+    tool_result = paper_tool_executor.execute(
+        tool_name=tool_name,
+        arguments={
+            "query": query,
+            "max_results": get_max_results(state, source),
+        },
+    )
+    papers = (
+        tool_result.data.get("papers", [])
+        if tool_result.success and isinstance(tool_result.data, dict)
+        else []
+    )
+    if papers:
+        save_cached_papers(query, papers, source=source)
+
+    return {
+        "papers": papers,
+        "provider": source,
+        "retrieval_source": source,
+        "cache_hit": False,
+        "tools_used": [f"{source}_retriever", tool_name],
+        "tool_execution": _tool_execution_metadata(tool_result),
+    }
+
+
 def retrieve_by_query(query: str, state: AgentState) -> Dict[str, Any]:
-    """
-    Retrieve papers for a single query.
+    """Retrieve one query from the configured single or multiple providers."""
 
-    This function keeps the original retrieval behavior:
-    - use cache first
-    - call arXiv if cache misses
-    - use fallback papers if arXiv returns nothing
-    """
-
-    max_results = get_max_results(state)
     retrieval_mode = settings.RETRIEVAL_MODE.lower()
+    sources = get_retrieval_sources(retrieval_mode)
+    source_results = [
+        retrieve_from_source(query, state, source)
+        for source in sources
+    ]
 
-    papers: List[Dict[str, Any]] = []
-    retrieval_source = retrieval_mode
-    cache_hit = False
-    tool_execution = {}
+    document_groups = [
+        convert_papers_to_documents(result["papers"], result["provider"])
+        for result in source_results
+        if result["papers"]
+    ]
+    tool_executions = [
+        result["tool_execution"]
+        for result in source_results
+        if result["tool_execution"]
+    ]
+    tools_used = []
+    for result in source_results:
+        for tool in result["tools_used"]:
+            if tool and tool not in tools_used:
+                tools_used.append(tool)
 
-    if retrieval_mode == "arxiv":
-        cached_papers = load_cached_papers(query)
-
-        if cached_papers is not None:
-            print(f"\n[Retrieve Node] Cache hit，使用本地缓存结果。query={query}")
-            papers = cached_papers
-            retrieval_source = "cache"
-            cache_hit = True
-
+    if document_groups:
+        max_documents = (
+            settings.MULTI_SOURCE_MAX_RESULTS
+            if len(sources) > 1
+            else get_max_results(state, sources[0])
+        )
+        merge_result = merge_documents_with_stats(
+            document_groups=document_groups,
+            max_documents=max_documents,
+        )
+        documents = merge_result["documents"]
+        if len(sources) > 1:
+            retrieval_source = "multi_source"
         else:
-            print(f"\n[Retrieve Node] Cache miss，调用 arXiv 检索。query={query}")
-
-            tool_name = paper_tool_router.resolve(
-                capability="paper.search",
-                source="arxiv",
-            )
-            tool_result = paper_tool_executor.execute(
-                tool_name=tool_name,
-                arguments={
-                    "query": query,
-                    "max_results": max_results,
-                },
-            )
-            tool_execution = {
-                "tool_name": tool_result.tool_name,
-                "tool_version": tool_result.tool_version,
-                "tool_success": tool_result.success,
-                "tool_error_code": tool_result.error_code,
-                "tool_error_message": tool_result.error_message,
-                "tool_latency_seconds": tool_result.latency_seconds,
-                "tool_attempt_count": tool_result.attempt_count,
-            }
-            papers = (
-                tool_result.data.get("papers", [])
-                if tool_result.success and isinstance(tool_result.data, dict)
-                else []
-            )
-
-            if papers:
-                save_cached_papers(query, papers)
-                print("[Retrieve Node] arXiv 检索结果已写入缓存。")
-                retrieval_source = "arxiv"
-                cache_hit = False
-
-            else:
-                print("\n[Retrieve Node] arXiv 无返回结果，使用 fallback papers。")
-                papers = FALLBACK_PAPERS
-                retrieval_source = "fallback"
-                cache_hit = False
-
+            retrieval_source = source_results[0]["retrieval_source"]
     else:
-        print("\n[Retrieve Node] 当前使用 fallback 检索模式，不访问 arXiv。")
-        papers = FALLBACK_PAPERS
+        documents = convert_papers_to_documents(FALLBACK_PAPERS, "fallback")
         retrieval_source = "fallback"
-        cache_hit = False
+        merge_result = {
+            "raw_document_count": 0,
+            "merged_document_count": len(documents),
+            "deduplicated_count": 0,
+        }
+        if "fallback_retriever" not in tools_used:
+            tools_used.append("fallback_retriever")
 
-    documents = convert_papers_to_documents(papers, retrieval_source)
-
-    tools_used = [f"{retrieval_source}_retriever"]
-    tool_name = tool_execution.get("tool_name", "")
-    if tool_name and tool_name not in tools_used:
-        tools_used.append(tool_name)
+    cache_hit_count = sum(result["cache_hit"] for result in source_results)
+    cache_hit = bool(source_results) and cache_hit_count == len(source_results)
+    source_statuses = [
+        {
+            "provider": result["provider"],
+            "retrieval_source": result["retrieval_source"],
+            "cache_hit": result["cache_hit"],
+            "paper_count": len(result["papers"]),
+        }
+        for result in source_results
+    ]
 
     return {
         "documents": documents,
@@ -157,7 +240,13 @@ def retrieve_by_query(query: str, state: AgentState) -> Dict[str, Any]:
         "search_query": query,
         "paper_count": len(documents),
         "tools_used": tools_used,
-        "tool_execution": tool_execution,
+        "tool_execution": tool_executions[0] if tool_executions else {},
+        "tool_executions": tool_executions,
+        "source_statuses": source_statuses,
+        "cache_hit_count": cache_hit_count,
+        "raw_document_count": merge_result["raw_document_count"],
+        "merged_document_count": merge_result["merged_document_count"],
+        "deduplicated_count": merge_result["deduplicated_count"],
     }
 
 
@@ -168,6 +257,7 @@ def retrieve_multi_query(state: AgentState, sub_queries: List[str]) -> AgentStat
 
     document_groups: List[List[Dict[str, Any]]] = []
     retrieval_sources: List[str] = []
+    source_statuses: List[Dict[str, Any]] = []
     tool_executions: List[Dict[str, Any]] = []
     search_queries: List[str] = []
     cache_hit_count = 0
@@ -187,12 +277,14 @@ def retrieve_multi_query(state: AgentState, sub_queries: List[str]) -> AgentStat
         if search_query:
             search_queries.append(search_query)
 
-        if single_result.get("cache_hit", False):
-            cache_hit_count += 1
+        cache_hit_count += single_result.get(
+            "cache_hit_count",
+            int(single_result.get("cache_hit", False)),
+        )
 
-        tool_execution = single_result.get("tool_execution", {})
-        if tool_execution:
-            tool_executions.append(tool_execution)
+        source_statuses.extend(single_result.get("source_statuses", []))
+
+        tool_executions.extend(single_result.get("tool_executions", []))
 
         for tool in single_result.get("tools_used", []):
             if tool not in tools_used:
@@ -200,7 +292,11 @@ def retrieve_multi_query(state: AgentState, sub_queries: List[str]) -> AgentStat
 
     merge_result = merge_documents_with_stats(
         document_groups=document_groups,
-        max_documents=settings.ARXIV_MAX_RESULTS,
+        max_documents=(
+            settings.MULTI_SOURCE_MAX_RESULTS
+            if settings.RETRIEVAL_MODE.lower() in {"multi", "multi_source"}
+            else settings.ARXIV_MAX_RESULTS
+        ),
     )
 
     documents = merge_result["documents"]
@@ -227,6 +323,7 @@ def retrieve_multi_query(state: AgentState, sub_queries: List[str]) -> AgentStat
             "merged_document_count": merge_result["merged_document_count"],
             "deduplicated_count": merge_result["deduplicated_count"],
             "retrieval_sources": retrieval_sources,
+            "source_statuses": source_statuses,
             "agentic_rag_enabled": True,
             "tool_executions": tool_executions,
         },
@@ -291,10 +388,10 @@ def retrieve_node(state: AgentState) -> AgentState:
             "retrieval_mode": single_result.get("retrieval_mode", settings.RETRIEVAL_MODE.lower()),
             "cache_hit": single_result.get("cache_hit", False),
             "agentic_rag_enabled": False,
-            "tool_executions": (
-                [single_result["tool_execution"]]
-                if single_result.get("tool_execution")
-                else []
-            ),
+            "tool_executions": single_result.get("tool_executions", []),
+            "source_statuses": single_result.get("source_statuses", []),
+            "raw_document_count": single_result.get("raw_document_count", len(documents)),
+            "merged_document_count": single_result.get("merged_document_count", len(documents)),
+            "deduplicated_count": single_result.get("deduplicated_count", 0),
         },
     }

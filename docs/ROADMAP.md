@@ -8,9 +8,9 @@
 
 - 对问候、感谢和身份问题进行本地意图路由；
 - 基于规则的查询复杂度分类与动态查询规划；
-- 带本地 JSON 缓存和静态兜底文档的 arXiv 检索；
-- 统一 ToolSpec、ToolResult、Tool Registry、Tool Router、Tool Executor、只读 ToolPolicy 和 arXiv Native Adapter；
-- 多查询结果合并与去重；
+- 带来源隔离 JSON 缓存和静态兜底文档的 arXiv / OpenAlex 可配置检索，默认仍使用 arXiv；
+- 统一 ToolSpec、ToolResult、Tool Registry、Tool Router、Tool Executor、只读 ToolPolicy，以及 arXiv / OpenAlex Native Adapter；
+- 支持 `arxiv`、`openalex`、`multi` 三种模式的多查询结果合并与 DOI 优先跨源去重；
 - 带有限重试的检索质量评估；
 - QA、总结、比较、引用、研究方向推荐和 PDF 阅读技能；
 - 按节点统计 LLM Token、延迟、失败和成本所需的用量数据；
@@ -18,9 +18,9 @@
 
 当前主要限制：
 
-- 外部论文搜索仅支持 arXiv；
+- 已接入 OpenAlex 原生工具和多源编排，但尚未在真实标注问题集上证明其相对 arXiv 的在线召回、质量、延迟和额度净收益，因此默认模式仍为 arXiv；
 - 尚未建立完整的本地 RAG 链路，当前优化主要属于 LangGraph 查询规划、多查询检索、结果合并和有限重试；
-- 当前只注册了 arXiv 一个原生工具，尚未接入多数据源和 MCP 工具；
+- 当前注册了 arXiv 与 OpenAlex 两个原生工具，尚未接入 Semantic Scholar、Crossref、PubMed 和 MCP 工具；
 - Tool Router 仍是确定性来源映射，尚未加入数据源可用性、成本、限流和质量驱动选择；
 - 当前入口意图仅对高置信度闲聊做精确规则匹配，查询改写和复杂度规划也主要依赖规则；`reason` 位于检索之后，查询规划通常无法直接利用正式 `task_type`，尚未建立规则与 LLM 协作的统一任务分析器；
 - LangGraph 尚未配置持久化检查点；
@@ -101,7 +101,7 @@ GraphRAG 工程
 | Context Engineering | 部分完成 | 已有 Context Builder、Policy 和文档格式化 | 增加证据选择、压缩、上下文预算与效果对比 |
 | Agentic RAG / Query Planning | 第一版完成 | 已有规则复杂度分类、多查询规划、检索合并与重试 | 增加可评测的规则 + LLM 混合任务分析、重排、多源检索和失败类型驱动的重新规划 |
 | Structured Memory | 未完成 | 已有基础对话历史 | 增加摘要、重要事实、活跃论文、研究偏好和策略记忆 |
-| Tool Governance | 第一版完成 | 已有统一协议、Registry、Router、Executor、只读 Policy、arXiv Adapter、指标与离线 Benchmark | 增加多源路由、限流、细粒度授权和 MCP Adapter |
+| Tool Governance | 第一版完成 | 已有统一协议、Registry、Router、Executor、只读 Policy、arXiv/OpenAlex Adapter、来源隔离缓存、指标与离线 Benchmark | 增加质量/成本驱动路由、限流、细粒度授权和 MCP Adapter |
 | MCP | 未开始 | 无 | 先实现 MCP Client Adapter，后暴露 PaperAgent MCP Server |
 | Reflection / Reflexion / Agent Loop | 未完成 | 只有检索分数重试 | 先增加单次任务内反思与分类型修复，再将经过验证的反思写入情节记忆供后续任务复用 |
 | 新科研 Skill | 未开始 | 已有 QA、总结、比较、推荐、引用和 PDF 阅读 | 增加实验方案、综述、批判分析和报告生成 |
@@ -382,6 +382,20 @@ D：规则优先、低置信度才调用 Task Analyzer 的混合方案
 - Crossref：DOI 和正式出版元数据核验。
 - PubMed：可选的医学与生命科学专业数据源。
 - 本地 PDF 与未来的本地向量索引：用户拥有的论文内容。
+
+### 当前已完成的多源基础
+
+- OpenAlex Works API 原生 Client 与 `paper.search.openalex` 只读 Adapter；
+- OpenAlex 作者、倒排摘要、DOI、开放获取链接、引用次数和平台 ID 到统一论文结构的转换；
+- `arxiv`、`openalex`、`multi` 三种配置模式，默认 `arxiv` 基线不变；
+- arXiv 与 OpenAlex 独立缓存命名空间；
+- 多源合并采用 DOI、平台 ID、PDF URL、标题的稳定去重优先级；
+- 单一来源失败时保留其他来源成功结果，所有来源无结果时才进入静态 fallback；
+- 离线 Benchmark 覆盖互补结果、跨源 DOI 重复和部分来源失败三个场景。
+
+当前完成的是“可运行、可关闭、可观测”的多源工程基础，不代表 OpenAlex 已经通过真实质量选型。下一门槛是固定标注问题集上的在线对照评测。
+
+OpenAlex 真实在线运行建议配置免费的 `OPENALEX_API_KEY`。无密钥请求额度较低，额度耗尽时 Client 会将 HTTP 429 转换为 `RATE_LIMITED`，由 Tool Executor 执行有限重试并保留结构化失败；多源模式仍可继续使用其他成功来源。
 
 ### 本地论文知识库
 
@@ -1309,17 +1323,16 @@ Push / Pull Request
 
 ## 推荐的下一项开发工作
 
-阶段 1 第一版已完成，下一项只实现阶段 2 的“第二个原生论文数据源接入”，暂不同时引入 RAG、MCP、Redis 或 Agent Loop：
+阶段 1 和阶段 2 的第二原生数据源工程基础已完成。下一项只建立 arXiv / OpenAlex 在线多源评测集，暂不同时引入 RAG、MCP、Redis 或 Agent Loop：
 
 ```text
-选择一个只读候选数据源（OpenAlex 或 Semantic Scholar）
-→ 通过统一 Tool 协议实现 Native Adapter
-→ 定义统一 PaperDocument 字段与跨源错误映射
-→ 增加确定性 Tool Router 路由规则
-→ 保持 arXiv 单源模式作为关闭开关和基线
-→ 增加正常、空结果、限流、超时和字段缺失测试
-→ 使用固定论文查询集比较覆盖率、去重、延迟和工具调用成本
-→ 只有数据证明有收益后才晋升默认多源路线
+建立包含简单主题、复杂比较、中文查询、正式出版物和预印本的固定问题集
+→ 为每个问题标注相关论文 DOI / arXiv ID 和必要覆盖维度
+→ 分别运行 arXiv、OpenAlex 和 multi 三个配置
+→ 比较 Recall@K、MRR、nDCG@K、独有有效论文数和重复率
+→ 同时记录请求数、缓存命中、P50/P95 延迟、限流、失败和额度成本
+→ 保存逐问题结果、失败案例、Commit、配置和数据集版本
+→ 只有真实质量与可靠性收益达到门槛后才考虑把 multi 晋升为默认路线
 ```
 
-完成第二个原生数据源后，再判断继续扩展多源检索还是开始本地 RAG 标注集；MCP、Agent Loop、LLM Wiki 和 Agent 自进化继续建立在统一 Tool 与 Harness 接口之上。
+完成在线多源评测后，再依据数据判断继续接入 Semantic Scholar、开始本地 RAG 标注集，或先优化数据源路由；MCP、Agent Loop、LLM Wiki 和 Agent 自进化继续建立在统一 Tool 与 Harness 接口之上。

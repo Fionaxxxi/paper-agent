@@ -217,6 +217,81 @@ TOOL_EXECUTION_CASES: List[Dict[str, Any]] = [
 ]
 
 
+MULTI_SOURCE_RETRIEVAL_CASES: List[Dict[str, Any]] = [
+    {
+        "id": "complementary_provider_coverage",
+        "sources": [
+            {
+                "provider": "arxiv",
+                "documents": [
+                    {"entry_id": "A1", "title": "arXiv Paper", "source": "arxiv"}
+                ],
+            },
+            {
+                "provider": "openalex",
+                "documents": [
+                    {"entry_id": "W1", "title": "OpenAlex Work", "source": "openalex"}
+                ],
+            },
+        ],
+        "expected": {
+            "document_count": 2,
+            "provider_call_count": 2,
+            "duplicate_count": 0,
+            "partial_failure_recovered": False,
+            "structured_failure_count": 0,
+        },
+    },
+    {
+        "id": "cross_source_doi_deduplication",
+        "sources": [
+            {
+                "provider": "arxiv",
+                "documents": [
+                    {"doi": "https://doi.org/10.1/shared", "entry_id": "A2"}
+                ],
+            },
+            {
+                "provider": "openalex",
+                "documents": [
+                    {"doi": "10.1/SHARED", "entry_id": "W2"}
+                ],
+            },
+        ],
+        "expected": {
+            "document_count": 1,
+            "provider_call_count": 2,
+            "duplicate_count": 0,
+            "partial_failure_recovered": False,
+            "structured_failure_count": 0,
+        },
+    },
+    {
+        "id": "partial_provider_failure",
+        "sources": [
+            {
+                "provider": "arxiv",
+                "documents": [],
+                "error_code": "TIMEOUT",
+            },
+            {
+                "provider": "openalex",
+                "documents": [
+                    {"entry_id": "W3", "title": "Recovered Work"}
+                ],
+            },
+        ],
+        "expected": {
+            "document_count": 1,
+            "provider_call_count": 2,
+            "duplicate_count": 0,
+            "partial_failure_recovered": True,
+            "structured_failure_count": 1,
+        },
+    },
+]
+
+
 LLM_USAGE_CASES: List[Dict[str, Any]] = [
     {
         "id": "reason_and_generate_success",

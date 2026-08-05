@@ -36,7 +36,8 @@ candidate（当前候选实现）
 ├─ 使用当前 Result Merger（结果合并）
 ├─ 使用当前检索重试路由
 ├─ 使用当前 LLM 用量追踪
-└─ 使用统一 Tool 协议、执行器和有限恢复
+├─ 使用统一 Tool 协议、执行器和有限恢复
+└─ 使用 arXiv + OpenAlex 多源合并、DOI 去重和局部失败恢复
 ```
 
 ## 指标解释
@@ -54,6 +55,10 @@ candidate（当前候选实现）
 - `invalid_output_block_count`：进入下游前拦截的非法输出数量。
 - `permission_block_count`：执行前拒绝的未授权风险工具数量。
 - `recovered_retry_count`：通过有限重试恢复的临时失败数量。
+- `retrieval_accuracy_pct`：多源覆盖、去重和局部失败恢复场景的整体准确率。
+- `provider_call_count`：测试场景中执行的数据源调用总数。
+- `partial_failure_recovery_count`：一个来源失败但仍从其他来源取得有效论文的次数。
+- `structured_failure_count`：多源流程中保留下来的标准化来源失败数量。
 
 数值越低越好：
 
@@ -77,6 +82,8 @@ candidate（当前候选实现）
 - 真实模型的输入与输出 Token；
 - 答案依据充分程度或幻觉率；
 - 在线 arXiv 的召回率与延迟；
+- 在线 OpenAlex 的召回率、限额消耗与延迟；
+- arXiv 与 OpenAlex 在真实标注问题集上的互补覆盖率；
 - LLM 最终答案质量；
 - 实际货币成本。
 

@@ -17,6 +17,9 @@ class PaperRecord(BaseModel):
     summary: str = ""
     pdf_url: str = ""
     entry_id: str = ""
+    doi: str = ""
+    cited_by_count: int = Field(default=0, ge=0)
+    landing_page_url: str = ""
     source: str
 
 
