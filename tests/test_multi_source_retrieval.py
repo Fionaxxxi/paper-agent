@@ -136,3 +136,28 @@ def test_multi_source_retrieval_keeps_success_when_one_provider_fails(monkeypatc
     ]
     assert result["tool_executions"][0]["tool_error_code"] == "TIMEOUT"
     assert "fallback_retriever" not in result["tools_used"]
+
+
+def test_multi_source_retrieval_uses_reranker_only_when_feature_flag_is_enabled(
+    monkeypatch,
+):
+    results = {
+        "paper.search.arxiv": success(
+            "paper.search.arxiv",
+            "arxiv",
+            [paper("Unrelated Work", "arxiv", "A1")],
+        ),
+        "paper.search.openalex": success(
+            "paper.search.openalex",
+            "openalex",
+            [paper("Reflexion Language Agents", "openalex", "O1")],
+        ),
+    }
+    configure_multi_source(monkeypatch, results)
+    monkeypatch.setattr(retrieve_module.settings, "MULTI_SOURCE_RERANK_ENABLED", True)
+
+    result = retrieve_module.retrieve_by_query("reflexion language agents", {})
+
+    assert result["documents"][0]["source"] == "openalex"
+    assert result["ranking_strategy"] == "deterministic_cross_source_v1"
+    assert result["candidate_count_before_top_k"] == 2

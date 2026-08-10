@@ -21,16 +21,18 @@ from eval_harness.retrieval_eval_models import (
 from eval_harness.retrieval_metrics import (
     calculate_case_metrics,
     duplicate_rate,
+    gold_identity_title_conflict,
     match_relevant_paper,
 )
 from retrieval.result_merger import merge_documents_with_stats
+from retrieval.reranker import rerank_documents_with_stats
 from tools.runtime import build_default_tool_runtime
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_DATASET_PATH = PROJECT_ROOT / "eval_harness" / "datasets" / "retrieval_online_v1.json"
 DEFAULT_OUTPUT_DIR = PROJECT_ROOT / "eval_harness" / "reports" / "retrieval_online"
-SUPPORTED_PROFILES = ("arxiv", "openalex", "multi")
+SUPPORTED_PROFILES = ("arxiv", "openalex", "multi", "multi_rerank")
 
 
 def get_git_commit() -> str:
@@ -175,7 +177,7 @@ class NativeProviderFetcher:
 
 
 def _profile_providers(profile: str) -> tuple[str, ...]:
-    if profile == "multi":
+    if profile in {"multi", "multi_rerank"}:
         return ("arxiv", "openalex")
     if profile in {"arxiv", "openalex"}:
         return (profile,)
@@ -192,6 +194,12 @@ def _ranked_papers(
             paper,
             case.relevant_papers,
         )
+        metadata_warnings = list(paper.get("metadata_warnings", []))
+        if any(
+            gold_identity_title_conflict(paper, relevant)
+            for relevant in case.relevant_papers
+        ):
+            metadata_warnings.append("GOLD_TITLE_CONFLICT")
         ranked.append(
             {
                 "rank": rank,
@@ -208,6 +216,10 @@ def _ranked_papers(
                     if gold_index is not None
                     else ""
                 ),
+                "ranking_score": paper.get("ranking_score", 0.0),
+                "ranking_signals": paper.get("ranking_signals", {}),
+                "metadata_warnings": metadata_warnings,
+                "sources": paper.get("sources", [paper.get("source", "")]),
             }
         )
     return ranked
@@ -223,7 +235,14 @@ def evaluate_case_profile(
     selected = [provider_results[provider] for provider in providers]
     groups = [result["papers"] for result in selected if result["success"]]
     raw_count = sum(len(group) for group in groups)
-    merged = merge_documents_with_stats(groups, max_documents=max(k_values))
+    if profile == "multi_rerank":
+        merged = rerank_documents_with_stats(
+            query=case.query,
+            document_groups=groups,
+            max_documents=max(k_values),
+        )
+    else:
+        merged = merge_documents_with_stats(groups, max_documents=max(k_values))
     papers = merged["documents"]
     quality_metrics = calculate_case_metrics(case, papers, k_values)
     failures = [result for result in selected if not result["success"]]
@@ -243,6 +262,7 @@ def evaluate_case_profile(
     else:
         status = "failed"
 
+    ranked_papers = _ranked_papers(case, papers)
     return {
         "case_id": case.id,
         "query": case.query,
@@ -273,8 +293,16 @@ def evaluate_case_profile(
         "raw_document_count": raw_count,
         "merged_document_count": len(papers),
         "duplicate_rate_pct": duplicate_rate(raw_count, len(papers)),
+        "candidate_count_before_top_k": merged.get(
+            "candidate_count_before_top_k",
+            len(papers),
+        ),
+        "metadata_warning_count": sum(
+            bool(paper.get("metadata_warnings")) for paper in ranked_papers
+        ),
+        "ranking_strategy": merged.get("ranking_strategy", "source_priority"),
         **quality_metrics,
-        "ranked_papers": _ranked_papers(case, papers),
+        "ranked_papers": ranked_papers,
     }
 
 
@@ -315,6 +343,9 @@ def summarize_profile(
         ),
         "average_duplicate_rate_pct": mean(
             result["duplicate_rate_pct"] for result in case_results
+        ),
+        "total_metadata_warning_count": sum(
+            result.get("metadata_warning_count", 0) for result in case_results
         ),
         "total_provider_calls": sum(result["provider_call_count"] for result in case_results),
         "total_cache_hits": sum(result["cache_hit_count"] for result in case_results),
@@ -435,7 +466,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--profiles",
         default="arxiv,openalex,multi",
-        help="Comma-separated profiles: arxiv, openalex, multi",
+        help="Comma-separated profiles: arxiv, openalex, multi, multi_rerank",
     )
     parser.add_argument("--refresh", action="store_true")
     parser.add_argument("--allow-openalex-without-key", action="store_true")

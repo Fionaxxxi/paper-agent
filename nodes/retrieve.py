@@ -3,6 +3,7 @@ from typing import Any, Dict, List
 from agent.state import AgentState
 from core.config import settings
 from retrieval.cache import load_cached_papers, save_cached_papers
+from retrieval.reranker import rerank_documents_with_stats
 from retrieval.result_merger import merge_documents_with_stats
 from tools.contracts import ToolErrorCode
 from tools.runtime import paper_tool_executor, paper_tool_router
@@ -200,10 +201,17 @@ def retrieve_by_query(query: str, state: AgentState) -> Dict[str, Any]:
             if len(sources) > 1
             else get_max_results(state, sources[0])
         )
-        merge_result = merge_documents_with_stats(
-            document_groups=document_groups,
-            max_documents=max_documents,
-        )
+        if len(sources) > 1 and settings.MULTI_SOURCE_RERANK_ENABLED:
+            merge_result = rerank_documents_with_stats(
+                query=query,
+                document_groups=document_groups,
+                max_documents=max_documents,
+            )
+        else:
+            merge_result = merge_documents_with_stats(
+                document_groups=document_groups,
+                max_documents=max_documents,
+            )
         documents = merge_result["documents"]
         if len(sources) > 1:
             retrieval_source = "multi_source"
@@ -247,6 +255,12 @@ def retrieve_by_query(query: str, state: AgentState) -> Dict[str, Any]:
         "raw_document_count": merge_result["raw_document_count"],
         "merged_document_count": merge_result["merged_document_count"],
         "deduplicated_count": merge_result["deduplicated_count"],
+        "candidate_count_before_top_k": merge_result.get(
+            "candidate_count_before_top_k",
+            merge_result["merged_document_count"],
+        ),
+        "metadata_warning_count": merge_result.get("metadata_warning_count", 0),
+        "ranking_strategy": merge_result.get("ranking_strategy", "source_priority"),
     }
 
 

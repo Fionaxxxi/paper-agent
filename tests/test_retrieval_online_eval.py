@@ -14,6 +14,7 @@ from eval_harness.retrieval_metrics import (
     normalize_doi,
     normalize_title,
     paper_identity_keys,
+    match_relevant_paper,
 )
 from eval_harness.retrieval_online import (
     DEFAULT_DATASET_PATH,
@@ -91,6 +92,14 @@ def test_paper_identity_normalizes_doi_arxiv_id_and_title():
         "doi:10.48550/arxiv.2005.11401",
         "arxiv:2005.11401",
     }.issubset(paper_identity_keys(paper))
+
+
+def test_gold_match_rejects_stable_identity_with_contradictory_title():
+    case = first_case_dataset().cases[0]
+    corrupted = relevant_paper()
+    corrupted["title"] = "A Completely Different Paper About Robotics"
+
+    assert match_relevant_paper(corrupted, case.relevant_papers) == (None, 0)
 
 
 def test_ranking_metrics_calculate_recall_precision_mrr_ndcg_and_dimensions():

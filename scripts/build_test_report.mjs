@@ -459,16 +459,17 @@ console.log(formulaErrors.ndjson);
 
 if (previewDir) {
   await fs.mkdir(previewDir, { recursive: true });
-  for (const sheetName of [
-    "测试总览",
-    "测试明细",
-    "用例说明",
-    "失败明细",
-    "历史趋势",
-  ]) {
+  const previewRanges = {
+    测试总览: "A1:H17",
+    测试明细: "A1:H35",
+    用例说明: "A1:J25",
+    失败明细: "A1:F10",
+    历史趋势: `A1:J${Math.max(history.length + 3, 10)}`,
+  };
+  for (const [sheetName, range] of Object.entries(previewRanges)) {
     const preview = await workbook.render({
       sheetName,
-      autoCrop: "all",
+      range,
       scale: 1,
       format: "png",
     });

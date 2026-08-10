@@ -60,13 +60,45 @@ def paper_identity_keys(paper: dict[str, Any] | RelevantPaper) -> set[str]:
     return keys
 
 
+def _title_similarity(first: str, second: str) -> float:
+    first_tokens = set(normalize_title(first).split())
+    second_tokens = set(normalize_title(second).split())
+    union = first_tokens | second_tokens
+    if not union:
+        return 1.0
+    return len(first_tokens & second_tokens) / len(union)
+
+
+def gold_identity_title_conflict(
+    paper: dict[str, Any],
+    relevant: RelevantPaper,
+) -> bool:
+    """Detect a stable-identity match paired with a contradictory title."""
+
+    candidate_stable = {
+        key for key in paper_identity_keys(paper) if not key.startswith("title:")
+    }
+    relevant_stable = {
+        key for key in paper_identity_keys(relevant) if not key.startswith("title:")
+    }
+    if not candidate_stable & relevant_stable:
+        return False
+    candidate_title = str(paper.get("title") or "")
+    if not candidate_title or not relevant.title:
+        return False
+    return _title_similarity(candidate_title, relevant.title) < 0.35
+
+
 def match_relevant_paper(
     paper: dict[str, Any],
     relevant_papers: list[RelevantPaper],
 ) -> tuple[int | None, int]:
     candidate_keys = paper_identity_keys(paper)
     for index, relevant in enumerate(relevant_papers):
-        if candidate_keys & paper_identity_keys(relevant):
+        if (
+            candidate_keys & paper_identity_keys(relevant)
+            and not gold_identity_title_conflict(paper, relevant)
+        ):
             return index, relevant.relevance_grade
     return None, 0
 

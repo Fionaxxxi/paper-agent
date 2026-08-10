@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     ARXIV_MAX_RESULTS: int = 5
     MULTI_SOURCE_PROVIDERS: str = "arxiv,openalex"
     MULTI_SOURCE_MAX_RESULTS: int = 8
+    MULTI_SOURCE_RERANK_ENABLED: bool = False
 
     # OpenAlex
     OPENALEX_BASE_URL: str = "https://api.openalex.org"

@@ -394,6 +394,11 @@ TEST_CASE_CATALOG: dict[str, CaseDescription] = {
         "不同 URL、大小写和标点形式仍能识别为同一论文。",
         "同一论文可能无法匹配金标准或无法跨来源去重。",
     ),
+    "tests/test_retrieval_online_eval.py::test_gold_match_rejects_stable_identity_with_contradictory_title": _description(
+        "验证 DOI/arXiv ID 相同但标题严重冲突的来源记录不会被金标准误判为相关论文。",
+        "异常 OpenAlex 标题即使复用了金标准 DOI，也不会虚增 Recall、MRR 或 nDCG。",
+        "来源元数据污染可能制造虚假能力提升，使重排技术选型结论失真。",
+    ),
     "tests/test_retrieval_online_eval.py::test_ranking_metrics_calculate_recall_precision_mrr_ndcg_and_dimensions": _description(
         "用手工可验证的排名检查 Recall、Precision、MRR、nDCG 和维度覆盖率公式。",
         "相关论文位于第 2 名时，各项指标与预先计算值完全一致。",
@@ -443,6 +448,36 @@ TEST_CASE_CATALOG: dict[str, CaseDescription] = {
         "验证一个论文来源超时时，多源检索仍使用另一个成功来源。",
         "保留 OpenAlex 论文和 arXiv TIMEOUT 明细，不错误触发静态兜底。",
         "局部数据源故障可能拖垮整个检索，或掩盖成功结果与失败原因。",
+    ),
+    "tests/test_multi_source_retrieval.py::test_multi_source_retrieval_uses_reranker_only_when_feature_flag_is_enabled": _description(
+        "验证跨来源重排只有在功能开关开启时接入真实 multi 检索流程。",
+        "OpenAlex 高相关候选升到首位，并记录确定性重排策略和完整候选数。",
+        "重排器可能没有进入运行时，或无法通过开关安全回滚到原有合并策略。",
+    ),
+    "tests/test_reranker.py::test_tokenize_handles_english_stopwords_and_chinese_characters": _description(
+        "验证零 Token 重排器能稳定处理英文停用词和中文字符。",
+        "英文实词与中文字符被保留，常见英文停用词被删除。",
+        "中英文查询可能无法形成稳定特征，导致相关性评分失真。",
+    ),
+    "tests/test_reranker.py::test_metadata_verifier_detects_conflicting_arxiv_ids_and_missing_abstract": _description(
+        "验证元数据校验器识别同一记录中的 arXiv ID 冲突和摘要缺失。",
+        "两个风险产生明确错误码并降低元数据质量分。",
+        "身份冲突或不完整论文可能以高可信度进入最终候选。",
+    ),
+    "tests/test_reranker.py::test_reranker_promotes_query_relevant_openalex_candidate_into_top_k": _description(
+        "验证统一重排能让被 arXiv 前五条遮挡的 OpenAlex 高相关论文进入 Top K。",
+        "Reflexion 论文从第二来源候选升至第一，并保留截断前候选数量。",
+        "multi 仍可能只保留第一来源结果，无法获得多来源互补收益。",
+    ),
+    "tests/test_reranker.py::test_reranker_interleaves_equal_relevance_candidates_by_source_rank": _description(
+        "验证文本相关性相同时按各来源原始排名公平交错候选。",
+        "两个来源按照 A1/O1/A2/O2 排列，不再由来源列表顺序垄断 Top K。",
+        "弱文本信号场景仍可能被首个来源完全占据。",
+    ),
+    "tests/test_reranker.py::test_cross_source_title_conflict_is_visible_and_penalized": _description(
+        "验证相同 DOI 的跨来源标题严重冲突会被合并、标记并降权。",
+        "重复论文只保留一条，记录两个来源及 CROSS_SOURCE_TITLE_CONFLICT。",
+        "OpenAlex 等来源的异常标题可能被当成可靠元数据进入高排名。",
     ),
 }
 

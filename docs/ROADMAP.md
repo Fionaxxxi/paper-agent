@@ -1323,17 +1323,18 @@ Push / Pull Request
 
 ## 推荐的下一项开发工作
 
-arXiv / OpenAlex 在线多源评测集 v1、排名指标、逐题报告、缓存和限流恢复已经完成。2026-08-05 续跑后 arXiv 网络失败归零、2 题正常零结果；OpenAlex 仍因缺少 API Key 被跳过，因此尚未产生多数据源选型结论。
+跨来源确定性重排 v1 已完成缓存 A/B：Recall@5 从 55% 提升到 60%，MRR@5 从 45.42% 提升到 57.50%，没有新增 API 或 LLM Token；但一条 OpenAlex 标题/DOI 异常记录仍进入 Top 3，因此功能开关暂不默认开启。
 
-下一项优先完成一次可比较的正式多源运行：
+下一项优先补齐权威元数据一致性门槛：
 
 ```text
-配置 OpenAlex API Key
-→ 配置 OpenAlex API Key 后完成同版本在线检索，并单独分析 arXiv 的 2 个正常零结果
-→ 用同一数据集版本完成 arXiv、OpenAlex 和 multi 三配置
-→ 审核逐题误匹配、漏标与必要覆盖维度
-→ 只有失败数归零且质量/可靠性收益达到门槛，才考虑把 multi 晋升为默认路线
-→ 若多源收益有限，再比较查询路由优化或 Semantic Scholar；若收益稳定，则进入本地 RAG 标注集和 Dense 基线
+为 DOI/arXiv ID 获取或缓存权威标题
+→ 对来源标题、作者、年份和稳定身份做交叉验证
+→ 冲突记录降权、隔离或使用可信字段修复
+→ 重跑旧 multi / multi_rerank 缓存 A/B
+→ 元数据冲突不再进入高排名后，再考虑开启重排
+→ 随后实现来源级与子查询级有界异步并行
+→ 再进入失败类型驱动的 Retrieval Replan 和 Reflection
 ```
 
 完成在线多源评测后，再依据数据判断继续接入 Semantic Scholar、开始本地 RAG 标注集，或先优化数据源路由；MCP、Agent Loop、LLM Wiki 和 Agent 自进化继续建立在统一 Tool 与 Harness 接口之上。
