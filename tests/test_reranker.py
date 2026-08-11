@@ -108,3 +108,80 @@ def test_cross_source_title_conflict_is_visible_and_penalized():
     assert merged["sources"] == ["arxiv", "openalex"]
     assert "CROSS_SOURCE_TITLE_CONFLICT" in merged["metadata_warnings"]
     assert score_document("chain of thought reasoning", merged)["ranking_score"] < 0.8
+
+
+def test_authoritative_arxiv_record_repairs_conflicting_secondary_title():
+    arxiv = document(
+        "Chain-of-Thought Prompting Elicits Reasoning in Large Language Models",
+        "arxiv",
+        "https://arxiv.org/abs/2201.11903",
+        doi="10.48550/arxiv.2201.11903",
+    )
+    openalex = document(
+        "Unrelated and corrupted secondary title",
+        "openalex",
+        "https://openalex.org/W1",
+        doi="https://doi.org/10.48550/arxiv.2201.11903",
+    )
+
+    result = rerank_documents_with_stats(
+        "chain of thought prompting reasoning",
+        [[openalex], [arxiv]],
+        5,
+        metadata_resolution_enabled=True,
+    )
+    resolved = result["documents"][0]
+
+    assert resolved["title"] == arxiv["title"]
+    assert resolved["metadata_resolution_status"] == "AUTHORITATIVE_REPAIRED"
+    assert "REPAIRED_TITLE_FROM_ARXIV" in resolved["metadata_repairs"]
+    assert result["metadata_repaired_count"] == 1
+
+
+def test_unverified_arxiv_identity_with_unrelated_title_is_quarantined():
+    poisoned = document(
+        "BNAI NO TOKEN and MIND UNITY",
+        "openalex",
+        "https://openalex.org/W4221143046",
+        doi="https://doi.org/10.48550/arxiv.2201.11903",
+    )
+    safe = document(
+        "Reasoning with language models",
+        "openalex",
+        "https://openalex.org/W2",
+        content="Chain of thought reasoning.",
+    )
+
+    result = rerank_documents_with_stats(
+        "chain of thought prompting elicits reasoning",
+        [[poisoned, safe]],
+        5,
+        metadata_resolution_enabled=True,
+    )
+
+    assert [item["entry_id"] for item in result["documents"]] == [safe["entry_id"]]
+    assert result["metadata_quarantined_count"] == 1
+    assert result["quarantined_documents"][0]["metadata_resolution_action"] == "QUARANTINE"
+    assert "UNVERIFIED_ARXIV_ID_TITLE_MISMATCH" in (
+        result["quarantined_documents"][0]["metadata_warnings"]
+    )
+
+
+def test_unverified_but_query_supported_arxiv_identity_remains_available():
+    plausible = document(
+        "Reflexion Language Agents with Verbal Reinforcement Learning",
+        "openalex",
+        "https://openalex.org/W3",
+        doi="https://doi.org/10.48550/arxiv.2303.11366",
+    )
+
+    result = rerank_documents_with_stats(
+        "reflexion language agents verbal reinforcement learning",
+        [[plausible]],
+        5,
+        metadata_resolution_enabled=True,
+    )
+
+    assert result["documents"][0]["metadata_resolution_status"] == "SECONDARY_ACCEPTED"
+    assert "UNVERIFIED_ARXIV_IDENTITY" in result["documents"][0]["metadata_warnings"]
+    assert result["metadata_quarantined_count"] == 0

@@ -161,3 +161,40 @@ def test_multi_source_retrieval_uses_reranker_only_when_feature_flag_is_enabled(
     assert result["documents"][0]["source"] == "openalex"
     assert result["ranking_strategy"] == "deterministic_cross_source_v1"
     assert result["candidate_count_before_top_k"] == 2
+
+
+def test_multi_source_metadata_verification_can_quarantine_unsafe_record(
+    monkeypatch,
+):
+    results = {
+        "paper.search.arxiv": success(
+            "paper.search.arxiv",
+            "arxiv",
+            [paper("Chain of Thought Reasoning", "arxiv", "safe")],
+        ),
+        "paper.search.openalex": success(
+            "paper.search.openalex",
+            "openalex",
+            [
+                paper(
+                    "Unrelated Metadata Record",
+                    "openalex",
+                    "https://openalex.org/W1",
+                    "https://doi.org/10.48550/arxiv.2201.11903",
+                )
+            ],
+        ),
+    }
+    configure_multi_source(monkeypatch, results)
+    monkeypatch.setattr(retrieve_module.settings, "MULTI_SOURCE_RERANK_ENABLED", True)
+    monkeypatch.setattr(
+        retrieve_module.settings,
+        "MULTI_SOURCE_METADATA_VERIFICATION_ENABLED",
+        True,
+    )
+
+    result = retrieve_module.retrieve_by_query("chain of thought reasoning", {})
+
+    assert [item["entry_id"] for item in result["documents"]] == ["safe"]
+    assert result["ranking_strategy"] == "deterministic_cross_source_verified_v2"
+    assert result["metadata_quarantined_count"] == 1

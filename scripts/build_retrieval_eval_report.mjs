@@ -47,53 +47,53 @@ const metricsSheet = workbook.worksheets.add("指标说明");
 for (const sheet of [overview, casesSheet, papersSheet, goldSheet, exceptionsSheet, metricsSheet]) setup(sheet);
 
 const profiles = Object.entries(report.profiles ?? {});
-title(overview, "A1:Q1", "PaperAgent 在线论文检索评测");
-overview.getRange("A2:Q2").merge();
+title(overview, "A1:S1", "PaperAgent 在线论文检索评测");
+overview.getRange("A2:S2").merge();
 overview.getRange("A2").values = [[`数据集：${report.dataset_name} v${report.dataset_version}（${report.dataset_case_count} 题） | 运行：${report.generated_at} | Git：${report.git_commit}`]];
-overview.getRange("A2:Q2").format = { fill: COLORS.light, font: { color: COLORS.text }, wrapText: true };
+overview.getRange("A2:S2").format = { fill: COLORS.light, font: { color: COLORS.text }, wrapText: true };
 const complete = report.acquisition?.openalex_api_key_configured && profiles.every(([, p]) => Number(p.summary.failed_count ?? 0) === 0);
-overview.getRange("A4:Q4").merge();
+overview.getRange("A4:S4").merge();
 overview.getRange("A4").values = [[complete ? "结论状态：数据完整，可进入来源比较复核。" : "结论状态：阶段结果。OpenAlex 未配置 API Key 或仍有失败，不能据此决定多来源优劣。"]];
-overview.getRange("A4:Q4").format = { fill: complete ? COLORS.green : COLORS.amber, font: { bold: true, color: COLORS.text }, wrapText: true };
-overview.getRange("A6:Q6").values = [["配置", "题数", "成功", "部分成功", "空结果", "失败", "跳过", "Recall@5", "MRR@5", "nDCG@5", "空结果率", "失败率", "P50 延迟(秒)", "P95 延迟(秒)", "来源调用", "缓存命中", "元数据警告"]];
-header(overview.getRange("A6:Q6"));
+overview.getRange("A4:S4").format = { fill: complete ? COLORS.green : COLORS.amber, font: { bold: true, color: COLORS.text }, wrapText: true };
+overview.getRange("A6:S6").values = [["配置", "题数", "成功", "部分成功", "空结果", "失败", "跳过", "Recall@5", "MRR@5", "nDCG@5", "空结果率", "失败率", "P50 延迟(秒)", "P95 延迟(秒)", "来源调用", "缓存命中", "元数据警告", "元数据修复", "隔离候选"]];
+header(overview.getRange("A6:S6"));
 if (profiles.length) {
-  overview.getRangeByIndexes(6, 0, profiles.length, 17).values = profiles.map(([name, payload]) => {
+  overview.getRangeByIndexes(6, 0, profiles.length, 19).values = profiles.map(([name, payload]) => {
     const s = payload.summary;
-    return [name, s.case_count, s.success_count, s.partial_success_count, s.empty_count ?? 0, s.failed_count, s.skipped_count, s.mean_recall_at_5, s.mean_mrr_at_5, s.mean_ndcg_at_5, s.empty_result_rate_pct / 100, s.failure_rate_pct / 100, s.p50_network_latency_seconds, s.p95_network_latency_seconds, s.total_provider_calls, s.total_cache_hits, s.total_metadata_warning_count ?? 0];
+    return [name, s.case_count, s.success_count, s.partial_success_count, s.empty_count ?? 0, s.failed_count, s.skipped_count, s.mean_recall_at_5, s.mean_mrr_at_5, s.mean_ndcg_at_5, s.empty_result_rate_pct / 100, s.failure_rate_pct / 100, s.p50_network_latency_seconds, s.p95_network_latency_seconds, s.total_provider_calls, s.total_cache_hits, s.total_metadata_warning_count ?? 0, s.total_metadata_repaired_count ?? 0, s.total_metadata_quarantined_count ?? 0];
   });
   const end = 6 + profiles.length;
-  body(overview.getRange(`A7:Q${end}`));
+  body(overview.getRange(`A7:S${end}`));
   overview.getRange(`H7:L${end}`).format.numberFormat = "0.00%";
   overview.getRange(`M7:N${end}`).format.numberFormat = "0.000";
-  table(overview, `A6:Q${end}`, "RetrievalSummaryTable");
+  table(overview, `A6:S${end}`, "RetrievalSummaryTable");
 }
-overview.getRange("A11:D11").values = [["实际 API 调用", "缓存命中", "OpenAlex Key", "报告模式"]];
-header(overview.getRange("A11:D11"));
-overview.getRange("A12:D12").values = [[report.acquisition?.actual_api_call_count ?? 0, report.acquisition?.provider_cache_hit_count ?? 0, report.acquisition?.openalex_api_key_configured ? "已配置" : "未配置", report.mode ?? ""]];
-body(overview.getRange("A12:D12"));
+overview.getRange("A13:D13").values = [["实际 API 调用", "缓存命中", "OpenAlex Key", "报告模式"]];
+header(overview.getRange("A13:D13"));
+overview.getRange("A14:D14").values = [[report.acquisition?.actual_api_call_count ?? 0, report.acquisition?.provider_cache_hit_count ?? 0, report.acquisition?.openalex_api_key_configured ? "已配置" : "未配置", report.mode ?? ""]];
+body(overview.getRange("A14:D14"));
 overview.freezePanes.freezeRows(6);
-overview.getRange("A:Q").format.columnWidth = 14;
-overview.getRange("A:A").format.columnWidth = 16;
+overview.getRange("A:S").format.columnWidth = 14;
+overview.getRange("A:A").format.columnWidth = 25;
 
 const caseRows = profiles.flatMap(([, payload]) => payload.cases ?? []);
-const caseHeaders = ["配置", "案例ID", "查询", "语言", "类别", "难度", "状态", "Recall@1", "Recall@3", "Recall@5", "Precision@5", "MRR@5", "nDCG@5", "维度覆盖率", "返回数", "重复率", "网络延迟(秒)", "缓存命中", "来源错误", "排序策略", "截断前候选", "元数据警告数"];
-title(casesSheet, "A1:V1", "逐题检索指标");
-casesSheet.getRange("A3:V3").values = [caseHeaders]; header(casesSheet.getRange("A3:V3"));
+const caseHeaders = ["配置", "案例ID", "查询", "语言", "类别", "难度", "状态", "Recall@1", "Recall@3", "Recall@5", "Precision@5", "MRR@5", "nDCG@5", "维度覆盖率", "返回数", "重复率", "网络延迟(秒)", "缓存命中", "来源错误", "排序策略", "截断前候选", "元数据警告数", "元数据修复数", "隔离候选数"];
+title(casesSheet, "A1:X1", "逐题检索指标");
+casesSheet.getRange("A3:X3").values = [caseHeaders]; header(casesSheet.getRange("A3:X3"));
 if (caseRows.length) {
-  casesSheet.getRangeByIndexes(3, 0, caseRows.length, caseHeaders.length).values = caseRows.map(c => [c.profile, c.case_id, c.query, c.language, c.category, c.difficulty, c.status, c.recall_at_1, c.recall_at_3, c.recall_at_5, c.precision_at_5, c.mrr_at_5, c.ndcg_at_5, c.dimension_coverage_pct / 100, c.returned_count, c.duplicate_rate_pct / 100, c.network_latency_seconds, c.cache_hit_count, (c.provider_errors ?? []).map(e => `${e.provider}:${e.error_code}`).join("；"), c.ranking_strategy ?? "", c.candidate_count_before_top_k ?? c.returned_count, c.metadata_warning_count ?? 0]);
-  const end = caseRows.length + 3; body(casesSheet.getRange(`A4:V${end}`));
+  casesSheet.getRangeByIndexes(3, 0, caseRows.length, caseHeaders.length).values = caseRows.map(c => [c.profile, c.case_id, c.query, c.language, c.category, c.difficulty, c.status, c.recall_at_1, c.recall_at_3, c.recall_at_5, c.precision_at_5, c.mrr_at_5, c.ndcg_at_5, c.dimension_coverage_pct / 100, c.returned_count, c.duplicate_rate_pct / 100, c.network_latency_seconds, c.cache_hit_count, (c.provider_errors ?? []).map(e => `${e.provider}:${e.error_code}`).join("；"), c.ranking_strategy ?? "", c.candidate_count_before_top_k ?? c.returned_count, c.metadata_warning_count ?? 0, c.metadata_repaired_count ?? 0, c.metadata_quarantined_count ?? 0]);
+  const end = caseRows.length + 3; body(casesSheet.getRange(`A4:X${end}`));
   casesSheet.getRange(`H4:N${end}`).format.numberFormat = "0.00%"; casesSheet.getRange(`P4:P${end}`).format.numberFormat = "0.00%"; casesSheet.getRange(`Q4:Q${end}`).format.numberFormat = "0.000";
-  statusFormatting(casesSheet.getRange(`G4:G${end}`)); table(casesSheet, `A3:V${end}`, "RetrievalCasesTable");
+  statusFormatting(casesSheet.getRange(`G4:G${end}`)); table(casesSheet, `A3:X${end}`, "RetrievalCasesTable");
 }
 casesSheet.freezePanes.freezeRows(3); casesSheet.freezePanes.freezeColumns(2);
-casesSheet.getRange("A:V").format.columnWidth = 13; casesSheet.getRange("B:B").format.columnWidth = 24; casesSheet.getRange("C:C").format.columnWidth = 55; casesSheet.getRange("S:T").format.columnWidth = 28;
+casesSheet.getRange("A:X").format.columnWidth = 13; casesSheet.getRange("A:A").format.columnWidth = 25; casesSheet.getRange("B:B").format.columnWidth = 24; casesSheet.getRange("C:C").format.columnWidth = 55; casesSheet.getRange("S:S").format.columnWidth = 28; casesSheet.getRange("T:T").format.columnWidth = 38;
 
-const paperRows = caseRows.flatMap(c => (c.ranked_papers ?? []).map(p => [c.profile, c.case_id, c.query, p.rank, p.title, p.source, p.entry_id, p.doi, p.is_relevant ? "是" : "否", p.relevance_grade, p.matched_gold_title, p.pdf_url, p.ranking_score ?? 0, (p.metadata_warnings ?? []).join("；"), (p.sources ?? []).join("；"), JSON.stringify(p.ranking_signals ?? {})]));
-title(papersSheet, "A1:P1", "返回论文排名、统一评分与金标准匹配");
-papersSheet.getRange("A3:P3").values = [["配置", "案例ID", "查询", "排名", "论文标题", "来源", "Entry ID", "DOI", "命中金标准", "相关性等级", "匹配金标准标题", "PDF URL", "统一排序分", "元数据警告", "来源集合", "评分信号"]]; header(papersSheet.getRange("A3:P3"));
-if (paperRows.length) { papersSheet.getRangeByIndexes(3, 0, paperRows.length, 16).values = paperRows; const end = paperRows.length + 3; body(papersSheet.getRange(`A4:P${end}`)); papersSheet.getRange(`M4:M${end}`).format.numberFormat = "0.000000"; table(papersSheet, `A3:P${end}`, "RankedPapersTable"); }
-papersSheet.freezePanes.freezeRows(3); papersSheet.freezePanes.freezeColumns(2); papersSheet.getRange("A:P").format.columnWidth = 15; papersSheet.getRange("C:C").format.columnWidth = 45; papersSheet.getRange("E:E").format.columnWidth = 55; papersSheet.getRange("K:L").format.columnWidth = 45; papersSheet.getRange("N:N").format.columnWidth = 32; papersSheet.getRange("P:P").format.columnWidth = 60;
+const paperRows = caseRows.flatMap(c => (c.ranked_papers ?? []).map(p => [c.profile, c.case_id, c.query, p.rank, p.title, p.source, p.entry_id, p.doi, p.is_relevant ? "是" : "否", p.relevance_grade, p.matched_gold_title, p.pdf_url, p.ranking_score ?? 0, (p.metadata_warnings ?? []).join("；"), (p.sources ?? []).join("；"), p.metadata_resolution_status ?? "NOT_APPLIED", p.metadata_resolution_action ?? "KEEP", (p.metadata_repairs ?? []).join("；"), p.canonical_identity ?? "", JSON.stringify(p.ranking_signals ?? {})]));
+title(papersSheet, "A1:T1", "返回论文排名、统一评分与金标准匹配");
+papersSheet.getRange("A3:T3").values = [["配置", "案例ID", "查询", "排名", "论文标题", "来源", "Entry ID", "DOI", "命中金标准", "相关性等级", "匹配金标准标题", "PDF URL", "统一排序分", "元数据警告", "来源集合", "解析状态", "处理动作", "修复明细", "规范身份", "评分信号"]]; header(papersSheet.getRange("A3:T3"));
+if (paperRows.length) { papersSheet.getRangeByIndexes(3, 0, paperRows.length, 20).values = paperRows; const end = paperRows.length + 3; body(papersSheet.getRange(`A4:T${end}`)); papersSheet.getRange(`M4:M${end}`).format.numberFormat = "0.000000"; table(papersSheet, `A3:T${end}`, "RankedPapersTable"); }
+papersSheet.freezePanes.freezeRows(3); papersSheet.freezePanes.freezeColumns(2); papersSheet.getRange("A:T").format.columnWidth = 15; papersSheet.getRange("A:A").format.columnWidth = 25; papersSheet.getRange("C:C").format.columnWidth = 45; papersSheet.getRange("E:E").format.columnWidth = 55; papersSheet.getRange("K:L").format.columnWidth = 45; papersSheet.getRange("N:N").format.columnWidth = 32; papersSheet.getRange("P:Q").format.columnWidth = 28; papersSheet.getRange("R:T").format.columnWidth = 40;
 
 const goldRows = (dataset.cases ?? []).flatMap(c => (c.relevant_papers ?? []).map(p => [c.id, c.query, c.language, c.category, c.difficulty, (c.required_dimensions ?? []).join("；"), p.title, p.arxiv_id ?? "", p.doi ?? "", p.relevance_grade]));
 title(goldSheet, "A1:J1", `检索金标准（${dataset.dataset_name} v${dataset.dataset_version}）`);
@@ -104,11 +104,12 @@ goldSheet.freezePanes.freezeRows(3); goldSheet.freezePanes.freezeColumns(1); gol
 const exceptionRows = caseRows.flatMap(c => [
   ...(c.provider_errors ?? []).map(e => [c.profile, c.case_id, c.query, c.status, e.provider, e.error_code, e.error_message]),
   ...(c.ranked_papers ?? []).flatMap(p => (p.metadata_warnings ?? []).map(w => [c.profile, c.case_id, c.query, c.status, p.source, w, `排名 ${p.rank}：${p.title}`])),
+  ...(c.quarantined_documents ?? []).flatMap(p => (p.metadata_warnings ?? []).map(w => [c.profile, c.case_id, c.query, c.status, p.source, w, `已隔离：${p.title}｜${p.canonical_identity ?? ""}`])),
 ]);
 title(exceptionsSheet, "A1:G1", "来源失败、缺少凭据与跳过明细");
 exceptionsSheet.getRange("A3:G3").values = [["配置", "案例ID", "查询", "案例状态", "来源", "错误码", "错误说明"]]; header(exceptionsSheet.getRange("A3:G3"));
 if (exceptionRows.length) { exceptionsSheet.getRangeByIndexes(3, 0, exceptionRows.length, 7).values = exceptionRows; const end = exceptionRows.length + 3; body(exceptionsSheet.getRange(`A4:G${end}`)); statusFormatting(exceptionsSheet.getRange(`D4:D${end}`)); table(exceptionsSheet, `A3:G${end}`, "RetrievalExceptionsTable"); }
-exceptionsSheet.freezePanes.freezeRows(3); exceptionsSheet.getRange("A:G").format.columnWidth = 20; exceptionsSheet.getRange("C:C").format.columnWidth = 55; exceptionsSheet.getRange("G:G").format.columnWidth = 70;
+exceptionsSheet.freezePanes.freezeRows(3); exceptionsSheet.getRange("A:G").format.columnWidth = 20; exceptionsSheet.getRange("A:A").format.columnWidth = 25; exceptionsSheet.getRange("C:C").format.columnWidth = 55; exceptionsSheet.getRange("F:F").format.columnWidth = 38; exceptionsSheet.getRange("G:G").format.columnWidth = 70;
 
 const metricRows = [
   ["Recall@K", "前 K 条命中的不同金标准论文数 / 金标准论文总数", "越高越好；反映遗漏程度"],
@@ -122,7 +123,7 @@ const metricRows = [
 ];
 title(metricsSheet, "A1:C1", "指标定义、计算方法与解读"); metricsSheet.getRange("A3:C3").values = [["指标", "计算公式", "结果代表什么"]]; header(metricsSheet.getRange("A3:C3")); metricsSheet.getRangeByIndexes(3, 0, metricRows.length, 3).values = metricRows; body(metricsSheet.getRange("A4:C11")); table(metricsSheet, "A3:C11", "MetricDefinitionsTable"); metricsSheet.getRange("A:A").format.columnWidth = 20; metricsSheet.getRange("B:B").format.columnWidth = 55; metricsSheet.getRange("C:C").format.columnWidth = 55; metricsSheet.getRange("A4:C11").format.wrapText = true; metricsSheet.getRange("A4:C11").format.autofitRows();
 
-const check = await workbook.inspect({ kind: "table", range: "评测总览!A1:Q14", include: "values,formulas", tableMaxRows: 14, tableMaxCols: 17 });
+const check = await workbook.inspect({ kind: "table", range: "评测总览!A1:S15", include: "values,formulas", tableMaxRows: 15, tableMaxCols: 19 });
 console.log(check.ndjson);
 const errors = await workbook.inspect({ kind: "match", searchTerm: "#REF!|#DIV/0!|#VALUE!|#NAME\\?|#N/A", options: { useRegex: true, maxResults: 100 }, summary: "formula errors" });
 console.log(errors.ndjson);

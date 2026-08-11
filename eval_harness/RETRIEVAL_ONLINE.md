@@ -1,6 +1,6 @@
 # 在线论文检索评测
 
-这套评测用于比较 `arxiv`、`openalex`、`multi` 和 `multi_rerank` 在同一批论文问题上的检索质量、延迟与可靠性。它与离线能力基准分开运行，不进入默认 CI，也不会在缺少凭据时偷偷消耗匿名 OpenAlex 额度。
+这套评测用于比较 `arxiv`、`openalex`、`multi`、`multi_rerank` 和 `multi_verified_rerank` 在同一批论文问题上的检索质量、延迟与可靠性。它与离线能力基准分开运行，不进入默认 CI，也不会在缺少凭据时偷偷消耗匿名 OpenAlex 额度。
 
 ## 当前评测集
 
@@ -34,12 +34,12 @@
 每个问题
 → arXiv 原始响应只请求一次
 → OpenAlex 原始响应只请求一次（需要 API Key）
-→ 四种配置复用同一响应快照
+→ 五种配置复用同一响应快照
 → multi 统一身份去重并限制为相同 K
 → 保存逐题排名、命中、错误、延迟和缓存状态
 ```
 
-`multi_rerank` 与 `multi` 复用相同来源响应，只把“按来源顺序截断”替换为“完整去重、统一评分、最后截断”，因此排序 A/B 不新增 API 调用。
+`multi_rerank` 与 `multi` 复用相同来源响应，只把“按来源顺序截断”替换为“完整去重、统一评分、最后截断”。`multi_verified_rerank` 再增加来源证据解析、字段修复和低可信候选隔离。三者使用同一批候选，因此 A/B 不新增 API 调用。
 
 成功响应按“数据集版本 + 来源 + case id”缓存。默认复用缓存，`--refresh` 强制重取。arXiv 使用跨问题全局间隔，HTTP 429 触发有限冷却重试；失败响应不缓存，以便后续续跑。
 
@@ -53,7 +53,7 @@ D:\miniconda3\envs\paper_agent\python.exe -m eval_harness.retrieval_online
 
 # 加入跨来源重排候选对照
 D:\miniconda3\envs\paper_agent\python.exe -m eval_harness.retrieval_online `
-  --profiles arxiv,openalex,multi,multi_rerank
+  --profiles arxiv,openalex,multi,multi_rerank,multi_verified_rerank
 
 # 单题网络冒烟测试
 D:\miniconda3\envs\paper_agent\python.exe -m eval_harness.retrieval_online --case-limit 1 --refresh
@@ -79,6 +79,8 @@ D:\miniconda3\envs\paper_agent\python.exe -m eval_harness.retrieval_online `
 
 20 题续跑后，arXiv 为 `Recall@5 = 0.5500`、`MRR@5 = 0.4542`，最终网络失败为 0，2 题正常返回零篇。OpenAlex 20 题因缺少 API Key 全部跳过；multi 因只有 arXiv 可用而质量指标与 arXiv 相同。这是用于验证评测系统的阶段报告，不是多数据源选型结论。
 
-2026-08-10 增加标题冲突门控后，旧 `multi` 为 Recall@5 55.00%、MRR@5 45.42%，`multi_rerank` 为 Recall@5 60.00%、MRR@5 57.50%。质量提升，但仍有一条 `GOLD_TITLE_CONFLICT` 异常记录进入 Top 3，因此暂不默认开启。
+2026-08-10 增加标题冲突门控后，旧 `multi` 为 Recall@5 55.00%、MRR@5 45.42%，`multi_rerank` 为 Recall@5 60.00%、MRR@5 57.50%。质量提升，但仍有一条 `GOLD_TITLE_CONFLICT` 异常记录进入 Top 3。
+
+2026-08-11 增加元数据来源解析后，`multi_verified_rerank` 保持 Recall@5 60.00%、MRR@5 57.50%、nDCG@5 58.15%，并把上述异常记录及另外 7 条低可信、低查询一致性二级身份声明隔离出排序。本次复用 40 个缓存响应，实际 API 调用与 LLM Token 均为 0。隔离动作必须和逐题质量一起评估，不能把“删得更多”单独视为改进。
 
 正式晋升必须满足：OpenAlex Key 已配置、所有配置使用同一数据集版本、失败状态已消除、逐题结果完整保存，并且元数据冲突论文不进入高排名。

@@ -454,6 +454,11 @@ TEST_CASE_CATALOG: dict[str, CaseDescription] = {
         "OpenAlex 高相关候选升到首位，并记录确定性重排策略和完整候选数。",
         "重排器可能没有进入运行时，或无法通过开关安全回滚到原有合并策略。",
     ),
+    "tests/test_multi_source_retrieval.py::test_multi_source_metadata_verification_can_quarantine_unsafe_record": _description(
+        "验证权威元数据校验开关接入真实多来源检索并隔离低可信身份记录。",
+        "不相关标题与未经原生来源确认的 arXiv DOI 被移出候选，同时输出 v2 策略和隔离计数。",
+        "校验器可能只在评测中生效而没有保护正式 LangGraph 检索流程，或关闭后无法回滚。",
+    ),
     "tests/test_reranker.py::test_tokenize_handles_english_stopwords_and_chinese_characters": _description(
         "验证零 Token 重排器能稳定处理英文停用词和中文字符。",
         "英文实词与中文字符被保留，常见英文停用词被删除。",
@@ -478,6 +483,26 @@ TEST_CASE_CATALOG: dict[str, CaseDescription] = {
         "验证相同 DOI 的跨来源标题严重冲突会被合并、标记并降权。",
         "重复论文只保留一条，记录两个来源及 CROSS_SOURCE_TITLE_CONFLICT。",
         "OpenAlex 等来源的异常标题可能被当成可靠元数据进入高排名。",
+    ),
+    "tests/test_reranker.py::test_authoritative_arxiv_record_repairs_conflicting_secondary_title": _description(
+        "验证相同 arXiv 身份存在原生 arXiv 证据时使用权威字段修复二级来源冲突。",
+        "即使 OpenAlex 记录先出现，最终标题也恢复为 arXiv 标题，并记录修复状态、动作和计数。",
+        "合并顺序可能错误决定规范标题，让污染或过期的二级来源覆盖原生元数据。",
+    ),
+    "tests/test_reranker.py::test_unverified_arxiv_identity_with_unrelated_title_is_quarantined": _description(
+        "验证只有二级来源声称 arXiv DOI 且标题与查询无关时执行隔离。",
+        "可疑记录不会进入排序结果，隔离明细保留身份、警告和动作以供审计。",
+        "伪造或错误关联的稳定 ID 可能借助身份信号进入高排名并污染答案。",
+    ),
+    "tests/test_reranker.py::test_unverified_but_query_supported_arxiv_identity_remains_available": _description(
+        "验证尚无原生来源确认但标题与查询高度一致的二级来源记录不会被过度隔离。",
+        "记录保留在候选中并标为 SECONDARY_ACCEPTED，同时提示身份仍待确认。",
+        "元数据门槛可能过严而误删有价值论文，造成 Recall 回归。",
+    ),
+    "tests/test_retrieval_online_eval.py::test_verified_rerank_reports_quarantined_secondary_identity": _description(
+        "验证在线评测为元数据校验策略单独记录隔离数量和规范身份。",
+        "被隔离论文不计入返回结果，报告仍保存 arXiv 规范身份供异常追踪。",
+        "评测可能遗漏校验器的实际动作，导致质量不变时无法证明异常记录已被清除。",
     ),
 }
 

@@ -1325,14 +1325,16 @@ Push / Pull Request
 
 跨来源确定性重排 v1 已完成缓存 A/B：Recall@5 从 55% 提升到 60%，MRR@5 从 45.42% 提升到 57.50%，没有新增 API 或 LLM Token；但一条 OpenAlex 标题/DOI 异常记录仍进入 Top 3，因此功能开关暂不默认开启。
 
-下一项优先补齐权威元数据一致性门槛：
+权威元数据来源解析 v2 已完成第一轮缓存验证：异常 Chain-of-Thought 记录不再进入排名，Recall、MRR 和 nDCG 无回归，且没有新增 API 或 LLM Token。当前仍保持功能开关默认关闭，因为只验证了一份来源快照，且非 arXiv DOI 尚无 Crossref 等原生权威来源。
+
+下一项优先做第二份独立来源快照与隔离误伤复核：
 
 ```text
-为 DOI/arXiv ID 获取或缓存权威标题
-→ 对来源标题、作者、年份和稳定身份做交叉验证
-→ 冲突记录降权、隔离或使用可信字段修复
-→ 重跑旧 multi / multi_rerank 缓存 A/B
-→ 元数据冲突不再进入高排名后，再考虑开启重排
+刷新或新增一份独立在线来源快照
+→ 人工复核被隔离候选是否确属低可信或无关记录
+→ 为非 arXiv DOI 评测 Crossref 等规范元数据来源（不预先写死选型）
+→ 重跑 multi / multi_rerank / multi_verified_rerank A/B
+→ 两份快照均无关键质量回归后，再考虑默认开启重排与校验
 → 随后实现来源级与子查询级有界异步并行
 → 再进入失败类型驱动的 Retrieval Replan 和 Reflection
 ```

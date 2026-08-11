@@ -206,6 +206,9 @@ def retrieve_by_query(query: str, state: AgentState) -> Dict[str, Any]:
                 query=query,
                 document_groups=document_groups,
                 max_documents=max_documents,
+                metadata_resolution_enabled=(
+                    settings.MULTI_SOURCE_METADATA_VERIFICATION_ENABLED
+                ),
             )
         else:
             merge_result = merge_documents_with_stats(
@@ -260,6 +263,10 @@ def retrieve_by_query(query: str, state: AgentState) -> Dict[str, Any]:
             merge_result["merged_document_count"],
         ),
         "metadata_warning_count": merge_result.get("metadata_warning_count", 0),
+        "metadata_repaired_count": merge_result.get("metadata_repaired_count", 0),
+        "metadata_quarantined_count": merge_result.get(
+            "metadata_quarantined_count", 0
+        ),
         "ranking_strategy": merge_result.get("ranking_strategy", "source_priority"),
     }
 

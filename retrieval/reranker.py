@@ -6,11 +6,16 @@ import math
 import re
 from typing import Any, Dict, List
 
+from retrieval.metadata_resolver import (
+    extract_arxiv_ids,
+    metadata_evidence,
+    resolve_document_metadata,
+    title_similarity,
+)
 from retrieval.result_merger import build_document_keys, normalize_text
 
 
 TOKEN_PATTERN = re.compile(r"[a-z0-9]+|[\u4e00-\u9fff]", re.IGNORECASE)
-ARXIV_ID_PATTERN = re.compile(r"(?<!\d)(\d{4}\.\d{4,5})(?:v\d+)?(?!\d)")
 STOPWORDS = {
     "a", "an", "and", "are", "as", "at", "be", "by", "for", "from",
     "in", "is", "of", "on", "or", "that", "the", "to", "using", "with",
@@ -28,20 +33,6 @@ def tokenize(value: Any) -> set[str]:
     }
 
 
-def _extract_arxiv_ids(document: Dict[str, Any]) -> set[str]:
-    values = (
-        document.get("doi", ""),
-        document.get("entry_id", ""),
-        document.get("pdf_url", ""),
-        document.get("landing_page_url", ""),
-    )
-    return {
-        match.group(1)
-        for value in values
-        for match in ARXIV_ID_PATTERN.finditer(str(value or ""))
-    }
-
-
 def verify_document_metadata(document: Dict[str, Any]) -> Dict[str, Any]:
     """Check locally provable metadata consistency without external calls."""
 
@@ -52,7 +43,7 @@ def verify_document_metadata(document: Dict[str, Any]) -> Dict[str, Any]:
         warnings.append("MISSING_STABLE_IDENTITY")
     if not str(document.get("content") or document.get("summary") or "").strip():
         warnings.append("MISSING_ABSTRACT")
-    if len(_extract_arxiv_ids(document)) > 1:
+    if len(extract_arxiv_ids(document)) > 1:
         warnings.append("ARXIV_ID_CONFLICT")
 
     year = document.get("year")
@@ -66,21 +57,16 @@ def verify_document_metadata(document: Dict[str, Any]) -> Dict[str, Any]:
         "ARXIV_ID_CONFLICT": 0.65,
         "INVALID_YEAR": 0.1,
         "CROSS_SOURCE_TITLE_CONFLICT": 0.45,
+        "SECONDARY_TITLE_CONFLICT": 0.45,
+        "UNVERIFIED_ARXIV_IDENTITY": 0.1,
+        "UNVERIFIED_ARXIV_ID_TITLE_MISMATCH": 1.0,
+        "CONFLICTING_ARXIV_IDENTITIES": 1.0,
     }
     penalty = min(sum(penalty_by_warning[item] for item in warnings), 1.0)
     return {
         "metadata_warnings": warnings,
         "metadata_quality_score": round(1.0 - penalty, 6),
     }
-
-
-def _title_similarity(first: str, second: str) -> float:
-    first_tokens = tokenize(first)
-    second_tokens = tokenize(second)
-    union = first_tokens | second_tokens
-    if not union:
-        return 1.0
-    return len(first_tokens & second_tokens) / len(union)
 
 
 def _deduplicate_candidates(
@@ -102,6 +88,7 @@ def _deduplicate_candidates(
             if duplicate_index is None:
                 verification = verify_document_metadata(document)
                 document.update(verification)
+                document["metadata_evidence"] = [metadata_evidence(document)]
                 document["sources"] = [source]
                 document["source_ranks"] = {source: source_rank}
                 candidates.append(document)
@@ -111,13 +98,16 @@ def _deduplicate_candidates(
                 continue
 
             existing = candidates[duplicate_index]
+            existing.setdefault("metadata_evidence", []).append(
+                metadata_evidence(document)
+            )
             if source not in existing["sources"]:
                 existing["sources"].append(source)
             existing["source_ranks"][source] = min(
                 source_rank,
                 existing["source_ranks"].get(source, source_rank),
             )
-            if _title_similarity(
+            if title_similarity(
                 str(existing.get("title") or ""),
                 str(document.get("title") or ""),
             ) < 0.35:
@@ -181,11 +171,34 @@ def rerank_documents_with_stats(
     query: str,
     document_groups: List[List[Dict[str, Any]]],
     max_documents: int = 8,
+    metadata_resolution_enabled: bool = False,
 ) -> Dict[str, Any]:
     """Deduplicate all candidates, score them, then apply the Top-K limit."""
 
     raw_count = sum(len(group) for group in document_groups)
     candidates = _deduplicate_candidates(document_groups)
+    quarantined: list[Dict[str, Any]] = []
+    if metadata_resolution_enabled:
+        resolved_candidates = [
+            resolve_document_metadata(query, item) for item in candidates
+        ]
+        quarantined = [item for item in resolved_candidates if item["metadata_quarantined"]]
+        candidates = [item for item in resolved_candidates if not item["metadata_quarantined"]]
+        for document in candidates:
+            verification = verify_document_metadata(document)
+            combined_warnings = list(
+                dict.fromkeys(
+                    document.get("metadata_warnings", [])
+                    + verification["metadata_warnings"]
+                )
+            )
+            document["metadata_warnings"] = combined_warnings
+            penalty = 0.1 if "UNVERIFIED_ARXIV_IDENTITY" in combined_warnings else 0.0
+            if "SECONDARY_TITLE_CONFLICT" in combined_warnings:
+                penalty += 0.45
+            document["metadata_quality_score"] = round(
+                max(0.0, verification["metadata_quality_score"] - penalty), 6
+            )
     for document in candidates:
         document.update(score_document(query, document))
     candidates.sort(
@@ -204,5 +217,14 @@ def rerank_documents_with_stats(
         "metadata_warning_count": sum(
             bool(document.get("metadata_warnings")) for document in selected
         ),
-        "ranking_strategy": "deterministic_cross_source_v1",
+        "metadata_repaired_count": sum(
+            bool(document.get("metadata_repairs")) for document in selected
+        ),
+        "metadata_quarantined_count": len(quarantined),
+        "quarantined_documents": quarantined,
+        "ranking_strategy": (
+            "deterministic_cross_source_verified_v2"
+            if metadata_resolution_enabled
+            else "deterministic_cross_source_v1"
+        ),
     }

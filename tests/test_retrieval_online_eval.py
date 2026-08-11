@@ -196,6 +196,29 @@ def test_online_benchmark_reuses_provider_results_across_profiles():
     assert report["profiles"]["multi"]["cases"][0]["duplicate_rate_pct"] == 50.0
 
 
+def test_verified_rerank_reports_quarantined_secondary_identity():
+    case = first_case_dataset().cases[0]
+    corrupted = relevant_paper(source="openalex", entry_id="https://openalex.org/W1")
+    corrupted["title"] = "A Completely Different Paper About Robotics"
+    provider_results = {
+        "arxiv": provider_result("arxiv", []),
+        "openalex": provider_result("openalex", [corrupted]),
+    }
+
+    result = evaluate_case_profile(
+        case,
+        "multi_verified_rerank",
+        provider_results,
+        [1, 3, 5],
+    )
+
+    assert result["returned_count"] == 0
+    assert result["metadata_quarantined_count"] == 1
+    assert result["quarantined_documents"][0]["canonical_identity"] == (
+        "arxiv:2005.11401"
+    )
+
+
 def test_missing_openalex_key_is_explicitly_skipped_without_network(monkeypatch, tmp_path):
     monkeypatch.setattr(
         "eval_harness.retrieval_online.settings.OPENALEX_API_KEY",

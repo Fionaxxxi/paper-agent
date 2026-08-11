@@ -32,7 +32,9 @@ from tools.runtime import build_default_tool_runtime
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_DATASET_PATH = PROJECT_ROOT / "eval_harness" / "datasets" / "retrieval_online_v1.json"
 DEFAULT_OUTPUT_DIR = PROJECT_ROOT / "eval_harness" / "reports" / "retrieval_online"
-SUPPORTED_PROFILES = ("arxiv", "openalex", "multi", "multi_rerank")
+SUPPORTED_PROFILES = (
+    "arxiv", "openalex", "multi", "multi_rerank", "multi_verified_rerank",
+)
 
 
 def get_git_commit() -> str:
@@ -177,7 +179,7 @@ class NativeProviderFetcher:
 
 
 def _profile_providers(profile: str) -> tuple[str, ...]:
-    if profile in {"multi", "multi_rerank"}:
+    if profile in {"multi", "multi_rerank", "multi_verified_rerank"}:
         return ("arxiv", "openalex")
     if profile in {"arxiv", "openalex"}:
         return (profile,)
@@ -219,6 +221,14 @@ def _ranked_papers(
                 "ranking_score": paper.get("ranking_score", 0.0),
                 "ranking_signals": paper.get("ranking_signals", {}),
                 "metadata_warnings": metadata_warnings,
+                "metadata_repairs": paper.get("metadata_repairs", []),
+                "metadata_resolution_status": paper.get(
+                    "metadata_resolution_status", "NOT_APPLIED"
+                ),
+                "metadata_resolution_action": paper.get(
+                    "metadata_resolution_action", "KEEP"
+                ),
+                "canonical_identity": paper.get("canonical_identity", ""),
                 "sources": paper.get("sources", [paper.get("source", "")]),
             }
         )
@@ -235,11 +245,12 @@ def evaluate_case_profile(
     selected = [provider_results[provider] for provider in providers]
     groups = [result["papers"] for result in selected if result["success"]]
     raw_count = sum(len(group) for group in groups)
-    if profile == "multi_rerank":
+    if profile in {"multi_rerank", "multi_verified_rerank"}:
         merged = rerank_documents_with_stats(
             query=case.query,
             document_groups=groups,
             max_documents=max(k_values),
+            metadata_resolution_enabled=profile == "multi_verified_rerank",
         )
     else:
         merged = merge_documents_with_stats(groups, max_documents=max(k_values))
@@ -300,6 +311,9 @@ def evaluate_case_profile(
         "metadata_warning_count": sum(
             bool(paper.get("metadata_warnings")) for paper in ranked_papers
         ),
+        "metadata_repaired_count": merged.get("metadata_repaired_count", 0),
+        "metadata_quarantined_count": merged.get("metadata_quarantined_count", 0),
+        "quarantined_documents": merged.get("quarantined_documents", []),
         "ranking_strategy": merged.get("ranking_strategy", "source_priority"),
         **quality_metrics,
         "ranked_papers": ranked_papers,
@@ -346,6 +360,12 @@ def summarize_profile(
         ),
         "total_metadata_warning_count": sum(
             result.get("metadata_warning_count", 0) for result in case_results
+        ),
+        "total_metadata_repaired_count": sum(
+            result.get("metadata_repaired_count", 0) for result in case_results
+        ),
+        "total_metadata_quarantined_count": sum(
+            result.get("metadata_quarantined_count", 0) for result in case_results
         ),
         "total_provider_calls": sum(result["provider_call_count"] for result in case_results),
         "total_cache_hits": sum(result["cache_hit_count"] for result in case_results),
@@ -396,7 +416,7 @@ def run_online_benchmark(
         }
 
     return {
-        "report_version": "1.0",
+        "report_version": "1.1",
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "git_commit": get_git_commit(),
         "dataset_name": dataset.dataset_name,
@@ -466,7 +486,10 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--profiles",
         default="arxiv,openalex,multi",
-        help="Comma-separated profiles: arxiv, openalex, multi, multi_rerank",
+        help=(
+            "Comma-separated profiles: arxiv, openalex, multi, multi_rerank, "
+            "multi_verified_rerank"
+        ),
     )
     parser.add_argument("--refresh", action="store_true")
     parser.add_argument("--allow-openalex-without-key", action="store_true")
