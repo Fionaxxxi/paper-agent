@@ -41,7 +41,7 @@
 
 `multi_rerank` 与 `multi` 复用相同来源响应，只把“按来源顺序截断”替换为“完整去重、统一评分、最后截断”。`multi_verified_rerank` 再增加来源证据解析、字段修复和低可信候选隔离。三者使用同一批候选，因此 A/B 不新增 API 调用。
 
-成功响应按“数据集版本 + 来源 + case id”缓存。默认复用缓存，`--refresh` 强制重取。arXiv 使用跨问题全局间隔，HTTP 429 触发有限冷却重试；失败响应不缓存，以便后续续跑。
+成功响应按“快照 ID + 数据集版本 + 来源 + case id”缓存。未指定 `--snapshot-id` 时兼容旧目录；显式快照写入 `snapshots/<id>`，已有快照默认拒绝覆盖，只有 `--resume-snapshot` 可以复用成功响应并补取失败项。每次续跑都追加到快照清单，累计实际 API 调用和缓存命中。arXiv 使用跨问题全局间隔，HTTP 429 触发有限冷却重试；失败响应不缓存。
 
 OpenAlex 默认要求 `OPENALEX_API_KEY`。未配置时记录 `MISSING_API_KEY / skipped`，实际调用数为 0。只有显式传入 `--allow-openalex-without-key` 才允许匿名评测。
 
@@ -53,6 +53,16 @@ D:\miniconda3\envs\paper_agent\python.exe -m eval_harness.retrieval_online
 
 # 加入跨来源重排候选对照
 D:\miniconda3\envs\paper_agent\python.exe -m eval_harness.retrieval_online `
+  --profiles arxiv,openalex,multi,multi_rerank,multi_verified_rerank
+
+# 创建一份不会覆盖旧响应的独立快照
+D:\miniconda3\envs\paper_agent\python.exe -m eval_harness.retrieval_online `
+  --snapshot-id 2026-08-11-b `
+  --profiles arxiv,openalex,multi,multi_rerank,multi_verified_rerank
+
+# 限流或网络中断后，只补取失败项
+D:\miniconda3\envs\paper_agent\python.exe -m eval_harness.retrieval_online `
+  --snapshot-id 2026-08-11-b --resume-snapshot `
   --profiles arxiv,openalex,multi,multi_rerank,multi_verified_rerank
 
 # 单题网络冒烟测试
@@ -82,5 +92,7 @@ D:\miniconda3\envs\paper_agent\python.exe -m eval_harness.retrieval_online `
 2026-08-10 增加标题冲突门控后，旧 `multi` 为 Recall@5 55.00%、MRR@5 45.42%，`multi_rerank` 为 Recall@5 60.00%、MRR@5 57.50%。质量提升，但仍有一条 `GOLD_TITLE_CONFLICT` 异常记录进入 Top 3。
 
 2026-08-11 增加元数据来源解析后，`multi_verified_rerank` 保持 Recall@5 60.00%、MRR@5 57.50%、nDCG@5 58.15%，并把上述异常记录及另外 7 条低可信、低查询一致性二级身份声明隔离出排序。本次复用 40 个缓存响应，实际 API 调用与 LLM Token 均为 0。隔离动作必须和逐题质量一起评估，不能把“删得更多”单独视为改进。
+
+2026-08-11 第二份独立快照首次运行时 arXiv 仅成功 10/20，OpenAlex 成功 20/20；通过显式续跑补齐后，两来源均为 20/20。候选快照中 `multi_verified_rerank` 再次得到 Recall@5 60.00%、MRR@5 57.50%、nDCG@5 58.15%，逐题质量回归为 0。但隔离候选从 8 条变为 13 条，只有 6 条稳定重合，Jaccard 稳定度为 40%，低于 80% 门槛；新增项包含可能有研究价值的相关论文，因此 v2 继续保持默认关闭，下一步必须使用规范元数据来源验证，而不能继续加严词法隔离规则。
 
 正式晋升必须满足：OpenAlex Key 已配置、所有配置使用同一数据集版本、失败状态已消除、逐题结果完整保存，并且元数据冲突论文不进入高排名。

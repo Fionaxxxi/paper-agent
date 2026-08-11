@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import re
 import statistics
 import subprocess
 import time
@@ -35,6 +36,37 @@ DEFAULT_OUTPUT_DIR = PROJECT_ROOT / "eval_harness" / "reports" / "retrieval_onli
 SUPPORTED_PROFILES = (
     "arxiv", "openalex", "multi", "multi_rerank", "multi_verified_rerank",
 )
+SNAPSHOT_ID_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$")
+
+
+def validate_snapshot_id(snapshot_id: str) -> str:
+    """Return a filesystem-safe snapshot id or reject ambiguous paths."""
+
+    normalized = snapshot_id.strip()
+    if not SNAPSHOT_ID_PATTERN.fullmatch(normalized) or normalized in {".", ".."}:
+        raise ValueError(
+            "snapshot id must use 1-64 letters, numbers, dots, underscores or hyphens"
+        )
+    return normalized
+
+
+def resolve_snapshot_output_dir(
+    output_dir: Path,
+    snapshot_id: str,
+    *,
+    resume: bool = False,
+) -> Path:
+    """Isolate explicit snapshots and refuse accidental report/cache overwrite."""
+
+    if not snapshot_id.strip():
+        return output_dir
+    safe_id = validate_snapshot_id(snapshot_id)
+    snapshot_dir = output_dir / "snapshots" / safe_id
+    if snapshot_dir.exists() and any(snapshot_dir.iterdir()) and not resume:
+        raise FileExistsError(
+            f"snapshot already exists: {safe_id}; use --resume-snapshot to continue it"
+        )
+    return snapshot_dir
 
 
 def get_git_commit() -> str:
@@ -383,6 +415,8 @@ def run_online_benchmark(
     dataset: RetrievalEvalDataset,
     fetcher,
     profiles: list[str],
+    *,
+    snapshot_id: str = "legacy",
 ) -> dict[str, Any]:
     unknown_profiles = sorted(set(profiles) - set(SUPPORTED_PROFILES))
     if unknown_profiles:
@@ -417,6 +451,7 @@ def run_online_benchmark(
 
     return {
         "report_version": "1.1",
+        "snapshot_id": snapshot_id,
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "git_commit": get_git_commit(),
         "dataset_name": dataset.dataset_name,
@@ -438,6 +473,51 @@ def write_online_report(report: dict[str, Any], output_dir: Path) -> Path:
     json_path = output_dir / "latest_retrieval_online.json"
     json_path.write_text(
         json.dumps(report, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+
+    manifest_path = output_dir / "snapshot_manifest.json"
+    prior_runs: list[dict[str, Any]] = []
+    if manifest_path.exists():
+        previous_manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        prior_runs = list(previous_manifest.get("runs") or [])
+        if not prior_runs and previous_manifest.get("acquisition"):
+            prior_runs.append(
+                {
+                    "generated_at": previous_manifest.get("generated_at", ""),
+                    "git_commit": previous_manifest.get("git_commit", "unknown"),
+                    "acquisition": previous_manifest["acquisition"],
+                }
+            )
+    current_run = {
+        "generated_at": report["generated_at"],
+        "git_commit": report["git_commit"],
+        "acquisition": report["acquisition"],
+    }
+    runs = [*prior_runs, current_run]
+    cumulative_acquisition = {
+        "actual_api_call_count": sum(
+            run["acquisition"].get("actual_api_call_count", 0) for run in runs
+        ),
+        "provider_cache_hit_count": sum(
+            run["acquisition"].get("provider_cache_hit_count", 0) for run in runs
+        ),
+        "run_count": len(runs),
+    }
+    manifest = {
+        "snapshot_id": report.get("snapshot_id", "legacy"),
+        "generated_at": report["generated_at"],
+        "git_commit": report["git_commit"],
+        "dataset_name": report["dataset_name"],
+        "dataset_version": report["dataset_version"],
+        "dataset_case_count": report["dataset_case_count"],
+        "profiles": list(report["profiles"]),
+        "latest_acquisition": report["acquisition"],
+        "cumulative_acquisition": cumulative_acquisition,
+        "runs": runs,
+    }
+    manifest_path.write_text(
+        json.dumps(manifest, ensure_ascii=False, indent=2),
         encoding="utf-8",
     )
 
@@ -492,6 +572,16 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
     parser.add_argument("--refresh", action="store_true")
+    parser.add_argument(
+        "--snapshot-id",
+        default="",
+        help="Optional immutable snapshot id; outputs are isolated below snapshots/<id>.",
+    )
+    parser.add_argument(
+        "--resume-snapshot",
+        action="store_true",
+        help="Continue an existing snapshot and reuse its successful provider responses.",
+    )
     parser.add_argument("--allow-openalex-without-key", action="store_true")
     parser.add_argument("--case-limit", type=int, default=0)
     parser.add_argument("--arxiv-interval", type=float, default=6.0)
@@ -502,20 +592,37 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main() -> None:
     args = build_parser().parse_args()
+    if args.resume_snapshot and not args.snapshot_id.strip():
+        raise ValueError("--resume-snapshot requires --snapshot-id")
+    if args.resume_snapshot and args.refresh:
+        raise ValueError("--resume-snapshot cannot be combined with --refresh")
+    snapshot_id = (
+        validate_snapshot_id(args.snapshot_id) if args.snapshot_id.strip() else "legacy"
+    )
+    run_output_dir = resolve_snapshot_output_dir(
+        args.output_dir.resolve(),
+        args.snapshot_id,
+        resume=args.resume_snapshot,
+    )
     dataset = load_retrieval_dataset(args.dataset.resolve())
     if args.case_limit > 0:
         dataset = dataset.model_copy(update={"cases": dataset.cases[: args.case_limit]})
     profiles = [profile.strip() for profile in args.profiles.split(",") if profile.strip()]
     fetcher = NativeProviderFetcher(
-        args.output_dir.resolve() / "provider_cache" / dataset.dataset_version,
+        run_output_dir / "provider_cache" / dataset.dataset_version,
         refresh=args.refresh,
         allow_openalex_without_key=args.allow_openalex_without_key,
         arxiv_interval_seconds=args.arxiv_interval,
         rate_limit_cooldown_seconds=args.rate_limit_cooldown,
         rate_limit_retries=args.rate_limit_retries,
     )
-    report = run_online_benchmark(dataset, fetcher, profiles)
-    output_path = write_online_report(report, args.output_dir.resolve())
+    report = run_online_benchmark(
+        dataset,
+        fetcher,
+        profiles,
+        snapshot_id=snapshot_id,
+    )
+    output_path = write_online_report(report, run_output_dir)
     for profile, payload in report["profiles"].items():
         summary = payload["summary"]
         print(

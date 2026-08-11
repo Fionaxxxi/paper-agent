@@ -20,7 +20,9 @@ from eval_harness.retrieval_online import (
     DEFAULT_DATASET_PATH,
     NativeProviderFetcher,
     evaluate_case_profile,
+    resolve_snapshot_output_dir,
     run_online_benchmark,
+    validate_snapshot_id,
     write_online_report,
 )
 import tools.arxiv_tool as arxiv_tool_module
@@ -265,6 +267,51 @@ def test_online_report_writes_json_summary_case_and_paper_tables(tmp_path):
     assert (tmp_path / "latest_retrieval_summary.csv").exists()
     assert (tmp_path / "latest_retrieval_cases.csv").exists()
     assert (tmp_path / "latest_retrieval_papers.csv").exists()
+    manifest = json.loads(
+        (tmp_path / "snapshot_manifest.json").read_text(encoding="utf-8")
+    )
+    assert manifest["snapshot_id"] == "legacy"
+    assert manifest["cumulative_acquisition"] == {
+        "actual_api_call_count": 1,
+        "provider_cache_hit_count": 0,
+        "run_count": 1,
+    }
+
+    write_online_report(report, tmp_path)
+    manifest = json.loads(
+        (tmp_path / "snapshot_manifest.json").read_text(encoding="utf-8")
+    )
+    assert manifest["cumulative_acquisition"]["actual_api_call_count"] == 2
+    assert manifest["cumulative_acquisition"]["run_count"] == 2
+
+
+def test_snapshot_id_is_path_safe_and_uses_isolated_directory(tmp_path):
+    assert validate_snapshot_id("2026-08-11_openalex-b") == (
+        "2026-08-11_openalex-b"
+    )
+    assert resolve_snapshot_output_dir(tmp_path, "snapshot-b") == (
+        tmp_path / "snapshots" / "snapshot-b"
+    )
+    assert resolve_snapshot_output_dir(tmp_path, "") == tmp_path
+
+    for invalid in ("", "../escape", "nested/path", "含中文"):
+        with pytest.raises(ValueError, match="snapshot id"):
+            validate_snapshot_id(invalid)
+
+
+def test_existing_snapshot_requires_explicit_resume(tmp_path):
+    snapshot_dir = tmp_path / "snapshots" / "snapshot-b"
+    snapshot_dir.mkdir(parents=True)
+    (snapshot_dir / "existing.json").write_text("{}", encoding="utf-8")
+
+    with pytest.raises(FileExistsError, match="resume-snapshot"):
+        resolve_snapshot_output_dir(tmp_path, "snapshot-b")
+
+    assert resolve_snapshot_output_dir(
+        tmp_path,
+        "snapshot-b",
+        resume=True,
+    ) == snapshot_dir
 
 
 def test_arxiv_network_failure_propagates_to_tool_executor(monkeypatch):

@@ -435,9 +435,29 @@ TEST_CASE_CATALOG: dict[str, CaseDescription] = {
         "评测可能请求过快触发限流，或不必要地拖慢其他论文来源。",
     ),
     "tests/test_retrieval_online_eval.py::test_online_report_writes_json_summary_case_and_paper_tables": _description(
-        "验证在线评测可同时输出机器可读 JSON 及总览、逐题、论文明细 CSV。",
-        "四类报告文件均成功生成并可重新读取。",
+        "验证在线评测可同时输出机器可读 JSON、快照清单及总览、逐题、论文明细 CSV。",
+        "报告文件和快照清单均成功生成，且清单保存稳定的快照身份。",
         "评测结果无法沉淀为可审计数据，Excel 和历史对比也无法稳定生成。",
+    ),
+    "tests/test_retrieval_online_eval.py::test_snapshot_id_is_path_safe_and_uses_isolated_directory": _description(
+        "验证在线评测快照 ID 只能使用安全字符，并映射到独立快照目录。",
+        "合法 ID 获得独立目录，路径穿越、嵌套路径、空值和非约定字符均被拒绝。",
+        "快照名称可能逃逸评测目录、覆盖其他文件，或让两次来源响应混入同一实验。",
+    ),
+    "tests/test_retrieval_online_eval.py::test_existing_snapshot_requires_explicit_resume": _description(
+        "验证已有在线评测快照默认不可覆盖，只有显式续跑才能复用其成功响应。",
+        "普通运行遇到已有快照立即失败，resume 模式准确返回原快照目录。",
+        "第二次实验可能静默覆盖第一份证据，导致跨快照结论无法审计和复现。",
+    ),
+    "tests/test_retrieval_snapshot_compare.py::test_snapshot_comparison_passes_stable_complete_non_regressing_candidate": _description(
+        "验证两份完整快照在质量不回归且隔离集合稳定时可以通过晋升门槛。",
+        "质量提升、逐题无回归、隔离集合完全一致，比较器明确返回 promotion_ready。",
+        "稳定候选可能因比较口径错误被拒绝，阻碍经过复现验证的能力晋升。",
+    ),
+    "tests/test_retrieval_snapshot_compare.py::test_snapshot_comparison_blocks_quality_or_quarantine_instability": _description(
+        "验证跨快照出现逐题质量下降或隔离集合漂移时阻止默认启用候选策略。",
+        "比较器同时报告质量回归与隔离不稳定，并输出需要人工复核的新增和移除记录。",
+        "只看平均指标可能掩盖逐题退化或误伤漂移，让不稳定元数据策略进入默认流程。",
     ),
     "tests/test_retrieval_online_eval.py::test_arxiv_network_failure_propagates_to_tool_executor": _description(
         "验证 arXiv 网络异常会传递给 Tool Executor，而不是被伪装成零篇论文。",
