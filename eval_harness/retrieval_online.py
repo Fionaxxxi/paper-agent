@@ -35,6 +35,7 @@ DEFAULT_DATASET_PATH = PROJECT_ROOT / "eval_harness" / "datasets" / "retrieval_o
 DEFAULT_OUTPUT_DIR = PROJECT_ROOT / "eval_harness" / "reports" / "retrieval_online"
 SUPPORTED_PROFILES = (
     "arxiv", "openalex", "multi", "multi_rerank", "multi_verified_rerank",
+    "multi_canonical_rerank",
 )
 SNAPSHOT_ID_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$")
 
@@ -211,7 +212,9 @@ class NativeProviderFetcher:
 
 
 def _profile_providers(profile: str) -> tuple[str, ...]:
-    if profile in {"multi", "multi_rerank", "multi_verified_rerank"}:
+    if profile in {
+        "multi", "multi_rerank", "multi_verified_rerank", "multi_canonical_rerank",
+    }:
         return ("arxiv", "openalex")
     if profile in {"arxiv", "openalex"}:
         return (profile,)
@@ -272,17 +275,25 @@ def evaluate_case_profile(
     profile: str,
     provider_results: dict[str, dict[str, Any]],
     k_values: list[int],
+    authority_by_identity: dict[str, dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     providers = _profile_providers(profile)
     selected = [provider_results[provider] for provider in providers]
     groups = [result["papers"] for result in selected if result["success"]]
     raw_count = sum(len(group) for group in groups)
-    if profile in {"multi_rerank", "multi_verified_rerank"}:
+    if profile in {
+        "multi_rerank", "multi_verified_rerank", "multi_canonical_rerank",
+    }:
         merged = rerank_documents_with_stats(
             query=case.query,
             document_groups=groups,
             max_documents=max(k_values),
-            metadata_resolution_enabled=profile == "multi_verified_rerank",
+            metadata_resolution_enabled=profile in {
+                "multi_verified_rerank", "multi_canonical_rerank",
+            },
+            authority_by_identity=(
+                authority_by_identity if profile == "multi_canonical_rerank" else None
+            ),
         )
     else:
         merged = merge_documents_with_stats(groups, max_documents=max(k_values))

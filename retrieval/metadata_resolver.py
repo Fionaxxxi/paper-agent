@@ -82,6 +82,27 @@ def metadata_evidence(document: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
+def attach_authoritative_evidence(
+    document: Dict[str, Any],
+    authority_by_identity: Dict[str, Dict[str, Any]] | None,
+) -> Dict[str, Any]:
+    """Attach separately acquired canonical evidence without mutating the input."""
+
+    enriched = dict(document)
+    if not authority_by_identity:
+        return enriched
+    evidences = list(enriched.get("metadata_evidence") or [metadata_evidence(enriched)])
+    for arxiv_id in extract_arxiv_ids(enriched):
+        authority = authority_by_identity.get(f"arxiv:{arxiv_id}")
+        if authority is not None:
+            if authority.get("canonical_lookup_status") == "NOT_FOUND":
+                enriched["canonical_authority_not_found"] = True
+            else:
+                evidences.append(metadata_evidence(authority))
+    enriched["metadata_evidence"] = evidences
+    return enriched
+
+
 def _native_arxiv_evidence(
     evidences: Iterable[Dict[str, Any]],
     arxiv_id: str,
@@ -158,13 +179,20 @@ def resolve_document_metadata(query: str, document: Dict[str, Any]) -> Dict[str,
             status = "AUTHORITATIVE_REPAIRED" if repairs else "AUTHORITATIVE_VERIFIED"
             action = "REPAIR" if repairs else "KEEP"
         else:
-            support = title_query_support(query, str(resolved.get("title") or ""))
-            if support < 0.2:
+            if resolved.get("canonical_authority_not_found"):
+                warnings.append("ARXIV_ID_NOT_FOUND_IN_NATIVE_SOURCE")
+                status = "AUTHORITATIVE_NOT_FOUND"
+                action = "QUARANTINE"
+                quarantined = True
+                support = 0.0
+            else:
+                support = title_query_support(query, str(resolved.get("title") or ""))
+            if not quarantined and support < 0.2:
                 warnings.append("UNVERIFIED_ARXIV_ID_TITLE_MISMATCH")
                 status = "UNVERIFIED_CONFLICT"
                 action = "QUARANTINE"
                 quarantined = True
-            else:
+            elif not quarantined:
                 warnings.append("UNVERIFIED_ARXIV_IDENTITY")
                 status = "SECONDARY_ACCEPTED"
     else:

@@ -524,6 +524,46 @@ TEST_CASE_CATALOG: dict[str, CaseDescription] = {
         "被隔离论文不计入返回结果，报告仍保存 arXiv 规范身份供异常追踪。",
         "评测可能遗漏校验器的实际动作，导致质量不变时无法证明异常记录已被清除。",
     ),
+    "tests/test_tool_layer.py::test_arxiv_lookup_adapter_uses_native_identity_contract": _description(
+        "验证工具层可以按 arXiv 原生 ID 查询单篇规范元数据，而不需要退化为关键词搜索。",
+        "lookup 工具准确传递 ID，并通过统一 Pydantic 输出协议返回论文。",
+        "身份校验可能误用相关性搜索结果，无法证明返回论文就是被声明的规范身份。",
+    ),
+    "tests/test_reranker.py::test_canonical_arxiv_evidence_repairs_secondary_claim_without_query_gate": _description(
+        "验证取得原生 arXiv 证据后，身份判断不再依赖标题与用户查询的词法重合度。",
+        "即使查询故意无关，身份真实的二级记录仍被规范证据确认并保留。",
+        "相关性低可能继续被误判为身份造假，造成有价值论文被隔离。",
+    ),
+    "tests/test_reranker.py::test_canonical_arxiv_evidence_repairs_wrong_secondary_title": _description(
+        "验证二级来源标题错误时使用同一 ID 的原生 arXiv 标题修复，而不是直接丢弃论文。",
+        "标题和摘要恢复为规范字段，记录修复动作且论文继续参与排序。",
+        "可修复的来源污染可能被保留为错误标题，或被过度隔离造成召回下降。",
+    ),
+    "tests/test_reranker.py::test_canonical_arxiv_not_found_is_explicit_negative_evidence": _description(
+        "验证原生 arXiv 按 ID 明确查无记录时，将其作为身份声明无效的负证据。",
+        "记录以 AUTHORITATIVE_NOT_FOUND 状态隔离，并保留专用警告供审计。",
+        "不存在的 arXiv 身份可能因标题碰巧相关而绕过校验进入答案。",
+    ),
+    "tests/test_canonical_metadata_eval.py::test_collect_claimed_arxiv_ids_uses_secondary_provider_claims": _description(
+        "验证候选评测能从 OpenAlex 等二级来源的 DOI 中提取待验证 arXiv 身份。",
+        "不同格式 DOI 被归一为稳定 arXiv ID 清单。",
+        "待验证身份可能提取不全，导致规范来源评测覆盖率虚高。",
+    ),
+    "tests/test_canonical_metadata_eval.py::test_canonical_fetcher_caches_successful_lookup": _description(
+        "验证成功取得的规范元数据会缓存，快照重放不会重复消耗网络请求。",
+        "相同 ID 只实际请求一次，第二次读取缓存并记录命中。",
+        "跨快照评测可能重复请求同一论文，增加耗时和限流风险。",
+    ),
+    "tests/test_canonical_metadata_eval.py::test_canonical_fetcher_does_not_reuse_failed_lookup": _description(
+        "验证 SSL、超时等临时失败不会被当成永久缓存结果。",
+        "已有失败记录会触发重新查询，不增加成功缓存命中数。",
+        "一次短暂网络失败可能永久污染评测，错误地把未验证身份当作查无记录。",
+    ),
+    "tests/test_canonical_metadata_eval.py::test_collect_quarantined_arxiv_ids_limits_authority_experiment": _description(
+        "验证本轮候选实验只查询 v2 实际隔离过的身份，控制外部请求成本。",
+        "两份快照的隔离记录被合并、去重为最小验证集合。",
+        "评测可能无差别查询所有结果，增加 API 调用且偏离误伤复核目标。",
+    ),
 }
 
 

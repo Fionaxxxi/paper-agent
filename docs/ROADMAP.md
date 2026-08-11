@@ -1327,13 +1327,15 @@ Push / Pull Request
 
 权威元数据来源解析 v2 已完成两份独立快照验证：`multi_verified_rerank` 两次均为 Recall@5 60.00%、MRR@5 57.50%、nDCG@5 58.15%，逐题质量回归为 0；但隔离集合只有 40% Jaccard 稳定度，且新增隔离中存在可能相关论文，因此功能开关继续默认关闭。第二快照还验证了快照隔离、失败续跑和累计 API 成本记录。
 
-下一项优先做规范元数据解析候选评测与隔离误伤复核：
+规范 arXiv ID 候选评测已完成第一轮：两份快照 Recall@5 均由 60% 提升到 65%，MRR@5 均由 57.5% 提升到 62.5%，原 v2 隔离的 13 个唯一身份中 12 个可由原生记录确认，证明词法隔离存在明显误伤。v3 尚不默认启用。
+
+下一项优先扩大规范元数据评测覆盖并建立晋升门槛：
 
 ```text
-对两份快照的新增、稳定和移除隔离候选进行人工复核
-→ 对 arXiv DOI 使用原生 arXiv ID 元数据验证，对普通 DOI 评测 Crossref 等规范来源
-→ 区分“元数据冲突”和“查询相关性较低”，禁止仅凭词法重合低隔离论文
-→ 重跑 multi / multi_rerank / multi_verified_rerank A/B
+新增至少一份独立检索快照，复现规范 arXiv ID 候选收益
+→ 对普通 DOI 建立可替换 authority provider 接口，评测 Crossref 等规范来源
+→ 增加规范解析覆盖率、查无率、误隔离率、修复准确率和网络失败恢复指标
+→ 重跑 multi / multi_rerank / multi_verified_rerank / multi_canonical_rerank A/B
 → 质量无回归且隔离准确率、稳定度达标后，再考虑默认开启重排与校验
 → 随后实现来源级与子查询级有界异步并行
 → 再进入失败类型驱动的 Retrieval Replan 和 Reflection

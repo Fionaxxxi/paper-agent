@@ -4,7 +4,7 @@ import pytest
 from pydantic import BaseModel, Field
 
 import tools.arxiv_adapter as arxiv_adapter_module
-from tools.arxiv_adapter import ArxivSearchTool
+from tools.arxiv_adapter import ArxivLookupTool, ArxivSearchTool
 from tools.contracts import (
     RetryPolicy,
     ToolErrorCode,
@@ -13,7 +13,7 @@ from tools.contracts import (
     ToolRateLimitError,
 )
 from tools.executor import ToolExecutor
-from tools.paper_models import PaperSearchInput
+from tools.paper_models import PaperLookupInput, PaperSearchInput
 from tools.registry import ToolRegistry
 from tools.router import ToolRouter
 from nodes.metrics import metrics_node
@@ -229,6 +229,27 @@ def test_arxiv_adapter_preserves_native_search_behavior(monkeypatch):
 
     assert calls == [("research agents", 3)]
     assert output["papers"][0]["entry_id"] == "1234.5678"
+
+
+def test_arxiv_lookup_adapter_uses_native_identity_contract(monkeypatch):
+    calls = []
+    paper = {
+        "title": "Canonical Paper",
+        "authors": [],
+        "year": 2024,
+        "entry_id": "https://arxiv.org/abs/2401.01234",
+        "source": "arxiv",
+    }
+    monkeypatch.setattr(
+        arxiv_adapter_module,
+        "lookup_arxiv_paper",
+        lambda identity: calls.append(identity) or paper,
+    )
+
+    output = ArxivLookupTool().invoke(PaperLookupInput(identity="2401.01234"))
+
+    assert calls == ["2401.01234"]
+    assert output["paper"]["title"] == "Canonical Paper"
 
 
 def test_metrics_reports_tool_execution_success_failure_and_latency():

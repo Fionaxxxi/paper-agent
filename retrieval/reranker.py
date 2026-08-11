@@ -7,6 +7,7 @@ import re
 from typing import Any, Dict, List
 
 from retrieval.metadata_resolver import (
+    attach_authoritative_evidence,
     extract_arxiv_ids,
     metadata_evidence,
     resolve_document_metadata,
@@ -172,6 +173,7 @@ def rerank_documents_with_stats(
     document_groups: List[List[Dict[str, Any]]],
     max_documents: int = 8,
     metadata_resolution_enabled: bool = False,
+    authority_by_identity: dict[str, Dict[str, Any]] | None = None,
 ) -> Dict[str, Any]:
     """Deduplicate all candidates, score them, then apply the Top-K limit."""
 
@@ -180,7 +182,11 @@ def rerank_documents_with_stats(
     quarantined: list[Dict[str, Any]] = []
     if metadata_resolution_enabled:
         resolved_candidates = [
-            resolve_document_metadata(query, item) for item in candidates
+            resolve_document_metadata(
+                query,
+                attach_authoritative_evidence(item, authority_by_identity),
+            )
+            for item in candidates
         ]
         quarantined = [item for item in resolved_candidates if item["metadata_quarantined"]]
         candidates = [item for item in resolved_candidates if not item["metadata_quarantined"]]
@@ -223,7 +229,9 @@ def rerank_documents_with_stats(
         "metadata_quarantined_count": len(quarantined),
         "quarantined_documents": quarantined,
         "ranking_strategy": (
-            "deterministic_cross_source_verified_v2"
+            "canonical_authority_verified_v3"
+            if metadata_resolution_enabled and authority_by_identity
+            else "deterministic_cross_source_verified_v2"
             if metadata_resolution_enabled
             else "deterministic_cross_source_v1"
         ),

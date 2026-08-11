@@ -56,6 +56,7 @@ MULTI_SOURCE_METADATA_VERIFICATION_ENABLED=false
 - `false`：旧 `source_priority`；
 - 只开启重排：`deterministic_cross_source_v1`；
 - 同时开启元数据校验：`deterministic_cross_source_verified_v2`；
+- 注入按原生 ID 获取的规范元数据证据：`canonical_authority_verified_v3`。
 - 仅在 `RETRIEVAL_MODE=multi` 或 `multi_source` 时生效；
 - 单来源检索不受影响。
 
@@ -70,6 +71,10 @@ MULTI_SOURCE_METADATA_VERIFICATION_ENABLED=false
 | 旧 multi | 55.00% | 45.42% | 47.81% | 0（40 个缓存命中） | 0 |
 | multi_rerank | 60.00% | 57.50% | 58.15% | 0（40 个缓存命中） | 0 |
 | multi_verified_rerank | 60.00% | 57.50% | 58.15% | 0（40 个缓存命中） | 0 |
+
+2026-08-11 的 v3 候选实验只复核两份独立快照中被 v2 隔离过的 13 个 arXiv 身份。12 个取得原生记录，1 个原生查无；规范证据通过 `paper.lookup.arxiv` 工具取得并缓存，不调用 LLM。两份快照的 Recall@5 均从 60.00% 提升到 65.00%，MRR@5 均从 57.50% 提升到 62.50%；隔离数分别从 8 降到 0、从 13 降到 1。结果证明“标题与查询词法重合低”不能作为身份冲突证据，身份验证与相关性排序必须分离。
+
+v3 当前仍是候选能力，不受 `MULTI_SOURCE_METADATA_VERIFICATION_ENABLED` 默认开关控制。晋升前还需要更多独立快照、普通 DOI 规范来源候选（例如 Crossref）的同口径评测，以及对原生查无、网络失败和来源冲突分别设定恢复策略。
 
 重排使 Reflexion 金标准论文从 Top 5 外升至第 1，并提升 RAG、LightRAG 和 DPR 排名；20 题没有 Recall 或 MRR 退化。v2 在保持所有质量指标不变的同时隔离 8 条“未经原生来源确认且标题与查询明显不符”的候选，其中包括此前进入 Top 3 的异常 Chain-of-Thought 记录；本轮没有发生实际字段修复，因为进入同一身份组的原生 arXiv 记录本身已位于主记录。
 

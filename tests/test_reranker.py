@@ -185,3 +185,85 @@ def test_unverified_but_query_supported_arxiv_identity_remains_available():
     assert result["documents"][0]["metadata_resolution_status"] == "SECONDARY_ACCEPTED"
     assert "UNVERIFIED_ARXIV_IDENTITY" in result["documents"][0]["metadata_warnings"]
     assert result["metadata_quarantined_count"] == 0
+
+
+def test_canonical_arxiv_evidence_repairs_secondary_claim_without_query_gate():
+    secondary = document(
+        "Large Language Models are Zero-Shot Reasoners",
+        "openalex",
+        "https://openalex.org/W1",
+        doi="https://doi.org/10.48550/arxiv.2205.11916",
+        content="reasoning with language models",
+    )
+    canonical = document(
+        "Large Language Models are Zero-Shot Reasoners",
+        "arxiv",
+        "https://arxiv.org/abs/2205.11916",
+        content="canonical abstract",
+    )
+
+    result = rerank_documents_with_stats(
+        "a deliberately unrelated user query",
+        [[secondary]],
+        metadata_resolution_enabled=True,
+        authority_by_identity={"arxiv:2205.11916": canonical},
+    )
+
+    assert result["ranking_strategy"] == "canonical_authority_verified_v3"
+    assert result["metadata_quarantined_count"] == 0
+    assert result["documents"][0]["metadata_resolution_status"] == (
+        "AUTHORITATIVE_VERIFIED"
+    )
+
+
+def test_canonical_arxiv_evidence_repairs_wrong_secondary_title():
+    secondary = document(
+        "Unrelated Secondary Title",
+        "openalex",
+        "https://openalex.org/W2",
+        doi="https://doi.org/10.48550/arxiv.2205.11916",
+    )
+    canonical = document(
+        "Large Language Models are Zero-Shot Reasoners",
+        "arxiv",
+        "https://arxiv.org/abs/2205.11916",
+        content="canonical abstract",
+    )
+
+    result = rerank_documents_with_stats(
+        "zero shot reasoning",
+        [[secondary]],
+        metadata_resolution_enabled=True,
+        authority_by_identity={"arxiv:2205.11916": canonical},
+    )
+
+    paper = result["documents"][0]
+    assert paper["title"] == canonical["title"]
+    assert "REPAIRED_TITLE_FROM_ARXIV" in paper["metadata_repairs"]
+    assert result["metadata_quarantined_count"] == 0
+
+
+def test_canonical_arxiv_not_found_is_explicit_negative_evidence():
+    secondary = document(
+        "Claimed Paper",
+        "openalex",
+        "https://openalex.org/W3",
+        doi="https://doi.org/10.48550/arxiv.2013.00279",
+    )
+    not_found = {
+        "source": "arxiv_authority",
+        "canonical_identity": "arxiv:2013.00279",
+        "canonical_lookup_status": "NOT_FOUND",
+    }
+
+    result = rerank_documents_with_stats(
+        "claimed paper",
+        [[secondary]],
+        metadata_resolution_enabled=True,
+        authority_by_identity={"arxiv:2013.00279": not_found},
+    )
+
+    assert result["metadata_quarantined_count"] == 1
+    quarantined = result["quarantined_documents"][0]
+    assert quarantined["metadata_resolution_status"] == "AUTHORITATIVE_NOT_FOUND"
+    assert "ARXIV_ID_NOT_FOUND_IN_NATIVE_SOURCE" in quarantined["metadata_warnings"]
