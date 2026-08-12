@@ -74,6 +74,9 @@ data/vectorstore/
 # Local data / downloaded papers
 # =========================
 data/papers/
+!data/papers/
+data/papers/*
+!data/papers/.gitkeep
 data/pdfs/
 downloads/
 *.pdf
@@ -102,7 +105,6 @@ temp/
 
 # Local cache
 data/cache/
-data/papers/
 data/pdfs/
 
 # Local memory

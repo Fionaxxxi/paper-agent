@@ -849,6 +849,26 @@ TEST_CASE_CATALOG: dict[str, CaseDescription] = {
         "不同 retriever family、Embedding、Store 和 Graph Retriever 可使用独立 config_id。",
         "项目可能在评测前绑定单一产品，无法进行公平单变量对照。",
     ),
+    "tests/test_local_rag_foundation.py::test_fixed_window_chunker_preserves_page_and_overlap": _description(
+        "验证固定窗口分块保留页码、字符位置和配置的重叠区间。",
+        "分块文本和 char_start 正确，所有片段仍定位到原 PDF 页。",
+        "全文检索结果可能无法回溯页码，或分块边界丢失上下文。",
+    ),
+    "tests/test_local_rag_foundation.py::test_fixed_window_chunker_rejects_invalid_parameters": _description(
+        "验证重叠长度不能等于或超过分块长度。",
+        "非法参数触发 ValueError，避免零步长或无限循环。",
+        "错误 Chunk 配置可能造成挂起、重复片段或不可控索引体积。",
+    ),
+    "tests/test_local_rag_foundation.py::test_manifest_rebuilds_only_for_content_or_processing_version_change": _description(
+        "验证知识库只在 PDF 内容、Parser 或 Chunker 版本变化时局部重建。",
+        "相同哈希与版本跳过，内容或处理版本变化触发 rebuild。",
+        "每次更新可能全库重建，或变化论文没有刷新造成旧证据。",
+    ),
+    "tests/test_local_rag_foundation.py::test_manifest_writer_keeps_corpus_version_and_status": _description(
+        "验证语料清单记录 corpus_version 和每篇论文的处理状态。",
+        "JSON 清单可读，版本和 pending 状态完整保存。",
+        "知识库更新可能失去语料版本与处理进度，无法复现实验。",
+    ),
 }
 
 

@@ -1,0 +1,28 @@
+{
+  "dataset_name": "PaperAgent 本地全文 RAG 人工标注集",
+  "dataset_version": "0.1.0",
+  "description": "复制案例后填写问题、参考答案与人工核验的证据片段。",
+  "corpus_version": "0.1.0",
+  "k_values": [1, 3, 5],
+  "cases": [
+    {
+      "id": "example_question_001",
+      "question": "请替换为针对论文全文的问题",
+      "language": "zh",
+      "category": "method",
+      "difficulty": "simple",
+      "reference_answer": "请填写人工参考答案",
+      "evidence": [
+        {
+          "document_id": "paper_001",
+          "chunk_id": "paper_001:p1:c1",
+          "page_start": 1,
+          "page_end": 1,
+          "quote": "请填写能够支持答案的原文片段",
+          "source_path": "data/papers/paper_001.pdf",
+          "relevance_grade": 3
+        }
+      ]
+    }
+  ]
+}
