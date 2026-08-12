@@ -26,7 +26,7 @@ def _fake_result(query: str) -> dict:
     }
 
 
-def run_mode(parallel: bool, delay_seconds: float = 0.08) -> tuple[dict, float]:
+def run_mode(parallel: bool, delay_seconds: float = 0.15) -> tuple[dict, float]:
     def fake_retrieve(query, state):
         time.sleep(delay_seconds)
         return _fake_result(query)

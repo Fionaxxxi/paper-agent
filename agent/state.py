@@ -12,6 +12,8 @@ class AgentState(TypedDict, total=False):
 
     # 检索质量评分
     retrieval_score: float
+    retrieval_outcome: str
+    retrieval_stop_reason: str
 
     # 最终答案
     answer: str

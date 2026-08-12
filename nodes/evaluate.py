@@ -115,7 +115,20 @@ def evaluate_node(state: AgentState) -> AgentState:
         print(f"[Evaluate Node Error] {type(e).__name__}: {e}")
         score = rule_based_score(state)
 
+    retry_count = state.get("retry_count", 0)
+    if score >= 0.7:
+        retrieval_outcome = "recovered" if retry_count > 0 else "accepted"
+        retrieval_stop_reason = "quality_threshold_met"
+    elif retry_count > 0:
+        retrieval_outcome = "stopped_low_quality"
+        retrieval_stop_reason = "retry_budget_exhausted"
+    else:
+        retrieval_outcome = "replan_required"
+        retrieval_stop_reason = "quality_below_threshold"
+
     return {
         **usage_update,
         "retrieval_score": max(0.0, min(score, 1.0)),
+        "retrieval_outcome": retrieval_outcome,
+        "retrieval_stop_reason": retrieval_stop_reason,
     }

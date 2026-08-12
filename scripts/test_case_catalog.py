@@ -769,10 +769,10 @@ TEST_CASE_CATALOG: dict[str, CaseDescription] = {
         "单子查询继续走直接调用路径。",
         "简单任务可能承担不必要的并发调度成本。",
     ),
-    "tests/test_parallel_multi_query_eval.py::test_multi_query_parallel_benchmark_meets_latency_and_equivalence_gate": _description(
-        "验证子查询有界并行在重复离线 I/O 实验中同时满足延迟和结果一致性门槛。",
-        "加速至少 1.3 倍、延迟下降至少 20%，结果与规划顺序一致率均为 100%。",
-        "并行收益可能来自偶然计时，或并发改变子查询合并语义。",
+    "tests/test_parallel_multi_query_eval.py::test_multi_query_parallel_benchmark_reports_gate_and_equivalence": _description(
+        "验证子查询并行基准正确计算性能门槛，并保持结果与规划顺序一致。",
+        "结果与规划顺序一致率为 100%，acceptance_passed 与报告中的速度门槛计算一致。",
+        "基准可能错误计算晋升结论，或并发改变子查询合并语义；墙钟速度由独立 Benchmark 判定。",
     ),
     "tests/test_retrieval_replan.py::test_replan_retries_same_query_for_transient_tool_failure": _description(
         "验证超时等暂时工具错误不会被误判为查询质量问题。",
@@ -793,6 +793,26 @@ TEST_CASE_CATALOG: dict[str, CaseDescription] = {
         "验证重规划查询优先于旧的多子查询计划。",
         "第二轮只执行 retry_query，不重复运行已经失败的旧计划。",
         "重规划动作可能被旧 sub_queries 遮蔽，形成伪 Replan。",
+    ),
+    "tests/test_retrieval_replan_eval.py::test_replan_outperforms_plain_retry_and_meets_acceptance_gate": _description(
+        "验证固定故障集中 Replan 相对原样重试提升恢复率并减少无效重试。",
+        "分类准确率 100%，候选恢复率达到门槛、语义失败无效重试率为 0，且不调用 LLM。",
+        "Replan 可能只改变查询形式却没有改善受控恢复结果，或引入额外 Token 成本。",
+    ),
+    "tests/test_retrieval_stop_decision.py::test_first_low_score_requests_replan": _description(
+        "验证首次检索低于质量门槛时输出明确的 Replan 请求状态。",
+        "outcome 为 replan_required，停止原因为 quality_below_threshold。",
+        "低质量首次结果可能缺少后续动作信号而直接生成答案。",
+    ),
+    "tests/test_retrieval_stop_decision.py::test_second_low_score_stops_when_retry_budget_is_exhausted": _description(
+        "验证第二轮仍低质量时停止并记录重试预算耗尽。",
+        "outcome 为 stopped_low_quality，原因是 retry_budget_exhausted。",
+        "第二轮失败可能无审计地继续循环或被误记为成功。",
+    ),
+    "tests/test_retrieval_stop_decision.py::test_second_high_score_records_recovery": _description(
+        "验证 Replan 后质量达到门槛时记录恢复成功。",
+        "outcome 为 recovered，停止原因为 quality_threshold_met。",
+        "成功恢复可能无法与首轮直接通过区分，影响后续能力评测。",
     ),
 }
 
