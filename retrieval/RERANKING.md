@@ -80,6 +80,10 @@ v3 当前仍是候选能力，不受 `MULTI_SOURCE_METADATA_VERIFICATION_ENABLED
 
 arXiv authority 现由 `ARXIV_AUTHORITY_VERIFICATION_ENABLED` 独立控制，默认关闭。开启后只查询缺少同 ID 原生证据的二级声明；成功响应缓存，超时、SSL 等执行失败不缓存，也不作为负证据。普通 DOI provider 复用 `paper.lookup` 接口，Crossref 首轮 20 DOI 候选评测为 20/20 匹配，但尚未进入生产重排。
 
+普通 DOI authority 已完成最小污染挑战集验收后冻结：只在 `DOI_AUTHORITY_VERIFICATION_ENABLED` 开启时参与规范验证；明确查无只警告，网络失败不缓存，均不自动隔离普通 DOI。
+
+多来源搜索支持 `MULTI_SOURCE_PARALLEL_ENABLED` 有界并行。同步 provider 通过最多 `MULTI_SOURCE_MAX_WORKERS` 个线程并发执行，但结果始终按 `MULTI_SOURCE_PROVIDERS` 配置顺序收集，因此并发完成顺序不会改变去重和重排语义。单来源不创建线程池，开关默认关闭。
+
 重排使 Reflexion 金标准论文从 Top 5 外升至第 1，并提升 RAG、LightRAG 和 DPR 排名；20 题没有 Recall 或 MRR 退化。v2 在保持所有质量指标不变的同时隔离 8 条“未经原生来源确认且标题与查询明显不符”的候选，其中包括此前进入 Top 3 的异常 Chain-of-Thought 记录；本轮没有发生实际字段修复，因为进入同一身份组的原生 arXiv 记录本身已位于主记录。
 
 ## 晋升门槛

@@ -659,6 +659,56 @@ TEST_CASE_CATALOG: dict[str, CaseDescription] = {
         "质量提升标记为假，排名变化和逐题回归均为零。",
         "已有 arXiv 带来的提升可能被错误归因给普通 DOI 校验。",
     ),
+    "tests/test_doi_contamination_challenge.py::test_doi_contamination_challenge_meets_stop_condition": _description(
+        "验证 DOI 校验在固定污染、缺失、近似、查无和失败场景中达到阶段止损条件。",
+        "6 类场景全部通过，修复准确率 100%，误修复和误隔离均为 0。",
+        "DOI 议题可能在没有安全验收的情况下被草率结束，或无边界持续扩张。",
+    ),
+    "tests/test_parallel_retrieval.py::test_parallel_retrieval_preserves_configured_source_order": _description(
+        "验证来源完成顺序不同也不会改变配置顺序和合并结果顺序。",
+        "慢 arXiv 与快 OpenAlex 并发完成后仍按 arXiv、OpenAlex 顺序处理。",
+        "线程完成竞态可能导致结果排序和去重行为不可复现。",
+    ),
+    "tests/test_parallel_retrieval.py::test_parallel_retrieval_keeps_partial_success": _description(
+        "验证并行模式下单一来源空结果不影响另一来源成功返回。",
+        "OpenAlex 论文仍进入 multi_source 结果，不错误触发全局兜底。",
+        "一个来源异常可能取消其他来源结果，破坏原有失败恢复语义。",
+    ),
+    "tests/test_parallel_retrieval.py::test_single_source_does_not_create_parallel_pool": _description(
+        "验证单来源检索即使并行开关开启也不创建线程池。",
+        "arXiv 单来源继续走原有直接调用路径。",
+        "简单请求可能承担不必要的线程调度成本。",
+    ),
+    "tests/test_parallel_retrieval.py::test_parallel_benchmark_reports_repeatable_speedup_and_equivalence": _description(
+        "验证来源级并行在重复离线 I/O 实验中稳定降低延迟且保持结果一致。",
+        "至少获得 1.5 倍加速、30% 延迟下降和 100% 结果一致率。",
+        "单次偶然计时可能被误认为稳定性能提升，或并行改变业务结果。",
+    ),
+    "tests/test_doi_contamination_challenge.py::test_doi_contamination_challenge_meets_stop_condition": _description(
+        "验证 DOI 校验在固定污染、缺失、近似、查无和失败场景中达到阶段止损条件。",
+        "6 类场景全部通过，修复准确率 100%，误修复和误隔离均为 0。",
+        "DOI 议题可能在没有安全验收的情况下被草率结束，或无边界持续扩张。",
+    ),
+    "tests/test_parallel_retrieval.py::test_parallel_retrieval_preserves_configured_source_order": _description(
+        "验证来源完成顺序不同也不会改变配置顺序和合并结果顺序。",
+        "慢 arXiv 与快 OpenAlex 并发完成后仍按 arXiv、OpenAlex 顺序处理。",
+        "线程完成竞态可能导致结果排序和去重行为不可复现。",
+    ),
+    "tests/test_parallel_retrieval.py::test_parallel_retrieval_keeps_partial_success": _description(
+        "验证并行模式下单一来源空结果不影响另一来源成功返回。",
+        "OpenAlex 论文仍进入 multi_source 结果，不错误触发全局兜底。",
+        "一个来源异常可能取消其他来源结果，破坏原有失败恢复语义。",
+    ),
+    "tests/test_parallel_retrieval.py::test_single_source_does_not_create_parallel_pool": _description(
+        "验证单来源检索即使并行开关开启也不创建线程池。",
+        "arXiv 单来源继续走原有直接调用路径。",
+        "简单请求可能承担不必要的线程调度成本。",
+    ),
+    "tests/test_parallel_retrieval.py::test_parallel_benchmark_reports_repeatable_speedup_and_equivalence": _description(
+        "验证来源级并行在重复离线 I/O 实验中稳定降低延迟且保持结果一致。",
+        "至少获得 1.5 倍加速、30% 延迟下降和 100% 结果一致率。",
+        "单次偶然计时可能被误认为稳定性能提升，或并行改变业务结果。",
+    ),
 }
 
 

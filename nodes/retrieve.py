@@ -1,4 +1,5 @@
 import json
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any, Dict, List
 
@@ -272,10 +273,19 @@ def retrieve_by_query(query: str, state: AgentState) -> Dict[str, Any]:
 
     retrieval_mode = settings.RETRIEVAL_MODE.lower()
     sources = get_retrieval_sources(retrieval_mode)
-    source_results = [
-        retrieve_from_source(query, state, source)
-        for source in sources
-    ]
+    if settings.MULTI_SOURCE_PARALLEL_ENABLED and len(sources) > 1:
+        worker_count = max(1, min(settings.MULTI_SOURCE_MAX_WORKERS, len(sources)))
+        with ThreadPoolExecutor(max_workers=worker_count) as pool:
+            futures = [
+                pool.submit(retrieve_from_source, query, state, source)
+                for source in sources
+            ]
+            source_results = [future.result() for future in futures]
+    else:
+        source_results = [
+            retrieve_from_source(query, state, source)
+            for source in sources
+        ]
 
     document_groups = [
         convert_papers_to_documents(result["papers"], result["provider"])
