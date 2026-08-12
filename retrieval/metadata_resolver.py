@@ -99,6 +99,14 @@ def attach_authoritative_evidence(
                 enriched["canonical_authority_not_found"] = True
             else:
                 evidences.append(metadata_evidence(authority))
+    doi = normalize_doi(enriched.get("doi"))
+    if doi and not doi.startswith("10.48550/arxiv."):
+        authority = authority_by_identity.get(f"doi:{doi}")
+        if authority is not None:
+            if authority.get("canonical_lookup_status") == "NOT_FOUND":
+                enriched["doi_authority_not_found"] = True
+            else:
+                evidences.append(metadata_evidence(authority))
     enriched["metadata_evidence"] = evidences
     return enriched
 
@@ -115,9 +123,22 @@ def _native_arxiv_evidence(
     return None
 
 
+def _canonical_doi_evidence(
+    evidences: Iterable[Dict[str, Any]],
+    doi: str,
+) -> Dict[str, Any] | None:
+    for evidence in evidences:
+        if normalize_text(evidence.get("source")) != "crossref":
+            continue
+        if normalize_doi(evidence.get("doi")) == doi:
+            return evidence
+    return None
+
+
 def _copy_authoritative_fields(
     document: Dict[str, Any],
     authoritative: Dict[str, Any],
+    authority_name: str = "ARXIV",
 ) -> list[str]:
     repairs: list[str] = []
     for field in ("title", "authors", "year", "pdf_url", "doi"):
@@ -129,12 +150,12 @@ def _copy_authoritative_fields(
         if not current_value or conflicts:
             if current_value != canonical_value:
                 document[field] = canonical_value
-                repairs.append(f"REPAIRED_{field.upper()}_FROM_ARXIV")
+                repairs.append(f"REPAIRED_{field.upper()}_FROM_{authority_name}")
     abstract_field = "content" if "content" in document else "summary"
     canonical_abstract = authoritative.get(abstract_field)
     if not document.get(abstract_field) and canonical_abstract:
         document[abstract_field] = canonical_abstract
-        repairs.append("REPAIRED_ABSTRACT_FROM_ARXIV")
+        repairs.append(f"REPAIRED_ABSTRACT_FROM_{authority_name}")
     return repairs
 
 
@@ -199,9 +220,31 @@ def resolve_document_metadata(query: str, document: Dict[str, Any]) -> Dict[str,
         doi = normalize_doi(resolved.get("doi"))
         if doi:
             canonical_identity = f"doi:{doi}"
+            authoritative = _canonical_doi_evidence(evidences, doi)
+            if authoritative is not None:
+                repairs = _copy_authoritative_fields(
+                    resolved, authoritative, "CROSSREF"
+                )
+                conflicts = [
+                    item for item in evidences
+                    if item is not authoritative
+                    and item.get("title")
+                    and title_similarity(authoritative.get("title"), item.get("title")) < 0.35
+                ]
+                if conflicts:
+                    warnings.append("SECONDARY_TITLE_CONFLICT")
+                status = "DOI_AUTHORITATIVE_REPAIRED" if repairs else "DOI_AUTHORITATIVE_VERIFIED"
+                action = "REPAIR" if repairs else "KEEP"
+            elif resolved.get("doi_authority_not_found"):
+                warnings.append("DOI_AUTHORITY_NOT_FOUND")
+                status = "DOI_AUTHORITY_NOT_FOUND"
+            else:
+                status = "CONSENSUS_VERIFIED" if len(resolved.get("sources") or []) > 1 else "SOURCE_ACCEPTED"
         elif resolved.get("entry_id"):
             canonical_identity = f"entry_id:{normalize_text(resolved['entry_id'])}"
-        status = "CONSENSUS_VERIFIED" if len(resolved.get("sources") or []) > 1 else "SOURCE_ACCEPTED"
+            status = "CONSENSUS_VERIFIED" if len(resolved.get("sources") or []) > 1 else "SOURCE_ACCEPTED"
+        else:
+            status = "CONSENSUS_VERIFIED" if len(resolved.get("sources") or []) > 1 else "SOURCE_ACCEPTED"
 
     resolved["metadata_warnings"] = list(dict.fromkeys(warnings))
     resolved["metadata_repairs"] = repairs

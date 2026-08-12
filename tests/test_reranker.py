@@ -267,3 +267,56 @@ def test_canonical_arxiv_not_found_is_explicit_negative_evidence():
     quarantined = result["quarantined_documents"][0]
     assert quarantined["metadata_resolution_status"] == "AUTHORITATIVE_NOT_FOUND"
     assert "ARXIV_ID_NOT_FOUND_IN_NATIVE_SOURCE" in quarantined["metadata_warnings"]
+
+
+def test_crossref_doi_evidence_repairs_conflicting_secondary_title():
+    secondary = document(
+        "Wrong Secondary Title",
+        "openalex",
+        "https://openalex.org/W4",
+        doi="https://doi.org/10.1145/example",
+    )
+    canonical = document(
+        "Canonical DOI Publication Title",
+        "crossref",
+        "https://doi.org/10.1145/example",
+        doi="10.1145/example",
+    )
+
+    result = rerank_documents_with_stats(
+        "canonical publication",
+        [[secondary]],
+        metadata_resolution_enabled=True,
+        authority_by_identity={"doi:10.1145/example": canonical},
+    )
+
+    paper = result["documents"][0]
+    assert paper["title"] == canonical["title"]
+    assert paper["metadata_resolution_status"] == "DOI_AUTHORITATIVE_REPAIRED"
+    assert "REPAIRED_TITLE_FROM_CROSSREF" in paper["metadata_repairs"]
+
+
+def test_crossref_doi_not_found_is_visible_but_does_not_quarantine():
+    secondary = document(
+        "Plausible Publication",
+        "openalex",
+        "https://openalex.org/W5",
+        doi="10.5281/missing",
+    )
+    not_found = {
+        "source": "crossref",
+        "canonical_identity": "doi:10.5281/missing",
+        "canonical_lookup_status": "NOT_FOUND",
+    }
+
+    result = rerank_documents_with_stats(
+        "plausible publication",
+        [[secondary]],
+        metadata_resolution_enabled=True,
+        authority_by_identity={"doi:10.5281/missing": not_found},
+    )
+
+    assert result["metadata_quarantined_count"] == 0
+    paper = result["documents"][0]
+    assert paper["metadata_resolution_status"] == "DOI_AUTHORITY_NOT_FOUND"
+    assert "DOI_AUTHORITY_NOT_FOUND" in paper["metadata_warnings"]

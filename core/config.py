@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     MULTI_SOURCE_RERANK_ENABLED: bool = False
     MULTI_SOURCE_METADATA_VERIFICATION_ENABLED: bool = False
     ARXIV_AUTHORITY_VERIFICATION_ENABLED: bool = False
+    DOI_AUTHORITY_VERIFICATION_ENABLED: bool = False
 
     # OpenAlex
     OPENALEX_BASE_URL: str = "https://api.openalex.org"

@@ -5,7 +5,7 @@ from typing import Any, Dict, List
 from agent.state import AgentState
 from core.config import settings
 from retrieval.cache import load_cached_papers, save_cached_papers
-from retrieval.metadata_resolver import extract_arxiv_ids
+from retrieval.metadata_resolver import extract_arxiv_ids, normalize_doi
 from retrieval.reranker import rerank_documents_with_stats
 from retrieval.result_merger import merge_documents_with_stats
 from tools.contracts import ToolErrorCode
@@ -84,6 +84,50 @@ def load_arxiv_authority_evidence(
             "canonical_lookup_status": "NOT_FOUND",
         }
         authority[f"arxiv:{arxiv_id}"] = evidence
+        cache_path.parent.mkdir(parents=True, exist_ok=True)
+        cache_path.write_text(
+            json.dumps(evidence, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
+    return authority, executions, tools_used
+
+
+def load_doi_authority_evidence(
+    document_groups: List[List[Dict[str, Any]]],
+) -> tuple[dict[str, Dict[str, Any]], list[dict[str, Any]], list[str]]:
+    """Resolve ordinary DOI claims through Crossref with success-only caching."""
+
+    claimed_dois = {
+        doi
+        for group in document_groups
+        for document in group
+        if (doi := normalize_doi(document.get("doi")))
+        and not doi.startswith("10.48550/arxiv.")
+    }
+    authority = {}
+    executions = []
+    tools_used = []
+    tool_name = paper_tool_router.resolve("paper.lookup", "crossref")
+    cache_dir = Path(settings.CACHE_DIR) / "authority" / "crossref"
+    for doi in sorted(claimed_dois):
+        cache_path = cache_dir / f"{doi.replace('/', '__')}.json"
+        if cache_path.exists():
+            authority[f"doi:{doi}"] = json.loads(
+                cache_path.read_text(encoding="utf-8")
+            )
+            continue
+        result = paper_tool_executor.execute(tool_name, {"identity": doi})
+        executions.append(_tool_execution_metadata(result))
+        if tool_name not in tools_used:
+            tools_used.append(tool_name)
+        if not result.success:
+            continue
+        paper = result.data.get("paper") if isinstance(result.data, dict) else None
+        evidence = paper or {
+            "source": "crossref",
+            "canonical_identity": f"doi:{doi}",
+            "canonical_lookup_status": "NOT_FOUND",
+        }
+        authority[f"doi:{doi}"] = evidence
         cache_path.parent.mkdir(parents=True, exist_ok=True)
         cache_path.write_text(
             json.dumps(evidence, ensure_ascii=False, indent=2), encoding="utf-8"
@@ -256,11 +300,21 @@ def retrieve_by_query(query: str, state: AgentState) -> Dict[str, Any]:
             else get_max_results(state, sources[0])
         )
         if len(sources) > 1 and settings.MULTI_SOURCE_RERANK_ENABLED:
-            authority_by_identity = None
+            authority_by_identity = {}
             if settings.ARXIV_AUTHORITY_VERIFICATION_ENABLED:
-                authority_by_identity, authority_executions, authority_tools = (
+                arxiv_authority, authority_executions, authority_tools = (
                     load_arxiv_authority_evidence(document_groups)
                 )
+                authority_by_identity.update(arxiv_authority)
+                tool_executions.extend(authority_executions)
+                for tool in authority_tools:
+                    if tool not in tools_used:
+                        tools_used.append(tool)
+            if settings.DOI_AUTHORITY_VERIFICATION_ENABLED:
+                doi_authority, authority_executions, authority_tools = (
+                    load_doi_authority_evidence(document_groups)
+                )
+                authority_by_identity.update(doi_authority)
                 tool_executions.extend(authority_executions)
                 for tool in authority_tools:
                     if tool not in tools_used:
@@ -272,8 +326,9 @@ def retrieve_by_query(query: str, state: AgentState) -> Dict[str, Any]:
                 metadata_resolution_enabled=(
                     settings.MULTI_SOURCE_METADATA_VERIFICATION_ENABLED
                     or settings.ARXIV_AUTHORITY_VERIFICATION_ENABLED
+                    or settings.DOI_AUTHORITY_VERIFICATION_ENABLED
                 ),
-                authority_by_identity=authority_by_identity,
+                authority_by_identity=authority_by_identity or None,
             )
         else:
             merge_result = merge_documents_with_stats(

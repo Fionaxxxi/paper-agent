@@ -1340,6 +1340,8 @@ Push / Pull Request
 2026-08-12 已完成 arXiv authority 独立开关和普通 DOI 可替换 `paper.lookup` 接口。Crossref 首轮使用三份快照均稳定出现的 20 个普通 DOI：查询覆盖率 100%，标题匹配 20/20，冲突、查无和失败均为 0，LLM Token 为 0。该样本按稳定 DOI 排序抽取，尚不足以固定选型；下一轮需要按 DOI 注册机构/出版商分层扩大样本，并与至少一个替代规范来源比较。
 
 2026-08-12 已完成第二轮分层 provider 对比：从 51 条三快照稳定普通 DOI 中按 DOI 前缀轮转抽取 40 条，覆盖 19 个前缀。Crossref 明确响应 40/40，标题匹配 38、查无 2、失败 0；Semantic Scholar 匿名访问明确响应 23/40，标题匹配 18、冲突 2、查无 3、RATE_LIMITED 17。双方均返回标题的 19 条中有 18 条一致，一致率 94.74%。因此 Crossref 进入下一轮生产 A/B，Semantic Scholar 保留为配置 API Key 后复测的候选；限流不视为语料查无或负身份依据。两者均尚未设为生产默认。
+
+2026-08-12 已完成 Crossref 普通 DOI 受控接入和三快照联合 canonical A/B：13 个 arXiv 身份与 65 个普通 DOI 共 78 个身份均取得明确 authority 结果，续跑为 78 次缓存命中、0 新 API、0 LLM Token。联合策略相对 v2 的三快照 Recall@5 均由 60% 提升到 65%，MRR@5 均由 57.5% 提升到 62.5%，逐题回归为 0；但与“仅 arXiv canonical”对照相比，Crossref 的 Recall/MRR/nDCG 增量和排名变化均为 0，且没有触发 DOI 标题修复。因此当前价值是 65/65 普通 DOI 可审计覆盖，不宣称排序质量提升。Crossref 明确查无 3 条只记录警告、不自动隔离；生产独立开关继续默认关闭，后续需补充人工标注的 DOI 污染/修复挑战集。
 → 随后实现来源级与子查询级有界异步并行
 → 再进入失败类型驱动的 Retrieval Replan 和 Reflection
 ```

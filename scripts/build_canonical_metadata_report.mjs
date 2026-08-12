@@ -36,10 +36,10 @@ overview.getRange("A4:H4").values = [[result.claimed_identity_count, result.reso
 body(overview.getRange("A4:H4"));
 overview.getRange("H4").format.wrapText = true;
 overview.getRange("A6:H6").merge();
-overview.getRange("A6").values = [[`结论：规范 arXiv ID 证据消除了查询词法门槛造成的误伤，${result.snapshots.length} 份快照 Recall@5 与 MRR@5 均提高 5 个百分点；arXiv 候选门槛已通过，普通 DOI 仍需独立评测。`]];
+overview.getRange("A6").values = [[`结论：联合 arXiv 与 Crossref authority 在 ${result.snapshots.length} 份快照上相对 v2 的 Recall@5、MRR@5 均提高 5 个百分点；但 Crossref 相对仅 arXiv canonical 的质量与排名增量均为 0，其当前价值是普通 DOI 身份可审计覆盖。`]];
 overview.getRange("A6:H6").format = { fill: colors.green, font: { bold: true }, wrapText: true };
 overview.getRange("A8:H8").merge();
-overview.getRange("A8").values = [["判断边界：身份真实性由 arXiv 原生 ID 响应决定；论文与问题是否相关由重排指标决定。原生查无记录属于负证据，网络失败不缓存、也不等于查无。"]];
+overview.getRange("A8").values = [["判断边界：arXiv 原生查无可作为无效 arXiv 声明的负证据；Crossref 查无只记录警告、不自动隔离普通 DOI。网络失败不缓存，也不等于查无。"]];
 overview.getRange("A8:H8").format = { fill: colors.light, wrapText: true };
 overview.getRange("A:H").format.columnWidth = 18;
 overview.getRange("H:H").format.columnWidth = 28;
@@ -51,15 +51,19 @@ header(metrics.getRange("A3:I3"));
 const metricRows = [];
 for (let i = 0; i < result.snapshots.length; i++) {
   const candidate = result.snapshots[i];
+  const arxivOnly = result.arxiv_only_snapshots[i];
   const baseline = baselines[i].profiles.multi_verified_rerank.summary;
   metricRows.push([candidate.snapshot_id, "v2 词法隔离", baseline.mean_recall_at_5, null, baseline.mean_mrr_at_5, null, baseline.mean_ndcg_at_5, null, baseline.total_metadata_quarantined_count]);
-  metricRows.push([candidate.snapshot_id, "v3 规范 ID", candidate.summary.mean_recall_at_5, null, candidate.summary.mean_mrr_at_5, null, candidate.summary.mean_ndcg_at_5, null, candidate.summary.total_metadata_quarantined_count]);
+  metricRows.push([candidate.snapshot_id, "仅 arXiv canonical", arxivOnly.summary.mean_recall_at_5, null, arxivOnly.summary.mean_mrr_at_5, null, arxivOnly.summary.mean_ndcg_at_5, null, arxivOnly.summary.total_metadata_quarantined_count]);
+  metricRows.push([candidate.snapshot_id, "arXiv + Crossref", candidate.summary.mean_recall_at_5, null, candidate.summary.mean_mrr_at_5, null, candidate.summary.mean_ndcg_at_5, null, candidate.summary.total_metadata_quarantined_count]);
 }
 metrics.getRangeByIndexes(3, 0, metricRows.length, 9).values = metricRows;
-for (let row = 4; row <= 3 + metricRows.length; row += 2) {
-  metrics.getRange(`D${row + 1}`).formulas = [[`=C${row + 1}-C${row}`]];
-  metrics.getRange(`F${row + 1}`).formulas = [[`=E${row + 1}-E${row}`]];
-  metrics.getRange(`H${row + 1}`).formulas = [[`=G${row + 1}-G${row}`]];
+for (let row = 4; row <= 3 + metricRows.length; row += 3) {
+  for (const current of [row + 1, row + 2]) {
+    metrics.getRange(`D${current}`).formulas = [[`=C${current}-C${row}`]];
+    metrics.getRange(`F${current}`).formulas = [[`=E${current}-E${row}`]];
+    metrics.getRange(`H${current}`).formulas = [[`=G${current}-G${row}`]];
+  }
 }
 body(metrics.getRange(`A4:I${3 + metricRows.length}`));
 metrics.getRange(`C4:H${3 + metricRows.length}`).format.numberFormat = "0.00%";
@@ -105,7 +109,7 @@ const definitionRows = [
   ["nDCG@5", "前 5 条按分级相关性计算 DCG，再除以理想排序 IDCG", "检查整体排序位置与相关性等级", "提高表示排序更接近理想顺序"],
   ["隔离数量", "被元数据策略排除出候选排序的唯一记录数", "观察规则是否过度删除", "减少不一定更好，必须同时看质量和规范证据"],
   ["成功解析", "重点 arXiv 身份中取得原生论文记录的数量", "衡量规范证据覆盖", "只有取得原生记录才允许修复身份字段"],
-  ["原生查无", "arXiv 按原生 ID 查询成功但没有对应记录的数量", "作为无效身份声明的负证据", "与超时、SSL 等网络失败严格区分"],
+  ["权威查无", "provider 查询成功但没有对应记录的数量", "审计规范源覆盖", "arXiv 查无可隔离相应声明；Crossref 查无只警告，不自动隔离"],
 ];
 definitions.getRangeByIndexes(3, 0, definitionRows.length, 4).values = definitionRows;
 body(definitions.getRange(`A4:D${3 + definitionRows.length}`));

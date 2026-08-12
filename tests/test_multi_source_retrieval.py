@@ -228,3 +228,58 @@ def test_arxiv_authority_switch_is_independent_from_legacy_metadata_gate(monkeyp
     assert result["ranking_strategy"] == "canonical_authority_verified_v3"
     assert result["documents"][0]["title"] == "Large Language Models are Zero-Shot Reasoners"
     assert "paper.lookup.arxiv" in result["tools_used"]
+
+
+def test_doi_authority_switch_loads_crossref_without_legacy_gate(monkeypatch):
+    results = {
+        "paper.search.arxiv": success("paper.search.arxiv", "arxiv", []),
+        "paper.search.openalex": success(
+            "paper.search.openalex",
+            "openalex",
+            [paper("Unrelated Robotics Dataset", "openalex", "W2", "10.1145/example")],
+        ),
+    }
+    configure_multi_source(monkeypatch, results)
+    monkeypatch.setattr(retrieve_module.settings, "MULTI_SOURCE_RERANK_ENABLED", True)
+    monkeypatch.setattr(retrieve_module.settings, "MULTI_SOURCE_METADATA_VERIFICATION_ENABLED", False)
+    monkeypatch.setattr(retrieve_module.settings, "ARXIV_AUTHORITY_VERIFICATION_ENABLED", False)
+    monkeypatch.setattr(retrieve_module.settings, "DOI_AUTHORITY_VERIFICATION_ENABLED", True)
+    monkeypatch.setattr(
+        retrieve_module,
+        "load_doi_authority_evidence",
+        lambda groups: (
+            {"doi:10.1145/example": paper("Canonical DOI Title", "crossref", "https://doi.org/10.1145/example", "10.1145/example")},
+            [],
+            ["paper.lookup.crossref"],
+        ),
+    )
+
+    result = retrieve_module.retrieve_by_query("canonical doi", {})
+
+    assert result["documents"][0]["title"] == "Canonical DOI Title"
+    assert "paper.lookup.crossref" in result["tools_used"]
+
+
+def test_failed_crossref_lookup_is_not_cached_or_negative_evidence(monkeypatch, tmp_path):
+    document_groups = [[{"title": "Paper", "doi": "10.1145/example", "source": "openalex"}]]
+    result = ToolResult(
+        success=False,
+        tool_name="paper.lookup.crossref",
+        source="crossref",
+        error_code=ToolErrorCode.TIMEOUT.value,
+        error_message="temporary",
+        attempt_count=2,
+    )
+    executor = SourceExecutor({"paper.lookup.crossref": result})
+    router = SourceRouter()
+    router.resolve = lambda capability, source: "paper.lookup.crossref"
+    monkeypatch.setattr(retrieve_module.settings, "CACHE_DIR", str(tmp_path))
+    monkeypatch.setattr(retrieve_module, "paper_tool_executor", executor)
+    monkeypatch.setattr(retrieve_module, "paper_tool_router", router)
+
+    authority, executions, tools = retrieve_module.load_doi_authority_evidence(document_groups)
+
+    assert authority == {}
+    assert executions[0]["tool_error_code"] == "TIMEOUT"
+    assert tools == ["paper.lookup.crossref"]
+    assert list(tmp_path.rglob("*.json")) == []

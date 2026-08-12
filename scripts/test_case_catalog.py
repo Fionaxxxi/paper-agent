@@ -619,6 +619,46 @@ TEST_CASE_CATALOG: dict[str, CaseDescription] = {
         "限流进入可重试失败类别，不被误记为论文查无。",
         "匿名访问限流可能污染覆盖率并错误触发论文隔离。",
     ),
+    "tests/test_reranker.py::test_crossref_doi_evidence_repairs_conflicting_secondary_title": _description(
+        "验证同一普通 DOI 的 Crossref 规范标题可修复明显冲突的二级来源标题。",
+        "低相似度污染标题被替换，并记录 REPAIRED_TITLE_FROM_CROSSREF。",
+        "普通 DOI 证据可能只被记录却无法修复实际元数据污染。",
+    ),
+    "tests/test_reranker.py::test_crossref_doi_not_found_is_visible_but_does_not_quarantine": _description(
+        "验证 Crossref 明确查无只形成可审计警告，不自动隔离普通 DOI。",
+        "记录 DOI_AUTHORITY_NOT_FOUND，论文仍保留在候选排序中。",
+        "单一规范源覆盖缺口可能被误当成虚假论文证据，造成召回损失。",
+    ),
+    "tests/test_multi_source_retrieval.py::test_doi_authority_switch_loads_crossref_without_legacy_gate": _description(
+        "验证 DOI authority 可通过独立开关接入生产多源重排。",
+        "旧元数据开关关闭时仍可加载 Crossref 证据并修复污染标题。",
+        "普通 DOI 校验可能与旧综合开关耦合，无法单独灰度或回滚。",
+    ),
+    "tests/test_multi_source_retrieval.py::test_failed_crossref_lookup_is_not_cached_or_negative_evidence": _description(
+        "验证 Crossref 超时不会缓存或形成 DOI 负证据。",
+        "失败被记录到工具执行明细，authority 索引和缓存保持为空。",
+        "临时网络失败可能永久污染身份结论并误伤论文。",
+    ),
+    "tests/test_canonical_metadata_eval.py::test_collect_claimed_ordinary_dois_excludes_arxiv_doi": _description(
+        "验证联合重放只把普通 DOI 交给 Crossref，排除 arXiv DOI。",
+        "普通 DOI 被归一去重，arXiv DOI 继续由原生 arXiv authority 处理。",
+        "同一身份可能被重复查询不同 provider，增加成本并产生冲突结论。",
+    ),
+    "tests/test_canonical_metadata_eval.py::test_canonical_doi_fetcher_caches_success_and_not_found": _description(
+        "验证 Crossref 成功记录和明确查无均可重复使用。",
+        "相同 DOI 第二次读取缓存，查无仍保持明确 NOT_FOUND 状态。",
+        "三快照重放可能重复产生外部请求，增加耗时和限流风险。",
+    ),
+    "tests/test_canonical_metadata_eval.py::test_canonical_doi_fetcher_does_not_cache_failure": _description(
+        "验证 DOI authority 网络失败不会写入成功缓存。",
+        "同一 DOI 再次调用时会重试，失败计数准确累积。",
+        "一次短暂故障可能被永久当成规范查无。",
+    ),
+    "tests/test_canonical_metadata_eval.py::test_doi_incremental_comparison_does_not_claim_unchanged_quality": _description(
+        "验证 Crossref 相对仅 arXiv canonical 没有指标变化时不得宣称质量提升。",
+        "质量提升标记为假，排名变化和逐题回归均为零。",
+        "已有 arXiv 带来的提升可能被错误归因给普通 DOI 校验。",
+    ),
 }
 
 
