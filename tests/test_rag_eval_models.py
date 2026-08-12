@@ -33,9 +33,16 @@ def test_rag_dataset_rejects_invalid_pages_and_duplicate_evidence():
         RAGEvalDataset.model_validate(invalid)
 
     duplicate = _dataset()
-    duplicate["cases"].append({**duplicate["cases"][0], "id": "q2"})
+    duplicate["cases"][0]["evidence"].append(dict(duplicate["cases"][0]["evidence"][0]))
     with pytest.raises(ValidationError):
         RAGEvalDataset.model_validate(duplicate)
+
+
+def test_rag_dataset_allows_different_questions_to_share_evidence_chunk():
+    shared = _dataset()
+    shared["cases"].append({**shared["cases"][0], "id": "q2", "question": "How does RAG use retrieval?"})
+    dataset = RAGEvalDataset.model_validate(shared)
+    assert len(dataset.cases) == 2
 
 
 def test_rag_experiment_config_keeps_technology_choices_replaceable():

@@ -1,0 +1,317 @@
+{
+  "dataset_name": "PaperAgent 本地全文 RAG 人工金标准 v1",
+  "dataset_version": "1.0.0",
+  "description": "基于 8 篇真实论文全文人工编写并逐页核验证据的 16 题首版金标准。",
+  "corpus_version": "0.1.0",
+  "k_values": [
+    1,
+    3,
+    5
+  ],
+  "cases": [
+    {
+      "id": "rag_architecture",
+      "question": "RAG-Sequence 与 RAG-Token 使用检索文档的方式有什么区别？",
+      "language": "zh",
+      "category": "method",
+      "difficulty": "simple",
+      "reference_answer": "RAG-Sequence 在生成整个目标序列时使用同一篇检索文档；RAG-Token 允许每个目标 token 基于不同文档生成。",
+      "evidence": [
+        {
+          "document_id": "rag_2005_11401",
+          "chunk_id": "rag_2005_11401:p3:c13",
+          "page_start": 3,
+          "page_end": 3,
+          "quote": "d document as a latent variable.\nWe propose two models that marginalize over the latent documents in different ways to produce a\ndistribution over generated text. In one approach, RAG-Sequence, the model uses the same document\nto predict each target token. The second approach, RAG-Token, can predict each target token based\non a different document. In the following, we formally introduce both models and then describe the\npη andpθ components, as well as the training and decoding procedure.\n2.1 Models\nRA",
+          "source_path": "data/papers/2005.11401_rag.pdf",
+          "relevance_grade": 3
+        }
+      ]
+    },
+    {
+      "id": "rag_qa_results",
+      "question": "RAG 论文中 RAG-Sequence 在 Natural Questions 测试集上的分数是多少？",
+      "language": "zh",
+      "category": "experiment",
+      "difficulty": "simple",
+      "reference_answer": "表 1 报告 RAG-Sequence 在 Natural Questions 上取得 44.5。",
+      "evidence": [
+        {
+          "document_id": "rag_2005_11401",
+          "chunk_id": "rag_2005_11401:p6:c33",
+          "page_start": 6,
+          "page_end": 6,
+          "quote": "ook\nT5-11B [52] 34.5 - /50.1 37.4 -\nT5-11B+SSM[52] 36.6 - /60.5 44.7 -\nOpen\nBook\nREALM [20] 40.4 - / - 40.7 46.8\nDPR [26] 41.5 57.9/ - 41.1 50.6\nRAG-Token 44.1 55.2/66.1 45.5 50.0\nRAG-Seq. 44.5 56.8/68.0 45.2 52.2\nTable 2: Generation and classiﬁcation Test Scores.\nMS-MARCO SotA is [4], FEVER-3 is [68] and\nFEVER-2 is [ 57] *Uses gold context/evidence.\nBest model without gold access underlined.\nModel Jeopardy MSMARCO FVR3 FVR2\nB-1 QB-1 R-L B-1 Label Acc.\nSotA - - 49.8* 4",
+          "source_path": "data/papers/2005.11401_rag.pdf",
+          "relevance_grade": 3
+        }
+      ]
+    },
+    {
+      "id": "dpr_core_method",
+      "question": "DPR 如何表示问题和文本段并计算二者相似度？",
+      "language": "zh",
+      "category": "method",
+      "difficulty": "simple",
+      "reference_answer": "DPR 使用两个独立的 BERT 编码器分别把问题和文本段映射为稠密向量，并以向量点积作为相似度。",
+      "evidence": [
+        {
+          "document_id": "dpr_2004_04906",
+          "chunk_id": "dpr_2004_04906:p3:c14",
+          "page_start": 3,
+          "page_end": 3,
+          "quote": "lies a different encoderEQ(·)\nthat maps the input question to a d-dimensional\nvector, and retrievesk passages of which vectors\nare the closest to the question vector. We deﬁne\nthe similarity between the question and the passage\nusing the dot product of their vectors:\nsim(q,p ) = EQ(q)⊺EP (p). (1)\nAlthough more expressive model forms for measur-\ning the similarity between a question and a passage\ndo exist, such as networks consisting of multiple\nlayers of cross attentions, the similarity function\nneeds",
+          "source_path": "data/papers/2004.04906_dpr.pdf",
+          "relevance_grade": 3
+        }
+      ]
+    },
+    {
+      "id": "dpr_gain",
+      "question": "DPR 相比强 Lucene-BM25 基线的 Top-20 文本段检索准确率提升幅度是多少？",
+      "language": "zh",
+      "category": "experiment",
+      "difficulty": "simple",
+      "reference_answer": "论文摘要报告，在多种开放域问答数据集上，DPR 的 Top-20 文本段检索准确率绝对提升约 9%～19%。",
+      "evidence": [
+        {
+          "document_id": "dpr_2004_04906",
+          "chunk_id": "dpr_2004_04906:p1:c2",
+          "page_start": 1,
+          "page_end": 1,
+          "quote": "nd passages by a simple dual-\nencoder framework. When evaluated on a\nwide range of open-domain QA datasets, our\ndense retriever outperforms a strong Lucene-\nBM25 system greatly by 9%-19% absolute in\nterms of top-20 passage retrieval accuracy, and\nhelps our end-to-end QA system establish new\nstate-of-the-art on multiple open-domain QA\nbenchmarks.1\n1 Introduction\nOpen-domain question answering (QA) (V oorhees,\n1999) is a task that answers factoid questions us-\ning a large",
+          "source_path": "data/papers/2004.04906_dpr.pdf",
+          "relevance_grade": 3
+        }
+      ]
+    },
+    {
+      "id": "selfrag_tokens",
+      "question": "Self-RAG 定义了哪四类 reflection token，它们分别判断什么？",
+      "language": "zh",
+      "category": "method",
+      "difficulty": "complex",
+      "reference_answer": "四类分别是 Retrieve（是否检索）、ISREL（文本段是否相关）、ISSUP（输出是否被证据支持）和 ISUSE（回答总体是否有用）。",
+      "evidence": [
+        {
+          "document_id": "self_rag_2310_11511",
+          "chunk_id": "self_rag_2310_11511:p4:c22",
+          "page_start": 4,
+          "page_end": 4,
+          "quote": "fully supported, partially\nsupported, no support}\nAll of the verification-worthy statement in y\nis supported by d.\nISUSE x, y {5, 4, 3, 2, 1} y is a useful response to x.\nTable 1: Four types of reflection tokens used inSELF -R AG. Each type uses several tokens to represent\nits output values. The bottom three rows are three types of Critique tokens, and the bold text indicates\nthe most desirable critique tokens. x, y, dindicate input, output, and a relevant passage, respectively.\nAlgorit",
+          "source_path": "data/papers/2310.11511_self_rag.pdf",
+          "relevance_grade": 3
+        }
+      ]
+    },
+    {
+      "id": "selfrag_ablation",
+      "question": "Self-RAG 消融实验中，移除 Critic 后 PopQA、PubHealth 和 ASQA 的结果分别是多少？",
+      "language": "zh",
+      "category": "experiment",
+      "difficulty": "complex",
+      "reference_answer": "No Critic 消融在 PopQA、PubHealth 和 ASQA 上分别为 42.6、72.0 和 18.1。",
+      "evidence": [
+        {
+          "document_id": "self_rag_2310_11511",
+          "chunk_id": "self_rag_2310_11511:p9:c55",
+          "page_start": 9,
+          "page_end": 9,
+          "quote": "Preprint.\nPQA Med AS\n(acc) (acc) (em)\nSELF -RAG (50k) 45.5 73.5 32.1\nTraining\nNo Retriever R 43.6 67.8 31.0\nNo Critic C 42.6 72.0 18.1\nTest\nNo retrieval 24.7 73.0 –\nHard constraints 28.3 72.6 –\nRetrieve top1 41.8 73.1 28.6\nRemove ISSUP 44.1 73.2 30.6\n(a) Ablation\n1 2\n70.0\n70.5Precision\n1 2\nWeight for IsSupport\n90\n95Mauve\n (b) Customization\n0.0 0.2 0.4 0.6\n0.98\n0.99\n0.99\n1.00Accuracy\nPubHealth\n0.0 0.2 0.4 0.6\nRe",
+          "source_path": "data/papers/2310.11511_self_rag.pdf",
+          "relevance_grade": 3
+        }
+      ]
+    },
+    {
+      "id": "graphrag_problem",
+      "question": "GraphRAG 论文认为传统 vector RAG 为什么不适合全局 sensemaking 问题？",
+      "language": "zh",
+      "category": "limitation",
+      "difficulty": "simple",
+      "reference_answer": "传统 vector RAG 擅长答案局部集中在少量记录中的问题，但全局 sensemaking 需要理解整个数据集及其跨实体、地点和事件的连接，因此局部相似度检索不足。",
+      "evidence": [
+        {
+          "document_id": "graph_rag_2404_16130",
+          "chunk_id": "graph_rag_2404_16130:p2:c5",
+          "page_start": 2,
+          "page_end": 2,
+          "quote": ". This conventional approach, which we collectively call\nvector RAG, works well for queries that can be answered with information localized within a small\nset of records. However, vector RAG approaches do not support sensemaking queries, meaning\nqueries that require global understanding of the entire dataset, such as ” What are the key trends in\nhow scientific discoveries are influenced by interdisciplinary research over the past decade?”\nSensemaking tasks require reasoning over “ connections (which can be amon",
+          "source_path": "data/papers/2404.16130_graph_rag.pdf",
+          "relevance_grade": 3
+        }
+      ]
+    },
+    {
+      "id": "graphrag_pipeline",
+      "question": "GraphRAG 从源文档到全局答案的主要处理链路是什么？",
+      "language": "zh",
+      "category": "method",
+      "difficulty": "complex",
+      "reference_answer": "源文档先被切成文本块，抽取实体与关系形成知识图谱，再检测图社区并生成社区摘要；查询时由社区摘要产生局部回答，最后汇总为全局答案。",
+      "evidence": [
+        {
+          "document_id": "graph_rag_2404_16130",
+          "chunk_id": "graph_rag_2404_16130:p4:c19",
+          "page_start": 4,
+          "page_end": 4,
+          "quote": "Source Documents\nText Chunks\ntext extraction\nand chunking\nEntities & Relationships\ndomain-tailored\nsummarization\nKnowledge Graph\ndomain-tailored\nsummarization\nGraph Communities\ncommunity\ndetection\nCommunity Summaries\ndomain-tailored\nsummarization\nCommunity Answers\nquery-focused\nsummarization\nGlo",
+          "source_path": "data/papers/2404.16130_graph_rag.pdf",
+          "relevance_grade": 3
+        }
+      ]
+    },
+    {
+      "id": "lightrag_retrieval",
+      "question": "LightRAG 的双层检索分别面向什么信息？",
+      "language": "zh",
+      "category": "method",
+      "difficulty": "complex",
+      "reference_answer": "低层检索聚焦具体实体及其关系，高层检索聚焦更抽象的主题或概念；二者结合以兼顾局部细节与全局语义。",
+      "evidence": [
+        {
+          "document_id": "light_rag_2410_05779",
+          "chunk_id": "light_rag_2410_05779:p4:c26",
+          "page_start": 4,
+          "page_end": 4,
+          "quote": "l retrieval paradigm. This ensures that both specific and abstract inquiries are addressed\neffectively, allowing the system to deliver relevant responses tailored to user needs.\n• Low-Level Retrieval. This level is primarily focused on retrieving specific entities along with their\nassociated attributes or relationships. Queries at this level are detail-oriented and aim to extract\nprecise information about particular nodes or edges within the graph.\n• High-Level Retrieval. Th",
+          "source_path": "data/papers/2410.05779_light_rag.pdf",
+          "relevance_grade": 3
+        }
+      ]
+    },
+    {
+      "id": "lightrag_incremental",
+      "question": "LightRAG 如何支持知识库增量更新？",
+      "language": "zh",
+      "category": "method",
+      "difficulty": "complex",
+      "reference_answer": "新文档经过与既有文档相同的图索引步骤，随后把新旧图的节点集合与边集合分别取并集，从而避免完全重建整个外部数据库。",
+      "evidence": [
+        {
+          "document_id": "light_rag_2410_05779",
+          "chunk_id": "light_rag_2410_05779:p4:c23",
+          "page_start": 4,
+          "page_end": 4,
+          "quote": "ior alternative to less accurate embedding matching methods (Gao et al., 2023)\nand inefficient chunk traversal techniques (Edge et al., 2024) commonly used in existing approaches.\nFast Adaptation to Incremental Knowledge Base. To efficiently adapt to evolving data changes\nwhile ensuring accurate and relevant responses, our LightRAG incrementally updates the knowledge\nbase without the need for complete reprocessing of the entire external database. For a new document\nD′, the incremental update algorith",
+          "source_path": "data/papers/2410.05779_light_rag.pdf",
+          "relevance_grade": 3
+        }
+      ]
+    },
+    {
+      "id": "react_interleave",
+      "question": "ReAct 的核心工作模式是什么？",
+      "language": "zh",
+      "category": "method",
+      "difficulty": "simple",
+      "reference_answer": "ReAct 让语言模型以交错方式生成推理轨迹和任务动作：推理用于形成、跟踪和调整计划，动作则与外部知识源或环境交互获取信息。",
+      "evidence": [
+        {
+          "document_id": "react_2210_03629",
+          "chunk_id": "react_2210_03629:p1:c1",
+          "page_start": 1,
+          "page_end": 1,
+          "quote": "action\nplan generation) have primarily been studied as separate topics. In this paper, we\nexplore the use of LLMs to generate both reasoning traces and task-speciﬁc actions\nin an interleaved manner, allowing for greater synergy between the two: reasoning\ntraces help the model induce, track, and update action plans as well as handle\nexceptions, while actions allow it to interface with and gather additional information\nfrom external sources such as knowledge bases or environ",
+          "source_path": "data/papers/2210.03629_react.pdf",
+          "relevance_grade": 3
+        }
+      ]
+    },
+    {
+      "id": "react_alfworld",
+      "question": "ReAct 在 ALFWorld 与 WebShop 上相对基线分别取得多大的绝对成功率提升？",
+      "language": "zh",
+      "category": "experiment",
+      "difficulty": "simple",
+      "reference_answer": "论文摘要报告，ReAct 在 ALFWorld 和 WebShop 上分别取得 34% 和 10% 的绝对成功率提升。",
+      "evidence": [
+        {
+          "document_id": "react_2210_03629",
+          "chunk_id": "react_2210_03629:p1:c3",
+          "page_start": 1,
+          "page_end": 1,
+          "quote": "s.\nFurthermore, on two interactive decision making benchmarks (ALFWorld and\nWebShop), ReAct outperforms imitation and reinforcement learning methods by\nan absolute success rate of 34% and 10% respectively, while being prompted with\nonly one or two in-context examples.\n1 I NTRODUCTION\nA unique feature of human intelligence is the ability to seamlessly combine task-oriented actions with\nverbal reasoning (or inner speech, Alderson-Day & Fernyhough, 2015), which has been",
+          "source_path": "data/papers/2210.03629_react.pdf",
+          "relevance_grade": 3
+        }
+      ]
+    },
+    {
+      "id": "reflexion_memory",
+      "question": "Reflexion 如何组织短期记忆与长期记忆？",
+      "language": "zh",
+      "category": "memory",
+      "difficulty": "complex",
+      "reference_answer": "轨迹历史作为短期记忆，Self-Reflection 输出存入长期记忆；两者共同提供当前任务细节和跨尝试提炼的经验。",
+      "evidence": [
+        {
+          "document_id": "reflexion_2303_11366",
+          "chunk_id": "reflexion_2303_11366:p5:c24",
+          "page_start": 5,
+          "page_end": 5,
+          "quote": "to the way that humans remember fine-grain recent details while also recalling distilled important\nexperiences from long-term memory. In the RL setup, the trajectory history serves as the short-term\nmemory while outputs from the Self-Reflection model are stored in long-term memory. These two\nmemory components work together to provide context that is specific but also influenced by lessons\nlearned over several trials, which is a key advantage of Reflexion agents over other L",
+          "source_path": "data/papers/2303.11366_reflexion.pdf",
+          "relevance_grade": 3
+        }
+      ]
+    },
+    {
+      "id": "reflexion_humaneval",
+      "question": "Reflexion 在 HumanEval Python 上的总体准确率是多少，基线是多少？",
+      "language": "zh",
+      "category": "experiment",
+      "difficulty": "simple",
+      "reference_answer": "表 2 中 HumanEval Python 的语言模型基线为 0.80，加入 Reflexion 后为 0.91。",
+      "evidence": [
+        {
+          "document_id": "reflexion_2303_11366",
+          "chunk_id": "reflexion_2303_11366:p8:c43",
+          "page_start": 8,
+          "page_end": 8,
+          "quote": "Benchmark + Language Base Reflexion TP FN FP TN\nHumanEval (PY) 0.80 0.91 0.99 0.40 0.01 0.60\nMBPP (PY) 0.80 0.77 0.84 0.59 0.16 0.41\nHumanEval (RS) 0.60 0.68 0.87 0.37 0.13 0.63\nMBPP (RS) 0.71 0.75 0.84 0.51 0.16 0.49\nTable 2: Overall accuracy and test generation performance for HumanEval and MBPP. For Rust,\nHumanEval is the hardest 50 problems from",
+          "source_path": "data/papers/2303.11366_reflexion.pdf",
+          "relevance_grade": 3
+        }
+      ]
+    },
+    {
+      "id": "agent_memory_risks",
+      "question": "LLM Agent Survey 指出记忆写入需要处理哪两个问题？",
+      "language": "zh",
+      "category": "memory",
+      "difficulty": "simple",
+      "reference_answer": "需要处理与已有记忆相似造成的记忆重复，以及存储达到上限时的记忆溢出和删除问题。",
+      "evidence": [
+        {
+          "document_id": "agent_survey_2308_11432",
+          "chunk_id": "agent_survey_2308_11432:p9:c44",
+          "page_start": 9,
+          "page_end": 9,
+          "quote": ", there are two poten-\ntial problems that should be carefully addressed.\nOn one hand, it is crucial to address how to store\ninformation that is similar to existing memories\n(i.e., memory duplicated). On the other hand, it\nis important to consider how to remove informa-\ntion when the memory reaches its storage limit (i.e.,\nmemory overflow). In the following, we discuss\nthese problems more in detail. (1) Memory Dupli-\ncated. To incorporate similar information, people\nhave de",
+          "source_path": "data/papers/2308.11432_agent_survey.pdf",
+          "relevance_grade": 3
+        }
+      ]
+    },
+    {
+      "id": "agent_replanning",
+      "question": "LLM Agent Survey 为什么认为复杂任务不能只依赖初始计划？",
+      "language": "zh",
+      "category": "planning",
+      "difficulty": "complex",
+      "reference_answer": "因为一开始就生成无瑕计划很困难，且不可预测的环境转移可能让初始计划无法执行；因此 Agent 应根据外部反馈迭代修订计划。",
+      "evidence": [
+        {
+          "document_id": "agent_survey_2308_11432",
+          "chunk_id": "agent_survey_2308_11432:p12:c61",
+          "page_start": 12,
+          "page_end": 12,
+          "quote": "the following reasons:\nfirstly, generating a flawless plan directly from the\nbeginning is extremely difficult as it needs to con-\nsider various complex preconditions. As a result,\nsimply following the initial plan often leads to fail-\nure. Moreover, the execution of the plan may be\nhindered by unpredictable transition dynamics, ren-\ndering the initial plan non-executable. Simultane-\nously, when examining how humans tackle complex\ntasks, we find that individuals may iteratively make\nand revise their plans bas",
+          "source_path": "data/papers/2308.11432_agent_survey.pdf",
+          "relevance_grade": 3
+        }
+      ]
+    }
+  ]
+}

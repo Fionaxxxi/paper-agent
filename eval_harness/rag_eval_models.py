@@ -49,13 +49,10 @@ class RAGEvalDataset(BaseModel):
         ids = [case.id for case in self.cases]
         if len(ids) != len(set(ids)):
             raise ValueError("case ids must be unique")
-        evidence_ids = [
-            (span.document_id, span.chunk_id)
-            for case in self.cases
-            for span in case.evidence
-        ]
-        if len(evidence_ids) != len(set(evidence_ids)):
-            raise ValueError("evidence document_id/chunk_id pairs must be unique")
+        for case in self.cases:
+            evidence_ids = [(span.document_id, span.chunk_id) for span in case.evidence]
+            if len(evidence_ids) != len(set(evidence_ids)):
+                raise ValueError("evidence document_id/chunk_id pairs must be unique within a case")
         return self
 
 

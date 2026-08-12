@@ -879,6 +879,26 @@ TEST_CASE_CATALOG: dict[str, CaseDescription] = {
         "异常明确列出缺失文件名，避免误把缺论文的实验结果当成完整结果。",
         "测试语料可能悄悄缩水，召回率和跨论文问题会得到具有误导性的结果。",
     ),
+    "tests/test_rag_eval_models.py::test_rag_dataset_allows_different_questions_to_share_evidence_chunk": _description(
+        "验证不同问题可以引用同一个真实证据块，同时仍禁止单个问题内部重复登记证据。",
+        "两个独立问题共享同一 document_id/chunk_id 时数据集通过校验。",
+        "契约会迫使标注者制造虚假 chunk ID，或无法表达一段原文支持多个问题的真实情况。",
+    ),
+    "tests/test_rag_gold_dataset.py::test_rag_gold_v1_has_balanced_corpus_and_question_coverage": _description(
+        "验证首版人工金标准包含 16 题、覆盖全部 8 篇论文，并具有多种题型和两档难度。",
+        "语料、题型与难度覆盖满足首版设计矩阵，避免评测只偏向单篇或单类问题。",
+        "金标准可能遗漏论文或题型过于单一，使后续 BM25、Dense 与图检索对比失真。",
+    ),
+    "tests/test_rag_gold_dataset.py::test_rag_gold_v1_evidence_is_present_on_declared_pdf_page": _description(
+        "逐题重新解析真实 PDF，验证人工证据原文确实存在于声明的 PDF 页序号。",
+        "16 题的证据片段与页码全部可回溯到本地原始论文。",
+        "参考答案可能引用错误页、错误论文或经过改写而无法核验的伪证据。",
+    ),
+    "tests/test_rag_gold_dataset.py::test_rag_gold_builder_reproduces_committed_dataset": _description(
+        "验证人工规格、PDF、Parser 与 Chunker 可确定性重建已提交的金标准 JSON。",
+        "重建结果逐字段等于版本控制中的数据集，包括真实 chunk ID 与证据片段。",
+        "标注产物可能不可复现，或处理组件变化后证据坐标已悄悄失效。",
+    ),
 }
 
 
