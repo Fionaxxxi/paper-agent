@@ -769,6 +769,31 @@ TEST_CASE_CATALOG: dict[str, CaseDescription] = {
         "单子查询继续走直接调用路径。",
         "简单任务可能承担不必要的并发调度成本。",
     ),
+    "tests/test_parallel_multi_query_eval.py::test_multi_query_parallel_benchmark_meets_latency_and_equivalence_gate": _description(
+        "验证子查询有界并行在重复离线 I/O 实验中同时满足延迟和结果一致性门槛。",
+        "加速至少 1.3 倍、延迟下降至少 20%，结果与规划顺序一致率均为 100%。",
+        "并行收益可能来自偶然计时，或并发改变子查询合并语义。",
+    ),
+    "tests/test_retrieval_replan.py::test_replan_retries_same_query_for_transient_tool_failure": _description(
+        "验证超时等暂时工具错误不会被误判为查询质量问题。",
+        "保持原查询重试一次，并记录失败类型、错误码和重试次数。",
+        "网络故障可能触发无意义查询改写，降低恢复概率。",
+    ),
+    "tests/test_retrieval_replan.py::test_replan_broadens_empty_query_without_llm": _description(
+        "验证零结果场景使用确定性规则放宽过窄查询。",
+        "去除引号和括号并追加 research survey，不产生 LLM 调用。",
+        "空结果可能原样重试，重复消耗工具预算。",
+    ),
+    "tests/test_retrieval_replan.py::test_replan_expands_low_relevance_query_and_records_reason": _description(
+        "验证有结果但相关性低时扩展综述上下文并记录评分原因。",
+        "追加 survey review，审计记录包含 low_relevance 与原评分。",
+        "低相关结果可能只通过扩大数量重试而不改变检索意图。",
+    ),
+    "tests/test_retrieval_replan.py::test_retry_query_overrides_old_multi_query_plan": _description(
+        "验证重规划查询优先于旧的多子查询计划。",
+        "第二轮只执行 retry_query，不重复运行已经失败的旧计划。",
+        "重规划动作可能被旧 sub_queries 遮蔽，形成伪 Replan。",
+    ),
 }
 
 

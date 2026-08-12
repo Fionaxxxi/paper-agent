@@ -11,14 +11,13 @@ from nodes.generate import generate_node
 from nodes.metrics import metrics_node
 from nodes.query_plan import query_plan_node
 from nodes.intent_router import intent_router_node
+from nodes.retrieval_replan import build_retrieval_replan
 
 from utils.timer import timed_node
 
 
 def retry_node(state: AgentState) -> AgentState:
-    return {
-        "retry_count": state.get("retry_count", 0) + 1,
-    }
+    return build_retrieval_replan(state)
 
 
 def route_after_intent(state: AgentState) -> str:

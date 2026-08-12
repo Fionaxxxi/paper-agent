@@ -29,6 +29,8 @@ class AgentState(TypedDict, total=False):
 
     # 重新检索次数
     retry_count: int
+    retry_query: str
+    retrieval_replan: Dict[str, Any]
 
     # 论文元数据
     paper_metadata: Dict[str, Any]
