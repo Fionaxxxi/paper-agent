@@ -1,0 +1,87 @@
+{
+  "corpus_name": "PaperAgent 本地 RAG 代表论文语料 v1",
+  "corpus_version": "0.1.0",
+  "selection_policy": "以小规模、可解释的对照实验为目标，覆盖稀疏/稠密检索、经典 RAG、自适应 RAG、图式 RAG，以及 Agent 的行动与反思。PDF 使用 arXiv 官方公开版本。",
+  "documents": [
+    {
+      "document_id": "rag_2005_11401",
+      "arxiv_id": "2005.11401",
+      "title": "Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks",
+      "filename": "2005.11401_rag.pdf",
+      "pdf_url": "https://arxiv.org/pdf/2005.11401",
+      "group": "rag",
+      "dimensions": ["RAG 基础架构", "参数记忆与非参数记忆", "RAG-Sequence 与 RAG-Token"],
+      "selection_reason": "经典 RAG 基础论文，适合作为术语、架构和生成方式的基准材料。"
+    },
+    {
+      "document_id": "dpr_2004_04906",
+      "arxiv_id": "2004.04906",
+      "title": "Dense Passage Retrieval for Open-Domain Question Answering",
+      "filename": "2004.04906_dpr.pdf",
+      "pdf_url": "https://arxiv.org/pdf/2004.04906",
+      "group": "retrieval",
+      "dimensions": ["稀疏与稠密检索", "双编码器", "Top-k 检索指标"],
+      "selection_reason": "为后续 BM25 与 Dense 对照提供经典稠密检索依据和可标注实验数据。"
+    },
+    {
+      "document_id": "self_rag_2310_11511",
+      "arxiv_id": "2310.11511",
+      "title": "Self-RAG: Learning to Retrieve, Generate, and Critique through Self-Reflection",
+      "filename": "2310.11511_self_rag.pdf",
+      "pdf_url": "https://arxiv.org/pdf/2310.11511",
+      "group": "rag",
+      "dimensions": ["按需检索", "Reflection Token", "事实性与引用"],
+      "selection_reason": "连接 RAG、检索判断和自反思，适合测试细粒度方法问答及跨主题比较。"
+    },
+    {
+      "document_id": "graph_rag_2404_16130",
+      "arxiv_id": "2404.16130",
+      "title": "From Local to Global: A Graph RAG Approach to Query-Focused Summarization",
+      "filename": "2404.16130_graph_rag.pdf",
+      "pdf_url": "https://arxiv.org/pdf/2404.16130",
+      "group": "graph_rag",
+      "dimensions": ["实体知识图谱", "社区摘要", "全局问题"],
+      "selection_reason": "代表 GraphRAG 的全局语料理解路线，用于检验图检索是否在跨文档全局问题上真正增益。"
+    },
+    {
+      "document_id": "light_rag_2410_05779",
+      "arxiv_id": "2410.05779",
+      "title": "LightRAG: Simple and Fast Retrieval-Augmented Generation",
+      "filename": "2410.05779_light_rag.pdf",
+      "pdf_url": "https://arxiv.org/pdf/2410.05779",
+      "group": "graph_rag",
+      "dimensions": ["双层检索", "图与向量融合", "增量更新"],
+      "selection_reason": "与 GraphRAG 形成直接技术对照，适合评测局部/全局检索与增量更新主张。"
+    },
+    {
+      "document_id": "react_2210_03629",
+      "arxiv_id": "2210.03629",
+      "title": "ReAct: Synergizing Reasoning and Acting in Language Models",
+      "filename": "2210.03629_react.pdf",
+      "pdf_url": "https://arxiv.org/pdf/2210.03629",
+      "group": "agent",
+      "dimensions": ["推理与行动交错", "工具交互", "任务轨迹"],
+      "selection_reason": "对应项目 Tool Router 和 Agent Loop 的核心工作模式，可与纯推理和反思机制比较。"
+    },
+    {
+      "document_id": "reflexion_2303_11366",
+      "arxiv_id": "2303.11366",
+      "title": "Reflexion: Language Agents with Verbal Reinforcement Learning",
+      "filename": "2303.11366_reflexion.pdf",
+      "pdf_url": "https://arxiv.org/pdf/2303.11366",
+      "group": "agent",
+      "dimensions": ["语言反馈", "情节记忆", "跨尝试改进"],
+      "selection_reason": "直接支撑项目后续 Reflexion 与分层记忆设计，并可和单次 Reflection 区分。"
+    },
+    {
+      "document_id": "agent_survey_2308_11432",
+      "arxiv_id": "2308.11432",
+      "title": "A Survey on Large Language Model based Autonomous Agents",
+      "filename": "2308.11432_agent_survey.pdf",
+      "pdf_url": "https://arxiv.org/pdf/2308.11432",
+      "group": "agent",
+      "dimensions": ["Agent 统一框架", "规划", "记忆", "工具使用", "评测"],
+      "selection_reason": "提供跨章节和分类型长文，能检验切分、长文召回与综合问答能力。"
+    }
+  ]
+}

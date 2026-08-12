@@ -1,0 +1,157 @@
+{
+  "corpus_version": "0.1.0",
+  "documents": [
+    {
+      "document_id": "rag_2005_11401",
+      "source_path": "data/papers/2005.11401_rag.pdf",
+      "sha256": "23e3249e9a1e75418d82efecab0ea8c4d033b89c93742f63208d47ce01f21233",
+      "file_size_bytes": 885323,
+      "parser": {
+        "name": "pypdf_page",
+        "version": "1.0"
+      },
+      "chunker": {
+        "name": "fixed_window",
+        "version": "1.0"
+      },
+      "processing_status": "pending",
+      "updated_at": "2026-08-12T15:03:53.842401+00:00",
+      "arxiv_id": "2005.11401",
+      "title": "Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks",
+      "group": "rag"
+    },
+    {
+      "document_id": "dpr_2004_04906",
+      "source_path": "data/papers/2004.04906_dpr.pdf",
+      "sha256": "3e67fc1a9977715acf722d85f0b7d124b03715e975f6310a4d6c12094190912f",
+      "file_size_bytes": 383508,
+      "parser": {
+        "name": "pypdf_page",
+        "version": "1.0"
+      },
+      "chunker": {
+        "name": "fixed_window",
+        "version": "1.0"
+      },
+      "processing_status": "pending",
+      "updated_at": "2026-08-12T15:03:53.846451+00:00",
+      "arxiv_id": "2004.04906",
+      "title": "Dense Passage Retrieval for Open-Domain Question Answering",
+      "group": "retrieval"
+    },
+    {
+      "document_id": "self_rag_2310_11511",
+      "source_path": "data/papers/2310.11511_self_rag.pdf",
+      "sha256": "d9eaa1398abac0df67a9d0933a5bf8b6d9d83d2e72da2a486073cd842dd52978",
+      "file_size_bytes": 1405127,
+      "parser": {
+        "name": "pypdf_page",
+        "version": "1.0"
+      },
+      "chunker": {
+        "name": "fixed_window",
+        "version": "1.0"
+      },
+      "processing_status": "pending",
+      "updated_at": "2026-08-12T15:03:53.850619+00:00",
+      "arxiv_id": "2310.11511",
+      "title": "Self-RAG: Learning to Retrieve, Generate, and Critique through Self-Reflection",
+      "group": "rag"
+    },
+    {
+      "document_id": "graph_rag_2404_16130",
+      "source_path": "data/papers/2404.16130_graph_rag.pdf",
+      "sha256": "730f1a9f38d16689900969a3eeeb1b31e45eda1dcc1f37a043afa90aff76c867",
+      "file_size_bytes": 6893854,
+      "parser": {
+        "name": "pypdf_page",
+        "version": "1.0"
+      },
+      "chunker": {
+        "name": "fixed_window",
+        "version": "1.0"
+      },
+      "processing_status": "pending",
+      "updated_at": "2026-08-12T15:03:53.865261+00:00",
+      "arxiv_id": "2404.16130",
+      "title": "From Local to Global: A Graph RAG Approach to Query-Focused Summarization",
+      "group": "graph_rag"
+    },
+    {
+      "document_id": "light_rag_2410_05779",
+      "source_path": "data/papers/2410.05779_light_rag.pdf",
+      "sha256": "bd72eebf611df1366b251c16ce4eac7aac699e519783c586feb2c5c43899347a",
+      "file_size_bytes": 1123301,
+      "parser": {
+        "name": "pypdf_page",
+        "version": "1.0"
+      },
+      "chunker": {
+        "name": "fixed_window",
+        "version": "1.0"
+      },
+      "processing_status": "pending",
+      "updated_at": "2026-08-12T15:03:53.865261+00:00",
+      "arxiv_id": "2410.05779",
+      "title": "LightRAG: Simple and Fast Retrieval-Augmented Generation",
+      "group": "graph_rag"
+    },
+    {
+      "document_id": "react_2210_03629",
+      "source_path": "data/papers/2210.03629_react.pdf",
+      "sha256": "f285b0971ae4a790e402fb93966bed3adde2cf0a04977d08b2b40d6ab0cace69",
+      "file_size_bytes": 633805,
+      "parser": {
+        "name": "pypdf_page",
+        "version": "1.0"
+      },
+      "chunker": {
+        "name": "fixed_window",
+        "version": "1.0"
+      },
+      "processing_status": "pending",
+      "updated_at": "2026-08-12T15:03:53.872668+00:00",
+      "arxiv_id": "2210.03629",
+      "title": "ReAct: Synergizing Reasoning and Acting in Language Models",
+      "group": "agent"
+    },
+    {
+      "document_id": "reflexion_2303_11366",
+      "source_path": "data/papers/2303.11366_reflexion.pdf",
+      "sha256": "6059b6f89fea9959bd3dab553fbb97756a3dfb1b15e3cbab2fbf3ab6664333bd",
+      "file_size_bytes": 591097,
+      "parser": {
+        "name": "pypdf_page",
+        "version": "1.0"
+      },
+      "chunker": {
+        "name": "fixed_window",
+        "version": "1.0"
+      },
+      "processing_status": "pending",
+      "updated_at": "2026-08-12T15:03:53.876724+00:00",
+      "arxiv_id": "2303.11366",
+      "title": "Reflexion: Language Agents with Verbal Reinforcement Learning",
+      "group": "agent"
+    },
+    {
+      "document_id": "agent_survey_2308_11432",
+      "source_path": "data/papers/2308.11432_agent_survey.pdf",
+      "sha256": "8709507742c260a5a92b4690ffc0459a0ab9af16dc7a5478d253a6e7b57bf23a",
+      "file_size_bytes": 5788348,
+      "parser": {
+        "name": "pypdf_page",
+        "version": "1.0"
+      },
+      "chunker": {
+        "name": "fixed_window",
+        "version": "1.0"
+      },
+      "processing_status": "pending",
+      "updated_at": "2026-08-12T15:03:53.888267+00:00",
+      "arxiv_id": "2308.11432",
+      "title": "A Survey on Large Language Model based Autonomous Agents",
+      "group": "agent"
+    }
+  ]
+}

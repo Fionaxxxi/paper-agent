@@ -869,6 +869,16 @@ TEST_CASE_CATALOG: dict[str, CaseDescription] = {
         "JSON 清单可读，版本和 pending 状态完整保存。",
         "知识库更新可能失去语料版本与处理进度，无法复现实验。",
     ),
+    "tests/test_local_rag_corpus_manifest.py::test_build_corpus_manifest_preserves_declared_identity_and_hash": _description(
+        "验证代表论文来源清单生成 Manifest 时保留语料版本、论文身份和内容哈希。",
+        "输出包含唯一论文、arXiv ID 和 64 位 SHA-256，可追踪实验实际使用的原始文件。",
+        "语料身份或内容版本可能丢失，导致不同 RAG 方案无法在同一批论文上公平复现。",
+    ),
+    "tests/test_local_rag_corpus_manifest.py::test_build_corpus_manifest_rejects_missing_declared_pdf": _description(
+        "验证来源清单声明的 PDF 缺失时立即失败，而不是静默生成不完整语料。",
+        "异常明确列出缺失文件名，避免误把缺论文的实验结果当成完整结果。",
+        "测试语料可能悄悄缩水，召回率和跨论文问题会得到具有误导性的结果。",
+    ),
 }
 
 

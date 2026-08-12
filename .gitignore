@@ -77,6 +77,7 @@ data/papers/
 !data/papers/
 data/papers/*
 !data/papers/.gitkeep
+!data/papers/corpus_sources.json
 data/pdfs/
 downloads/
 *.pdf
