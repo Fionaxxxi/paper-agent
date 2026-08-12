@@ -569,6 +569,81 @@ TEST_CASE_CATALOG: dict[str, CaseDescription] = {
         "三份候选质量均不低于基线时 promotion_ready 为真，并记录零逐题回归。",
         "候选可能凭单次偶然提升或不完整证据进入默认流程，造成上线后质量漂移。",
     ),
+    "tests/test_tool_layer.py::test_crossref_client_normalizes_doi_metadata": _description(
+        "验证 Crossref 客户端正确编码 DOI，并把标题、作者、年份和链接归一为统一论文结构。",
+        "带斜杠 DOI 被安全编码，Crossref 响应字段准确进入 PaperRecord。",
+        "普通 DOI 查询可能因 URL 错误或字段映射错误产生伪冲突和错误修复。",
+    ),
+    "tests/test_tool_layer.py::test_crossref_lookup_adapter_uses_shared_lookup_contract": _description(
+        "验证 Crossref 与 arXiv 共用 paper.lookup 工具能力和 Pydantic 输出契约。",
+        "同一 Router、Registry、Policy 和 Executor 可以替换 authority provider。",
+        "Crossref 可能变成绕过工具约束的特例，增加后续 MCP 接入和选型替换成本。",
+    ),
+    "tests/test_multi_source_retrieval.py::test_arxiv_authority_switch_is_independent_from_legacy_metadata_gate": _description(
+        "验证 arXiv 原生身份验证可独立于旧版词法元数据开关受控启用。",
+        "旧 v2 开关关闭时，独立开关仍能注入原生证据、修复标题并记录 lookup 工具。",
+        "已通过三快照门槛的 v3 可能被旧综合开关绑定，无法安全灰度或单独回滚。",
+    ),
+    "tests/test_crossref_authority_eval.py::test_collects_only_ordinary_dois_stable_across_all_snapshots": _description(
+        "验证普通 DOI 候选评测只使用所有独立快照都出现的非 arXiv DOI。",
+        "不稳定记录和 arXiv DOI 被排除，保留可复现的普通出版 DOI。",
+        "评测可能混入快照漂移或重复验证 arXiv 身份，导致候选覆盖结论失真。",
+    ),
+    "tests/test_crossref_authority_eval.py::test_crossref_eval_separates_match_conflict_not_found_and_failure": _description(
+        "验证 Crossref 评测严格区分标题匹配、标题冲突、规范查无和网络失败。",
+        "四类状态分别计数，失败不会被伪装成查无或元数据冲突。",
+        "临时网络故障可能错误触发论文隔离，污染 authority provider 选型指标。",
+    ),
+    "tests/test_tool_layer.py::test_crossref_client_normalizes_doi_metadata": _description(
+        "验证 Crossref 客户端正确编码 DOI，并把标题、作者、年份和链接归一为统一论文结构。",
+        "带斜杠 DOI 被安全编码，Crossref 响应字段准确进入 PaperRecord。",
+        "普通 DOI 查询可能因 URL 错误或字段映射错误产生伪冲突和错误修复。",
+    ),
+    "tests/test_tool_layer.py::test_crossref_lookup_adapter_uses_shared_lookup_contract": _description(
+        "验证 Crossref 与 arXiv 共用 paper.lookup 工具能力和 Pydantic 输出契约。",
+        "同一工具运行时可以替换 authority provider。",
+        "Crossref 可能变成绕过工具约束的特例，增加后续 MCP 接入和选型替换成本。",
+    ),
+    "tests/test_multi_source_retrieval.py::test_arxiv_authority_switch_is_independent_from_legacy_metadata_gate": _description(
+        "验证 arXiv 原生身份验证可独立于旧版词法元数据开关受控启用。",
+        "旧 v2 开关关闭时，独立开关仍能注入原生证据、修复标题并记录 lookup 工具。",
+        "v3 可能被旧综合开关绑定，无法安全灰度或单独回滚。",
+    ),
+    "tests/test_crossref_authority_eval.py::test_collects_only_ordinary_dois_stable_across_all_snapshots": _description(
+        "验证普通 DOI 候选评测只使用所有独立快照都出现的非 arXiv DOI。",
+        "不稳定记录和 arXiv DOI 被排除，保留可复现的普通出版 DOI。",
+        "评测可能混入快照漂移或重复验证 arXiv 身份，导致候选覆盖结论失真。",
+    ),
+    "tests/test_crossref_authority_eval.py::test_crossref_eval_separates_match_conflict_not_found_and_failure": _description(
+        "验证 Crossref 评测严格区分标题匹配、标题冲突、规范查无和网络失败。",
+        "四类状态分别计数，失败不会被伪装成查无或元数据冲突。",
+        "临时网络故障可能错误触发论文隔离，污染 provider 选型指标。",
+    ),
+    "tests/test_tool_layer.py::test_crossref_client_normalizes_doi_metadata": _description(
+        "验证 Crossref 客户端正确编码 DOI，并把标题、作者、年份和链接归一为统一论文结构。",
+        "带斜杠 DOI 被安全编码，Crossref 响应字段准确进入 PaperRecord。",
+        "普通 DOI 查询可能因 URL 错误或字段映射错误产生伪冲突和错误修复。",
+    ),
+    "tests/test_tool_layer.py::test_crossref_lookup_adapter_uses_shared_lookup_contract": _description(
+        "验证 Crossref 与 arXiv 共用 paper.lookup 工具能力和 Pydantic 输出契约。",
+        "同一工具运行时可以替换 authority provider。",
+        "Crossref 可能变成绕过工具约束的特例，增加后续 MCP 接入和选型替换成本。",
+    ),
+    "tests/test_multi_source_retrieval.py::test_arxiv_authority_switch_is_independent_from_legacy_metadata_gate": _description(
+        "验证 arXiv 原生身份验证可独立于旧版词法元数据开关受控启用。",
+        "旧 v2 开关关闭时，独立开关仍能注入原生证据、修复标题并记录 lookup 工具。",
+        "v3 可能被旧综合开关绑定，无法安全灰度或单独回滚。",
+    ),
+    "tests/test_crossref_authority_eval.py::test_collects_only_ordinary_dois_stable_across_all_snapshots": _description(
+        "验证普通 DOI 候选评测只使用所有独立快照都出现的非 arXiv DOI。",
+        "不稳定记录和 arXiv DOI 被排除，保留可复现的普通出版 DOI。",
+        "评测可能混入快照漂移或重复验证 arXiv 身份，导致候选覆盖结论失真。",
+    ),
+    "tests/test_crossref_authority_eval.py::test_crossref_eval_separates_match_conflict_not_found_and_failure": _description(
+        "验证 Crossref 评测严格区分标题匹配、标题冲突、规范查无和网络失败。",
+        "四类状态分别计数，失败不会被伪装成查无或元数据冲突。",
+        "临时网络故障可能错误触发论文隔离，污染 provider 选型指标。",
+    ),
 }
 
 

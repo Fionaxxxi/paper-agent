@@ -4,6 +4,8 @@ import pytest
 from pydantic import BaseModel, Field
 
 import tools.arxiv_adapter as arxiv_adapter_module
+from tools.crossref_adapter import CrossrefLookupTool
+from tools.crossref_client import CrossrefClient
 from tools.arxiv_adapter import ArxivLookupTool, ArxivSearchTool
 from tools.contracts import (
     RetryPolicy,
@@ -250,6 +252,33 @@ def test_arxiv_lookup_adapter_uses_native_identity_contract(monkeypatch):
 
     assert calls == ["2401.01234"]
     assert output["paper"]["title"] == "Canonical Paper"
+
+
+def test_crossref_client_normalizes_doi_metadata(monkeypatch):
+    class Response:
+        status_code = 200
+        def raise_for_status(self): pass
+        def json(self):
+            return {"message": {"DOI": "10.1000/test", "title": ["Canonical DOI Paper"], "author": [{"given": "Ada", "family": "Lovelace"}], "published": {"date-parts": [[2024, 1, 2]]}, "URL": "https://doi.org/10.1000/test"}}
+
+    calls = []
+    monkeypatch.setattr("tools.crossref_client.requests.get", lambda url, **kwargs: calls.append((url, kwargs)) or Response())
+    paper = CrossrefClient("https://api.crossref.org", "owner@example.com", 5).lookup_work("10.1000/test")
+
+    assert paper["title"] == "Canonical DOI Paper"
+    assert paper["authors"] == ["Ada Lovelace"]
+    assert paper["source"] == "crossref"
+    assert "10.1000%2Ftest" in calls[0][0]
+
+
+def test_crossref_lookup_adapter_uses_shared_lookup_contract():
+    class Client:
+        def lookup_work(self, doi):
+            return {"title": "DOI Paper", "doi": doi, "source": "crossref"}
+
+    output = CrossrefLookupTool(Client()).invoke(PaperLookupInput(identity="10.1/demo"))
+
+    assert output["paper"]["doi"] == "10.1/demo"
 
 
 def test_metrics_reports_tool_execution_success_failure_and_latency():

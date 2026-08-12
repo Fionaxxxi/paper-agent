@@ -1336,6 +1336,12 @@ Push / Pull Request
 → 增加规范解析覆盖率、查无率、误隔离率、修复准确率和网络失败恢复指标
 → 重跑 multi / multi_rerank / multi_verified_rerank / multi_canonical_rerank A/B
 → 质量无回归且隔离准确率、稳定度达标后，再考虑默认开启重排与校验
+
+2026-08-12 已完成 arXiv authority 独立开关和普通 DOI 可替换 `paper.lookup` 接口。Crossref 首轮使用三份快照均稳定出现的 20 个普通 DOI：查询覆盖率 100%，标题匹配 20/20，冲突、查无和失败均为 0，LLM Token 为 0。该样本按稳定 DOI 排序抽取，尚不足以固定选型；下一轮需要按 DOI 注册机构或出版商分层扩大样本，并与至少一个替代规范来源比较。
+
+2026-08-12 已完成 arXiv authority 独立开关和普通 DOI 可替换 `paper.lookup` 接口。Crossref 首轮使用三份快照均稳定出现的 20 个普通 DOI：查询覆盖率 100%，标题匹配 20/20，冲突、查无和失败均为 0，LLM Token 为 0。该样本按稳定 DOI 排序抽取，尚不足以固定选型；下一轮需要按 DOI 注册机构或出版商分层扩大样本，并与至少一个替代规范来源比较。
+
+2026-08-12 已完成 arXiv authority 独立开关和普通 DOI 可替换 `paper.lookup` 接口。Crossref 首轮使用三份快照均稳定出现的 20 个普通 DOI：查询覆盖率 100%，标题匹配 20/20，冲突、查无和失败均为 0，LLM Token 为 0。该样本按稳定 DOI 排序抽取，尚不足以固定选型；下一轮需要按 DOI 注册机构/出版商分层扩大样本，并与至少一个替代规范来源比较。
 → 随后实现来源级与子查询级有界异步并行
 → 再进入失败类型驱动的 Retrieval Replan 和 Reflection
 ```

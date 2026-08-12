@@ -1,8 +1,11 @@
+import json
+from pathlib import Path
 from typing import Any, Dict, List
 
 from agent.state import AgentState
 from core.config import settings
 from retrieval.cache import load_cached_papers, save_cached_papers
+from retrieval.metadata_resolver import extract_arxiv_ids
 from retrieval.reranker import rerank_documents_with_stats
 from retrieval.result_merger import merge_documents_with_stats
 from tools.contracts import ToolErrorCode
@@ -35,6 +38,57 @@ FALLBACK_PAPERS = [
         "source": "fallback",
     },
 ]
+
+
+def load_arxiv_authority_evidence(
+    document_groups: List[List[Dict[str, Any]]],
+) -> tuple[dict[str, Dict[str, Any]], list[dict[str, Any]], list[str]]:
+    """Resolve secondary arXiv claims with success-only persistent caching."""
+
+    native_ids = {
+        arxiv_id
+        for group in document_groups
+        for document in group
+        if str(document.get("source") or "").casefold() == "arxiv"
+        for arxiv_id in extract_arxiv_ids(document)
+    }
+    claimed_ids = {
+        arxiv_id
+        for group in document_groups
+        for document in group
+        if str(document.get("source") or "").casefold() != "arxiv"
+        for arxiv_id in extract_arxiv_ids(document)
+    } - native_ids
+    authority = {}
+    executions = []
+    tools_used = []
+    tool_name = paper_tool_router.resolve("paper.lookup", "arxiv")
+    cache_dir = Path(settings.CACHE_DIR) / "authority" / "arxiv"
+    for arxiv_id in sorted(claimed_ids):
+        cache_path = cache_dir / f"{arxiv_id}.json"
+        if cache_path.exists():
+            authority[f"arxiv:{arxiv_id}"] = json.loads(
+                cache_path.read_text(encoding="utf-8")
+            )
+            continue
+        result = paper_tool_executor.execute(tool_name, {"identity": arxiv_id})
+        executions.append(_tool_execution_metadata(result))
+        if tool_name not in tools_used:
+            tools_used.append(tool_name)
+        if not result.success:
+            continue
+        paper = result.data.get("paper") if isinstance(result.data, dict) else None
+        evidence = paper or {
+            "source": "arxiv_authority",
+            "canonical_identity": f"arxiv:{arxiv_id}",
+            "canonical_lookup_status": "NOT_FOUND",
+        }
+        authority[f"arxiv:{arxiv_id}"] = evidence
+        cache_path.parent.mkdir(parents=True, exist_ok=True)
+        cache_path.write_text(
+            json.dumps(evidence, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
+    return authority, executions, tools_used
 
 
 def convert_papers_to_documents(papers: List[Dict[str, Any]], source: str) -> List[Dict[str, Any]]:
@@ -202,13 +256,24 @@ def retrieve_by_query(query: str, state: AgentState) -> Dict[str, Any]:
             else get_max_results(state, sources[0])
         )
         if len(sources) > 1 and settings.MULTI_SOURCE_RERANK_ENABLED:
+            authority_by_identity = None
+            if settings.ARXIV_AUTHORITY_VERIFICATION_ENABLED:
+                authority_by_identity, authority_executions, authority_tools = (
+                    load_arxiv_authority_evidence(document_groups)
+                )
+                tool_executions.extend(authority_executions)
+                for tool in authority_tools:
+                    if tool not in tools_used:
+                        tools_used.append(tool)
             merge_result = rerank_documents_with_stats(
                 query=query,
                 document_groups=document_groups,
                 max_documents=max_documents,
                 metadata_resolution_enabled=(
                     settings.MULTI_SOURCE_METADATA_VERIFICATION_ENABLED
+                    or settings.ARXIV_AUTHORITY_VERIFICATION_ENABLED
                 ),
+                authority_by_identity=authority_by_identity,
             )
         else:
             merge_result = merge_documents_with_stats(

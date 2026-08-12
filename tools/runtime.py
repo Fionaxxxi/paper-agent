@@ -1,6 +1,7 @@
 """Default native tool runtime used by LangGraph nodes."""
 
 from tools.arxiv_adapter import ArxivLookupTool, ArxivSearchTool
+from tools.crossref_adapter import CrossrefLookupTool
 from tools.executor import ToolExecutor
 from tools.openalex_adapter import OpenAlexSearchTool
 from tools.registry import ToolRegistry
@@ -12,12 +13,18 @@ def build_default_tool_runtime() -> tuple[ToolRegistry, ToolRouter, ToolExecutor
     registry.register(ArxivSearchTool())
     registry.register(ArxivLookupTool())
     registry.register(OpenAlexSearchTool())
+    registry.register(CrossrefLookupTool())
 
     router = ToolRouter()
     router.register_route(
         capability="paper.search",
         source="arxiv",
         tool_name="paper.search.arxiv",
+    )
+    router.register_route(
+        capability="paper.lookup",
+        source="crossref",
+        tool_name="paper.lookup.crossref",
     )
     router.register_route(
         capability="paper.lookup",

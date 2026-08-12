@@ -198,3 +198,33 @@ def test_multi_source_metadata_verification_can_quarantine_unsafe_record(
     assert [item["entry_id"] for item in result["documents"]] == ["safe"]
     assert result["ranking_strategy"] == "deterministic_cross_source_verified_v2"
     assert result["metadata_quarantined_count"] == 1
+
+
+def test_arxiv_authority_switch_is_independent_from_legacy_metadata_gate(monkeypatch):
+    results = {
+        "paper.search.arxiv": success("paper.search.arxiv", "arxiv", []),
+        "paper.search.openalex": success(
+            "paper.search.openalex",
+            "openalex",
+            [paper("Wrong Secondary Title", "openalex", "W1", "10.48550/arxiv.2205.11916")],
+        ),
+    }
+    configure_multi_source(monkeypatch, results)
+    monkeypatch.setattr(retrieve_module.settings, "MULTI_SOURCE_RERANK_ENABLED", True)
+    monkeypatch.setattr(retrieve_module.settings, "MULTI_SOURCE_METADATA_VERIFICATION_ENABLED", False)
+    monkeypatch.setattr(retrieve_module.settings, "ARXIV_AUTHORITY_VERIFICATION_ENABLED", True)
+    monkeypatch.setattr(
+        retrieve_module,
+        "load_arxiv_authority_evidence",
+        lambda groups: (
+            {"arxiv:2205.11916": paper("Large Language Models are Zero-Shot Reasoners", "arxiv", "https://arxiv.org/abs/2205.11916")},
+            [],
+            ["paper.lookup.arxiv"],
+        ),
+    )
+
+    result = retrieve_module.retrieve_by_query("zero shot reasoning", {})
+
+    assert result["ranking_strategy"] == "canonical_authority_verified_v3"
+    assert result["documents"][0]["title"] == "Large Language Models are Zero-Shot Reasoners"
+    assert "paper.lookup.arxiv" in result["tools_used"]

@@ -16,12 +16,17 @@ class Settings(BaseSettings):
     MULTI_SOURCE_MAX_RESULTS: int = 8
     MULTI_SOURCE_RERANK_ENABLED: bool = False
     MULTI_SOURCE_METADATA_VERIFICATION_ENABLED: bool = False
+    ARXIV_AUTHORITY_VERIFICATION_ENABLED: bool = False
 
     # OpenAlex
     OPENALEX_BASE_URL: str = "https://api.openalex.org"
     OPENALEX_API_KEY: str = ""
     OPENALEX_MAILTO: str = ""
     OPENALEX_MAX_RESULTS: int = 5
+
+    # Crossref candidate authority provider
+    CROSSREF_BASE_URL: str = "https://api.crossref.org"
+    CROSSREF_MAILTO: str = ""
 
     # Tool execution
     TOOL_TIMEOUT_SECONDS: float = 45.0
