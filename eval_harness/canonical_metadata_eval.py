@@ -151,6 +151,69 @@ def replay_snapshot(
     }
 
 
+def evaluate_promotion(
+    snapshot_dirs: list[Path],
+    candidate_reports: list[dict[str, Any]],
+    *,
+    authority_identity_count: int,
+    claimed_identity_count: int,
+    minimum_snapshot_count: int = 3,
+) -> dict[str, Any]:
+    """Apply auditable v3 promotion gates across independent snapshots."""
+
+    blockers = []
+    comparisons = []
+    total_regressions = 0
+    for snapshot_dir, candidate in zip(snapshot_dirs, candidate_reports):
+        baseline_report = json.loads(
+            (snapshot_dir / "latest_retrieval_online.json").read_text(encoding="utf-8")
+        )
+        baseline = baseline_report["profiles"]["multi_verified_rerank"]
+        baseline_cases = {case["case_id"]: case for case in baseline["cases"]}
+        regressions = []
+        for case in candidate["cases"]:
+            first = baseline_cases[case["case_id"]]
+            metrics = [
+                name for name in ("recall_at_5", "mrr_at_5", "ndcg_at_5")
+                if case[name] < first[name]
+            ]
+            if metrics:
+                regressions.append({"case_id": case["case_id"], "metrics": metrics})
+        total_regressions += len(regressions)
+        comparisons.append(
+            {
+                "snapshot_id": candidate["snapshot_id"],
+                "baseline_complete": all(
+                    payload["summary"].get("failed_count", 0) == 0
+                    and payload["summary"].get("partial_success_count", 0) == 0
+                    for payload in baseline_report["profiles"].values()
+                ),
+                "quality_regression_count": len(regressions),
+                "quality_regressions": regressions,
+                "baseline_summary": baseline["summary"],
+                "candidate_summary": candidate["summary"],
+            }
+        )
+    coverage = authority_identity_count / claimed_identity_count if claimed_identity_count else 1.0
+    if len(snapshot_dirs) < minimum_snapshot_count:
+        blockers.append("INSUFFICIENT_SNAPSHOTS")
+    if any(not row["baseline_complete"] for row in comparisons):
+        blockers.append("INCOMPLETE_SNAPSHOT")
+    if total_regressions:
+        blockers.append("QUALITY_REGRESSION")
+    if coverage < 1.0:
+        blockers.append("INCOMPLETE_AUTHORITY_COVERAGE")
+    return {
+        "promotion_ready": not blockers,
+        "promotion_blockers": blockers,
+        "required_snapshot_count": minimum_snapshot_count,
+        "actual_snapshot_count": len(snapshot_dirs),
+        "authority_coverage": round(coverage, 6),
+        "quality_regression_count": total_regressions,
+        "comparisons": comparisons,
+    }
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Replay snapshots with canonical metadata.")
     parser.add_argument("snapshot_dirs", nargs="+", type=Path)
@@ -168,6 +231,18 @@ def main() -> None:
         replay_snapshot(snapshot_dir, args.dataset.resolve(), authority)
         for snapshot_dir in snapshot_dirs
     ]
+    promotion = evaluate_promotion(
+        snapshot_dirs,
+        reports,
+        authority_identity_count=len(authority),
+        claimed_identity_count=len(identities),
+    )
+    promotion = evaluate_promotion(
+        snapshot_dirs,
+        reports,
+        authority_identity_count=len(authority),
+        claimed_identity_count=len(identities),
+    )
     output = {
         "report_version": "1.0",
         "claimed_identity_count": len(identities),
@@ -188,6 +263,8 @@ def main() -> None:
         "actual_api_call_count": fetcher.actual_api_call_count,
         "cache_hit_count": fetcher.cache_hit_count,
         "snapshots": reports,
+        "promotion": promotion,
+        "promotion": promotion,
     }
     args.output_dir.mkdir(parents=True, exist_ok=True)
     output_path = args.output_dir / "latest_canonical_metadata_eval.json"
@@ -206,6 +283,10 @@ def main() -> None:
             f"ndcg={summary['mean_ndcg_at_5']:.4f} "
             f"quarantined={summary['total_metadata_quarantined_count']}"
         )
+    print(
+        f"promotion_ready={promotion['promotion_ready']} "
+        f"blockers={','.join(promotion['promotion_blockers']) or 'none'}"
+    )
     print(f"Report written to: {output_path}")
 
 

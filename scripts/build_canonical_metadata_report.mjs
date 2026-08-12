@@ -2,16 +2,13 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { SpreadsheetFile, Workbook } from "@oai/artifact-tool";
 
-const [evalPath, baselineAPath, baselineBPath, outputPath, previewDir] = process.argv.slice(2);
-if (!evalPath || !baselineAPath || !baselineBPath || !outputPath) {
-  throw new Error("Usage: node build_canonical_metadata_report.mjs <eval.json> <baseline-a.json> <baseline-b.json> <output.xlsx> [preview-dir]");
+const [evalPath, baselineList, outputPath, previewDir] = process.argv.slice(2);
+if (!evalPath || !baselineList || !outputPath) {
+  throw new Error("Usage: node build_canonical_metadata_report.mjs <eval.json> <baseline-a.json;baseline-b.json> <output.xlsx> [preview-dir]");
 }
 
 const result = JSON.parse(await fs.readFile(evalPath, "utf8"));
-const baselines = [
-  JSON.parse(await fs.readFile(baselineAPath, "utf8")),
-  JSON.parse(await fs.readFile(baselineBPath, "utf8")),
-];
+const baselines = await Promise.all(baselineList.split(";").map(async item => JSON.parse(await fs.readFile(item, "utf8"))));
 const workbook = Workbook.create();
 const colors = { navy: "#17365D", blue: "#D9EAF7", white: "#FFFFFF", green: "#E2F0D9", amber: "#FFF2CC", red: "#FCE4D6", light: "#EEF5FB" };
 
@@ -35,11 +32,11 @@ for (const sheet of [overview, metrics, cases, authority, definitions]) setup(sh
 title(overview, "A1:H1", "PaperAgent 规范元数据验证候选评测");
 overview.getRange("A3:H3").values = [["重点身份", "成功解析", "原生查无", "本次 API", "缓存命中", "LLM Token", "快照数量", "当前结论"]];
 header(overview.getRange("A3:H3"));
-overview.getRange("A4:H4").values = [[result.claimed_identity_count, result.resolved_identity_count - result.not_found_identity_count, result.not_found_identity_count, result.actual_api_call_count, result.cache_hit_count, 0, result.snapshots.length, "候选有效，暂不默认开启"]];
+overview.getRange("A4:H4").values = [[result.claimed_identity_count, result.resolved_identity_count - result.not_found_identity_count, result.not_found_identity_count, result.actual_api_call_count, result.cache_hit_count, 0, result.snapshots.length, result.promotion?.promotion_ready ? "三快照门槛通过" : "暂不晋升"]];
 body(overview.getRange("A4:H4"));
 overview.getRange("H4").format.wrapText = true;
 overview.getRange("A6:H6").merge();
-overview.getRange("A6").values = [["结论：规范 arXiv ID 证据消除了查询词法门槛造成的误伤，两份快照 Recall@5 与 MRR@5 均提高 5 个百分点；仍需扩大独立快照和普通 DOI 规范来源评测后再晋升。"]];
+overview.getRange("A6").values = [[`结论：规范 arXiv ID 证据消除了查询词法门槛造成的误伤，${result.snapshots.length} 份快照 Recall@5 与 MRR@5 均提高 5 个百分点；arXiv 候选门槛已通过，普通 DOI 仍需独立评测。`]];
 overview.getRange("A6:H6").format = { fill: colors.green, font: { bold: true }, wrapText: true };
 overview.getRange("A8:H8").merge();
 overview.getRange("A8").values = [["判断边界：身份真实性由 arXiv 原生 ID 响应决定；论文与问题是否相关由重排指标决定。原生查无记录属于负证据，网络失败不缓存、也不等于查无。"]];
@@ -48,7 +45,7 @@ overview.getRange("A:H").format.columnWidth = 18;
 overview.getRange("H:H").format.columnWidth = 28;
 overview.getRange("4:4").format.rowHeight = 30;
 
-title(metrics, "A1:I1", "两份独立快照：v2 与规范元数据 v3 指标对比");
+title(metrics, "A1:I1", `${result.snapshots.length} 份独立快照：v2 与规范元数据 v3 指标对比`);
 metrics.getRange("A3:I3").values = [["快照", "策略", "Recall@5", "Recall 差值", "MRR@5", "MRR 差值", "nDCG@5", "nDCG 差值", "隔离数量"]];
 header(metrics.getRange("A3:I3"));
 const metricRows = [];
@@ -114,13 +111,13 @@ definitions.getRangeByIndexes(3, 0, definitionRows.length, 4).values = definitio
 body(definitions.getRange(`A4:D${3 + definitionRows.length}`));
 definitions.getRange("A:A").format.columnWidth = 22; definitions.getRange("B:D").format.columnWidth = 55; definitions.getRange("A3:D10").format.wrapText = true;
 
-const check = await workbook.inspect({ kind: "table", range: "指标对比!A1:I7", include: "values,formulas", tableMaxRows: 8, tableMaxCols: 9 });
+const check = await workbook.inspect({ kind: "table", range: `指标对比!A1:I${3 + metricRows.length}`, include: "values,formulas", tableMaxRows: 12, tableMaxCols: 9 });
 console.log(check.ndjson);
 const errors = await workbook.inspect({ kind: "match", searchTerm: "#REF!|#DIV/0!|#VALUE!|#NAME\\?|#N/A", options: { useRegex: true, maxResults: 100 }, summary: "formula errors" });
 console.log(errors.ndjson);
 if (previewDir) {
   await fs.mkdir(previewDir, { recursive: true });
-  const ranges = { "评测总览": "A1:H9", "指标对比": "A1:I8", "逐题对比": `A1:J${3 + caseRows.length}`, "身份验证": `A1:C${3 + authorityRows.length}`, "指标口径": "A1:D10" };
+  const ranges = { "评测总览": "A1:H9", "指标对比": `A1:I${3 + metricRows.length}`, "逐题对比": `A1:J${3 + caseRows.length}`, "身份验证": `A1:C${3 + authorityRows.length}`, "指标口径": "A1:D10" };
   for (const [sheetName, range] of Object.entries(ranges)) {
     const preview = await workbook.render({ sheetName, range, scale: 1, format: "png" });
     await fs.writeFile(path.join(previewDir, `${sheetName}.png`), new Uint8Array(await preview.arrayBuffer()));

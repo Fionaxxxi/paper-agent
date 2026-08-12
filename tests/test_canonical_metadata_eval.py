@@ -4,6 +4,7 @@ from eval_harness.canonical_metadata_eval import (
     CanonicalArxivFetcher,
     collect_claimed_arxiv_ids,
     collect_quarantined_arxiv_ids,
+    evaluate_promotion,
 )
 
 
@@ -96,3 +97,21 @@ def test_collect_quarantined_arxiv_ids_limits_authority_experiment(tmp_path):
     )
 
     assert collect_quarantined_arxiv_ids([snapshot]) == ["2205.11916"]
+
+
+def test_promotion_requires_three_complete_non_regressing_snapshots(tmp_path):
+    snapshots = []
+    candidates = []
+    for index in range(3):
+        snapshot = tmp_path / f"snapshot-{index}"
+        snapshot.mkdir()
+        baseline_case = {"case_id": "case-1", "recall_at_5": 0.5, "mrr_at_5": 0.5, "ndcg_at_5": 0.5}
+        baseline_summary = {"failed_count": 0, "partial_success_count": 0, "mean_recall_at_5": 0.5, "mean_mrr_at_5": 0.5, "mean_ndcg_at_5": 0.5}
+        (snapshot / "latest_retrieval_online.json").write_text(json.dumps({"profiles": {"multi_verified_rerank": {"summary": baseline_summary, "cases": [baseline_case]}}}), encoding="utf-8")
+        snapshots.append(snapshot)
+        candidates.append({"snapshot_id": snapshot.name, "summary": {"mean_recall_at_5": 0.6, "mean_mrr_at_5": 0.6, "mean_ndcg_at_5": 0.6}, "cases": [{**baseline_case, "recall_at_5": 0.6, "mrr_at_5": 0.6, "ndcg_at_5": 0.6}]})
+
+    result = evaluate_promotion(snapshots, candidates, authority_identity_count=4, claimed_identity_count=4)
+
+    assert result["promotion_ready"] is True
+    assert result["quality_regression_count"] == 0

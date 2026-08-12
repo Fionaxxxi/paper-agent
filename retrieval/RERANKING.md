@@ -76,6 +76,8 @@ MULTI_SOURCE_METADATA_VERIFICATION_ENABLED=false
 
 v3 当前仍是候选能力，不受 `MULTI_SOURCE_METADATA_VERIFICATION_ENABLED` 默认开关控制。晋升前还需要更多独立快照、普通 DOI 规范来源候选（例如 Crossref）的同口径评测，以及对原生查无、网络失败和来源冲突分别设定恢复策略。
 
+2026-08-12 增加第三份完整独立快照后，v3 再次得到 Recall@5 65.00%、MRR@5 62.50%、nDCG@5 65.31%，逐题回归为 0。三快照自动门槛已经通过，但现有生产开关同时覆盖多种元数据行为，因此不会直接切换；下一步先拆分 arXiv authority 开关并评测普通 DOI provider，再进行受控启用。
+
 重排使 Reflexion 金标准论文从 Top 5 外升至第 1，并提升 RAG、LightRAG 和 DPR 排名；20 题没有 Recall 或 MRR 退化。v2 在保持所有质量指标不变的同时隔离 8 条“未经原生来源确认且标题与查询明显不符”的候选，其中包括此前进入 Top 3 的异常 Chain-of-Thought 记录；本轮没有发生实际字段修复，因为进入同一身份组的原生 arXiv 记录本身已位于主记录。
 
 ## 晋升门槛

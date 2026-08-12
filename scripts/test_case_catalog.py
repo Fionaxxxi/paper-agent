@@ -564,6 +564,11 @@ TEST_CASE_CATALOG: dict[str, CaseDescription] = {
         "两份快照的隔离记录被合并、去重为最小验证集合。",
         "评测可能无差别查询所有结果，增加 API 调用且偏离误伤复核目标。",
     ),
+    "tests/test_canonical_metadata_eval.py::test_promotion_requires_three_complete_non_regressing_snapshots": _description(
+        "验证规范元数据候选只有在三份完整独立快照、权威覆盖完整且逐题无回归时才通过晋升门槛。",
+        "三份候选质量均不低于基线时 promotion_ready 为真，并记录零逐题回归。",
+        "候选可能凭单次偶然提升或不完整证据进入默认流程，造成上线后质量漂移。",
+    ),
 }
 
 
