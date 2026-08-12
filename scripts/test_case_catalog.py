@@ -814,6 +814,21 @@ TEST_CASE_CATALOG: dict[str, CaseDescription] = {
         "outcome 为 recovered，停止原因为 quality_threshold_met。",
         "成功恢复可能无法与首轮直接通过区分，影响后续能力评测。",
     ),
+    "tests/test_low_quality_generation.py::test_low_quality_stop_returns_evidence_safe_answer_without_llm": _description(
+        "验证第二轮仍低质量时跳过大模型并返回证据安全的降级答复。",
+        "回答明确标记证据不足、列出待核验候选，generation_skipped 为真且无 LLM 调用。",
+        "系统可能把低质量证据包装成确定结论，并继续浪费生成 Token。",
+    ),
+    "tests/test_low_quality_generation.py::test_accepted_retrieval_keeps_normal_generation_path": _description(
+        "验证质量通过的检索仍走原有 Skill/生成路径。",
+        "accepted 状态正常执行技能并返回原回答。",
+        "质量闸门可能误拦截正常任务，造成不必要降级。",
+    ),
+    "tests/test_low_quality_generation.py::test_metrics_records_recovery_budget_and_generation_mode": _description(
+        "验证指标记录检索恢复、预算耗尽、回答模式和生成跳过状态。",
+        "预算耗尽为真、恢复为假，answer_mode 与 generation_skipped 正确写入。",
+        "降级行为可能无法审计，后续无法比较 Replan、Reflection 与普通重试。",
+    ),
 }
 
 

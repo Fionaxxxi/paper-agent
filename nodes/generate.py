@@ -75,8 +75,45 @@ def build_fallback_answer(state: AgentState, error_message: str = "") -> str:
 """
 
 
+def build_low_quality_answer(state: AgentState) -> str:
+    """Return an evidence-safe answer without spending another LLM call."""
+    documents = state.get("documents", [])[: settings.MAX_GENERATE_DOCS]
+    candidate_lines = [
+        f"- {doc.get('title', '未命名论文')}"
+        for doc in documents
+    ]
+    candidates = "\n".join(candidate_lines) or "- 暂无可用候选论文"
+    replan = state.get("retrieval_replan", {})
+    reason = replan.get("reason") or "第二轮检索质量仍低于系统门槛"
+
+    return f"""## 证据不足，已停止继续检索
+
+本次检索已经完成一次受控重规划，但第二轮结果仍不足以支持可靠结论。系统已达到重试预算上限，因此不会继续循环，也不会调用大模型基于低质量证据生成答案。
+
+### 停止原因
+
+{reason}
+
+### 待人工核验的候选论文
+
+{candidates}
+
+建议缩小研究主题、补充作者/论文名/年份等限定信息，或稍后在外部论文数据源恢复后重试。
+"""
+
+
 def generate_node(state: AgentState) -> AgentState:
     task_type = state.get("task_type", "qa")
+
+    if state.get("retrieval_outcome") == "stopped_low_quality":
+        return {
+            "answer": build_low_quality_answer(state),
+            "paper_metadata": {
+                **state.get("paper_metadata", {}),
+                "answer_mode": "insufficient_evidence",
+                "generation_skipped": True,
+            },
+        }
 
     if task_type != "pdf_reading" and not state.get("documents"):
         return {

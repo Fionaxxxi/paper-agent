@@ -68,6 +68,12 @@ def metrics_node(state: AgentState) -> AgentState:
         "retrieval_source": paper_metadata.get("retrieval_source", ""),
         "cache_hit": paper_metadata.get("cache_hit", False),
         "retry_count": state.get("retry_count", 0),
+        "retrieval_outcome": state.get("retrieval_outcome", ""),
+        "retrieval_stop_reason": state.get("retrieval_stop_reason", ""),
+        "retrieval_recovered": state.get("retrieval_outcome") == "recovered",
+        "retrieval_budget_exhausted": (
+            state.get("retrieval_stop_reason") == "retry_budget_exhausted"
+        ),
 
         # Agentic RAG / Query Planning
         "query_plan_enabled": paper_metadata.get(
@@ -174,6 +180,8 @@ def metrics_node(state: AgentState) -> AgentState:
         "rule_task_type": paper_metadata.get("rule_task_type", ""),
         "skill_used": paper_metadata.get("skill_used", ""),
         "citation_format": paper_metadata.get("citation_format", ""),
+        "answer_mode": paper_metadata.get("answer_mode", "normal"),
+        "generation_skipped": paper_metadata.get("generation_skipped", False),
 
         # Memory
         "conversation_id": state.get("conversation_id", ""),
@@ -208,6 +216,8 @@ def print_metrics(metrics: dict) -> None:
     print(f"retrieval_source: {metrics['retrieval_source']}")
     print(f"cache_hit: {metrics['cache_hit']}")
     print(f"retry_count: {metrics['retry_count']}")
+    print(f"retrieval_outcome: {metrics['retrieval_outcome']}")
+    print(f"retrieval_stop_reason: {metrics['retrieval_stop_reason']}")
 
     print("\n[Agentic RAG]")
     print(f"query_plan_enabled: {metrics['query_plan_enabled']}")
