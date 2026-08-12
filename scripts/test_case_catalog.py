@@ -899,6 +899,26 @@ TEST_CASE_CATALOG: dict[str, CaseDescription] = {
         "重建结果逐字段等于版本控制中的数据集，包括真实 chunk ID 与证据片段。",
         "标注产物可能不可复现，或处理组件变化后证据坐标已悄悄失效。",
     ),
+    "tests/test_local_rag_bm25.py::test_mixed_tokenizer_supports_chinese_and_english_queries": _description(
+        "验证 BM25 基线能把中文问题与英文术语、数字混合分词。",
+        "输出同时包含英文词、中文单字/双字和实验数值，支持中文提问检索英文论文。",
+        "跨语言术语或数值可能完全不进入索引，导致检索结果与算法质量无关地失败。",
+    ),
+    "tests/test_local_rag_bm25.py::test_bm25_ranks_matching_chunk_first_and_is_deterministic": _description(
+        "验证 BM25 将包含查询词的文本块排在无关块之前，且重复运行排名与分数一致。",
+        "相关块排名第一、得分更高，两次检索结果逐项相同。",
+        "BM25 公式、排序方向或并列规则可能错误，使基线不可复现或相关结果后移。",
+    ),
+    "tests/test_local_rag_bm25.py::test_bm25_rejects_invalid_configuration_and_limit": _description(
+        "验证 BM25 拒绝空语料和非正数返回条数。",
+        "非法配置明确抛出 ValueError，不产生空索引或误导性排名。",
+        "评测可能在没有语料或错误 K 值时静默运行并输出无意义指标。",
+    ),
+    "tests/test_local_rag_bm25.py::test_local_rag_metrics_use_exact_gold_chunk_rank": _description(
+        "用手工可计算的排名验证本地 RAG Recall、MRR 与 nDCG 公式。",
+        "金标准位于第二名时 Recall@1 为 0、Recall@3 为 1、MRR 为 0.5、nDCG 为 0.63093。",
+        "指标公式或排名下标可能错误，导致后续技术选型基于虚假的提升数据。",
+    ),
 }
 
 
