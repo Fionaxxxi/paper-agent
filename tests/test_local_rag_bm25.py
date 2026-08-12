@@ -36,3 +36,10 @@ def test_local_rag_metrics_use_exact_gold_chunk_rank():
     assert metrics["recall_at_3"] == 1
     assert metrics["mrr_at_3"] == 0.5
     assert metrics["ndcg_at_3"] == 0.63093
+
+
+def test_local_rag_metrics_do_not_double_count_duplicate_page_hits():
+    metrics = _metrics(["page-1", "page-1", "noise"], {"page-1"}, [3])
+    assert metrics["recall_at_3"] == 1
+    assert metrics["mrr_at_3"] == 1
+    assert metrics["ndcg_at_3"] == 1

@@ -919,6 +919,21 @@ TEST_CASE_CATALOG: dict[str, CaseDescription] = {
         "金标准位于第二名时 Recall@1 为 0、Recall@3 为 1、MRR 为 0.5、nDCG 为 0.63093。",
         "指标公式或排名下标可能错误，导致后续技术选型基于虚假的提升数据。",
     ),
+    "tests/test_local_rag_query_rewrite.py::test_query_expansion_preserves_original_and_adds_auditable_terms": _description(
+        "验证规则查询扩展保留原问题，并把命中的中文科研术语追加为可审计英文术语。",
+        "短期记忆和长期记忆分别扩展为对应英文表达，且返回明确的来源到目标映射。",
+        "查询可能丢失用户原意、产生不可追踪改写，或无法跨越中英文词汇鸿沟。",
+    ),
+    "tests/test_local_rag_query_rewrite.py::test_query_expansion_is_deterministic_and_leaves_unknown_query_unchanged": _description(
+        "验证未登记术语不被猜测改写，并且相同输入的扩展结果完全一致。",
+        "未知问题原样返回，已知术语重复运行得到相同查询和匹配记录。",
+        "规则可能过度改写未知问题或产生不稳定结果，使 A/B 对照不可复现。",
+    ),
+    "tests/test_local_rag_bm25.py::test_local_rag_metrics_do_not_double_count_duplicate_page_hits": _description(
+        "验证同一相关 PDF 页返回多个 Chunk 时，page-level 指标只计算首次命中。",
+        "重复页的 Recall、MRR、nDCG 均不超过 1，nDCG 恰为 1。",
+        "同一页可能被重复计分，导致 nDCG 大于 100% 并制造虚假检索提升。",
+    ),
 }
 
 
