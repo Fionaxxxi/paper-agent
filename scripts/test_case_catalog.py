@@ -829,6 +829,26 @@ TEST_CASE_CATALOG: dict[str, CaseDescription] = {
         "预算耗尽为真、恢复为假，answer_mode 与 generation_skipped 正确写入。",
         "降级行为可能无法审计，后续无法比较 Replan、Reflection 与普通重试。",
     ),
+    "tests/test_quality_gate_eval.py::test_quality_gate_blocks_low_quality_without_false_blocks_or_llm_cost": _description(
+        "验证质量闸门能阻断低质量生成，同时不误拦截正常任务并减少模拟 LLM 成本。",
+        "阻断准确率和格式合规率 100%，误阻断率 0%，避免 4 次调用和 480 Token。",
+        "闸门可能漏放低质量证据、误阻断正常回答，或没有产生实际成本收益。",
+    ),
+    "tests/test_rag_eval_models.py::test_rag_dataset_accepts_versioned_grounded_case": _description(
+        "验证本地 RAG 评测数据能记录版本化问题、答案、证据片段、页码和来源。",
+        "合法数据通过校验，语料版本与证据页码可审计。",
+        "RAG 实验可能缺少可复现语料版本或人工证据依据。",
+    ),
+    "tests/test_rag_eval_models.py::test_rag_dataset_rejects_invalid_pages_and_duplicate_evidence": _description(
+        "验证错误页码和重复证据身份会被评测契约拒绝。",
+        "页码倒置或跨案例重复 document/chunk 身份均触发 ValidationError。",
+        "脏标注可能污染 Recall、引用定位和技术选型结论。",
+    ),
+    "tests/test_rag_eval_models.py::test_rag_experiment_config_keeps_technology_choices_replaceable": _description(
+        "验证 Dense 与 Graph 等 RAG 技术通过统一配置字段替换，而非写死实现。",
+        "不同 retriever family、Embedding、Store 和 Graph Retriever 可使用独立 config_id。",
+        "项目可能在评测前绑定单一产品，无法进行公平单变量对照。",
+    ),
 }
 
 
