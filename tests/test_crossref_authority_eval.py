@@ -1,6 +1,11 @@
 import json
 
-from eval_harness.crossref_authority_eval import collect_stable_ordinary_doi_claims, evaluate_claims
+from eval_harness.crossref_authority_eval import (
+    collect_stable_ordinary_doi_claims,
+    compare_providers,
+    evaluate_claims,
+    select_stratified_claims,
+)
 
 
 def test_collects_only_ordinary_dois_stable_across_all_snapshots(tmp_path):
@@ -30,3 +35,28 @@ def test_crossref_eval_separates_match_conflict_not_found_and_failure():
     result = evaluate_claims(claims, fetcher)
 
     assert (result["match_count"], result["title_conflict_count"], result["not_found_count"], result["failed_count"]) == (1, 1, 1, 1)
+
+
+def test_stratified_sample_round_robins_doi_prefixes():
+    claims = [
+        {"doi": "10.1/a", "doi_prefix": "10.1"},
+        {"doi": "10.1/b", "doi_prefix": "10.1"},
+        {"doi": "10.2/a", "doi_prefix": "10.2"},
+        {"doi": "10.3/a", "doi_prefix": "10.3"},
+    ]
+
+    selected = select_stratified_claims(claims, 3)
+
+    assert {row["doi_prefix"] for row in selected} == {"10.1", "10.2", "10.3"}
+
+
+def test_provider_comparison_counts_only_two_successful_titles():
+    results = [
+        {"provider": "a", "rows": [{"doi": "x", "status": "MATCH", "canonical_title": "Same Paper"}, {"doi": "y", "status": "FAILED", "canonical_title": ""}]},
+        {"provider": "b", "rows": [{"doi": "x", "status": "MATCH", "canonical_title": "Same Paper"}, {"doi": "y", "status": "MATCH", "canonical_title": "Other"}]},
+    ]
+
+    comparison = compare_providers(results)
+
+    assert comparison["comparable_count"] == 1
+    assert comparison["title_agreement_rate"] == 1.0

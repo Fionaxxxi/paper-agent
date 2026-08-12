@@ -101,4 +101,6 @@ D:\miniconda3\envs\paper_agent\python.exe -m eval_harness.retrieval_online `
 
 普通 DOI 首轮候选评测从三份快照共同稳定出现的非 arXiv DOI 中固定抽取 20 条，通过 `paper.lookup.crossref` 查询：成功覆盖 20/20、标题匹配 20/20、标题冲突 0、查无 0、失败 0，实际 API 调用 20，LLM Token 0。失败结果不缓存。本轮只验证工具契约和初步覆盖，不作为 Crossref 已胜出或可默认启用的结论。
 
+普通 DOI 第二轮使用相同三份快照形成 51 条稳定总体，按 DOI 前缀轮转抽取 40 条、覆盖 19 个前缀，同时通过统一 `paper.lookup` 比较 Crossref 与 Semantic Scholar。Crossref 明确响应 40/40，其中标题匹配 38、查无 2、失败 0；Semantic Scholar 匿名访问明确响应 23/40，其中匹配 18、冲突 2、查无 3、限流失败 17。双方可比的 19 条标题中 18 条一致（94.74%）。当前结论只证明 Crossref 在现有网络配置下更稳定；Semantic Scholar 需配置 API Key 后复测，429 必须记录为 `RATE_LIMITED`，不得合并到查无率。
+
 正式晋升必须满足：OpenAlex Key 已配置、所有配置使用同一数据集版本、失败状态已消除、逐题结果完整保存，并且元数据冲突论文不进入高排名。

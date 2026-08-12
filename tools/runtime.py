@@ -4,6 +4,7 @@ from tools.arxiv_adapter import ArxivLookupTool, ArxivSearchTool
 from tools.crossref_adapter import CrossrefLookupTool
 from tools.executor import ToolExecutor
 from tools.openalex_adapter import OpenAlexSearchTool
+from tools.semantic_scholar_adapter import SemanticScholarLookupTool
 from tools.registry import ToolRegistry
 from tools.router import ToolRouter
 
@@ -14,6 +15,7 @@ def build_default_tool_runtime() -> tuple[ToolRegistry, ToolRouter, ToolExecutor
     registry.register(ArxivLookupTool())
     registry.register(OpenAlexSearchTool())
     registry.register(CrossrefLookupTool())
+    registry.register(SemanticScholarLookupTool())
 
     router = ToolRouter()
     router.register_route(
@@ -25,6 +27,11 @@ def build_default_tool_runtime() -> tuple[ToolRegistry, ToolRouter, ToolExecutor
         capability="paper.lookup",
         source="crossref",
         tool_name="paper.lookup.crossref",
+    )
+    router.register_route(
+        capability="paper.lookup",
+        source="semantic_scholar",
+        tool_name="paper.lookup.semantic_scholar",
     )
     router.register_route(
         capability="paper.lookup",

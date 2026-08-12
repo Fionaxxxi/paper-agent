@@ -281,6 +281,48 @@ def test_crossref_lookup_adapter_uses_shared_lookup_contract():
     assert output["paper"]["doi"] == "10.1/demo"
 
 
+def test_semantic_scholar_client_normalizes_doi_metadata(monkeypatch):
+    from tools.semantic_scholar_client import SemanticScholarClient
+
+    class Response:
+        status_code = 200
+        def raise_for_status(self): pass
+        def json(self):
+            return {"title": "Canonical Paper", "authors": [{"name": "Ada Lovelace"}], "year": 2024, "externalIds": {"DOI": "10.1/demo"}, "url": "https://www.semanticscholar.org/paper/demo", "openAccessPdf": {"url": "https://example.com/demo.pdf"}}
+
+    calls = []
+    monkeypatch.setattr("tools.semantic_scholar_client.requests.get", lambda url, **kwargs: calls.append((url, kwargs)) or Response())
+    paper = SemanticScholarClient("https://api.semanticscholar.org/graph/v1", "secret", 5).lookup_paper("10.1/demo")
+
+    assert paper["source"] == "semantic_scholar"
+    assert paper["authors"] == ["Ada Lovelace"]
+    assert "DOI%3A10.1%2Fdemo" in calls[0][0]
+    assert calls[0][1]["headers"]["x-api-key"] == "secret"
+
+
+def test_semantic_scholar_adapter_uses_shared_lookup_contract():
+    from tools.semantic_scholar_adapter import SemanticScholarLookupTool
+
+    class Client:
+        def lookup_paper(self, doi):
+            return {"title": "DOI Paper", "doi": doi, "source": "semantic_scholar"}
+
+    output = SemanticScholarLookupTool(Client()).invoke(PaperLookupInput(identity="10.1/demo"))
+
+    assert output["paper"]["doi"] == "10.1/demo"
+
+
+def test_semantic_scholar_client_maps_rate_limit_to_tool_error(monkeypatch):
+    from tools.contracts import ToolRateLimitError
+    from tools.semantic_scholar_client import SemanticScholarClient
+
+    response = type("Response", (), {"status_code": 429})()
+    monkeypatch.setattr("tools.semantic_scholar_client.requests.get", lambda *args, **kwargs: response)
+
+    with pytest.raises(ToolRateLimitError):
+        SemanticScholarClient("https://api.semanticscholar.org/graph/v1").lookup_paper("10.1/demo")
+
+
 def test_metrics_reports_tool_execution_success_failure_and_latency():
     result = metrics_node(
         {

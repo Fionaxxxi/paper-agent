@@ -28,6 +28,10 @@ class Settings(BaseSettings):
     CROSSREF_BASE_URL: str = "https://api.crossref.org"
     CROSSREF_MAILTO: str = ""
 
+    # Semantic Scholar candidate authority provider
+    SEMANTIC_SCHOLAR_BASE_URL: str = "https://api.semanticscholar.org/graph/v1"
+    SEMANTIC_SCHOLAR_API_KEY: str = ""
+
     # Tool execution
     TOOL_TIMEOUT_SECONDS: float = 45.0
 

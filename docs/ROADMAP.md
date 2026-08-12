@@ -1337,11 +1337,9 @@ Push / Pull Request
 → 重跑 multi / multi_rerank / multi_verified_rerank / multi_canonical_rerank A/B
 → 质量无回归且隔离准确率、稳定度达标后，再考虑默认开启重排与校验
 
-2026-08-12 已完成 arXiv authority 独立开关和普通 DOI 可替换 `paper.lookup` 接口。Crossref 首轮使用三份快照均稳定出现的 20 个普通 DOI：查询覆盖率 100%，标题匹配 20/20，冲突、查无和失败均为 0，LLM Token 为 0。该样本按稳定 DOI 排序抽取，尚不足以固定选型；下一轮需要按 DOI 注册机构或出版商分层扩大样本，并与至少一个替代规范来源比较。
-
-2026-08-12 已完成 arXiv authority 独立开关和普通 DOI 可替换 `paper.lookup` 接口。Crossref 首轮使用三份快照均稳定出现的 20 个普通 DOI：查询覆盖率 100%，标题匹配 20/20，冲突、查无和失败均为 0，LLM Token 为 0。该样本按稳定 DOI 排序抽取，尚不足以固定选型；下一轮需要按 DOI 注册机构或出版商分层扩大样本，并与至少一个替代规范来源比较。
-
 2026-08-12 已完成 arXiv authority 独立开关和普通 DOI 可替换 `paper.lookup` 接口。Crossref 首轮使用三份快照均稳定出现的 20 个普通 DOI：查询覆盖率 100%，标题匹配 20/20，冲突、查无和失败均为 0，LLM Token 为 0。该样本按稳定 DOI 排序抽取，尚不足以固定选型；下一轮需要按 DOI 注册机构/出版商分层扩大样本，并与至少一个替代规范来源比较。
+
+2026-08-12 已完成第二轮分层 provider 对比：从 51 条三快照稳定普通 DOI 中按 DOI 前缀轮转抽取 40 条，覆盖 19 个前缀。Crossref 明确响应 40/40，标题匹配 38、查无 2、失败 0；Semantic Scholar 匿名访问明确响应 23/40，标题匹配 18、冲突 2、查无 3、RATE_LIMITED 17。双方均返回标题的 19 条中有 18 条一致，一致率 94.74%。因此 Crossref 进入下一轮生产 A/B，Semantic Scholar 保留为配置 API Key 后复测的候选；限流不视为语料查无或负身份依据。两者均尚未设为生产默认。
 → 随后实现来源级与子查询级有界异步并行
 → 再进入失败类型驱动的 Retrieval Replan 和 Reflection
 ```

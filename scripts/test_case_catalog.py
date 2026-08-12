@@ -594,55 +594,30 @@ TEST_CASE_CATALOG: dict[str, CaseDescription] = {
         "四类状态分别计数，失败不会被伪装成查无或元数据冲突。",
         "临时网络故障可能错误触发论文隔离，污染 authority provider 选型指标。",
     ),
-    "tests/test_tool_layer.py::test_crossref_client_normalizes_doi_metadata": _description(
-        "验证 Crossref 客户端正确编码 DOI，并把标题、作者、年份和链接归一为统一论文结构。",
-        "带斜杠 DOI 被安全编码，Crossref 响应字段准确进入 PaperRecord。",
-        "普通 DOI 查询可能因 URL 错误或字段映射错误产生伪冲突和错误修复。",
+    "tests/test_crossref_authority_eval.py::test_stratified_sample_round_robins_doi_prefixes": _description(
+        "验证普通 DOI 样本按注册前缀轮转抽取，避免单一高频前缀垄断评测集。",
+        "样本容量允许时优先覆盖不同前缀，再抽取同前缀的第二条记录。",
+        "按字典序直接截取可能让 ACL 等单一出版群体主导选型结论。",
     ),
-    "tests/test_tool_layer.py::test_crossref_lookup_adapter_uses_shared_lookup_contract": _description(
-        "验证 Crossref 与 arXiv 共用 paper.lookup 工具能力和 Pydantic 输出契约。",
-        "同一工具运行时可以替换 authority provider。",
-        "Crossref 可能变成绕过工具约束的特例，增加后续 MCP 接入和选型替换成本。",
+    "tests/test_crossref_authority_eval.py::test_provider_comparison_counts_only_two_successful_titles": _description(
+        "验证 provider 一致率只使用双方均成功返回标题的 DOI。",
+        "单方失败的记录不进入分母，双方标题一致时正确计入一致数量。",
+        "限流失败可能被当成元数据不一致，错误贬低候选 provider。",
     ),
-    "tests/test_multi_source_retrieval.py::test_arxiv_authority_switch_is_independent_from_legacy_metadata_gate": _description(
-        "验证 arXiv 原生身份验证可独立于旧版词法元数据开关受控启用。",
-        "旧 v2 开关关闭时，独立开关仍能注入原生证据、修复标题并记录 lookup 工具。",
-        "v3 可能被旧综合开关绑定，无法安全灰度或单独回滚。",
+    "tests/test_tool_layer.py::test_semantic_scholar_client_normalizes_doi_metadata": _description(
+        "验证 Semantic Scholar DOI 精确查询、API Key 请求头和统一论文字段映射。",
+        "DOI 被安全编码，作者、年份、外部 DOI 与开放 PDF 进入 PaperRecord。",
+        "替代 provider 可能因 URL 或认证错误产生系统性失败。",
     ),
-    "tests/test_crossref_authority_eval.py::test_collects_only_ordinary_dois_stable_across_all_snapshots": _description(
-        "验证普通 DOI 候选评测只使用所有独立快照都出现的非 arXiv DOI。",
-        "不稳定记录和 arXiv DOI 被排除，保留可复现的普通出版 DOI。",
-        "评测可能混入快照漂移或重复验证 arXiv 身份，导致候选覆盖结论失真。",
+    "tests/test_tool_layer.py::test_semantic_scholar_adapter_uses_shared_lookup_contract": _description(
+        "验证 Semantic Scholar 与 Crossref 共用 paper.lookup 工具契约。",
+        "Router 和 Executor 可以按 provider 替换实现而无需改动调用方。",
+        "第二候选源可能绕过 Registry、Policy 和输出校验，破坏工具层边界。",
     ),
-    "tests/test_crossref_authority_eval.py::test_crossref_eval_separates_match_conflict_not_found_and_failure": _description(
-        "验证 Crossref 评测严格区分标题匹配、标题冲突、规范查无和网络失败。",
-        "四类状态分别计数，失败不会被伪装成查无或元数据冲突。",
-        "临时网络故障可能错误触发论文隔离，污染 provider 选型指标。",
-    ),
-    "tests/test_tool_layer.py::test_crossref_client_normalizes_doi_metadata": _description(
-        "验证 Crossref 客户端正确编码 DOI，并把标题、作者、年份和链接归一为统一论文结构。",
-        "带斜杠 DOI 被安全编码，Crossref 响应字段准确进入 PaperRecord。",
-        "普通 DOI 查询可能因 URL 错误或字段映射错误产生伪冲突和错误修复。",
-    ),
-    "tests/test_tool_layer.py::test_crossref_lookup_adapter_uses_shared_lookup_contract": _description(
-        "验证 Crossref 与 arXiv 共用 paper.lookup 工具能力和 Pydantic 输出契约。",
-        "同一工具运行时可以替换 authority provider。",
-        "Crossref 可能变成绕过工具约束的特例，增加后续 MCP 接入和选型替换成本。",
-    ),
-    "tests/test_multi_source_retrieval.py::test_arxiv_authority_switch_is_independent_from_legacy_metadata_gate": _description(
-        "验证 arXiv 原生身份验证可独立于旧版词法元数据开关受控启用。",
-        "旧 v2 开关关闭时，独立开关仍能注入原生证据、修复标题并记录 lookup 工具。",
-        "v3 可能被旧综合开关绑定，无法安全灰度或单独回滚。",
-    ),
-    "tests/test_crossref_authority_eval.py::test_collects_only_ordinary_dois_stable_across_all_snapshots": _description(
-        "验证普通 DOI 候选评测只使用所有独立快照都出现的非 arXiv DOI。",
-        "不稳定记录和 arXiv DOI 被排除，保留可复现的普通出版 DOI。",
-        "评测可能混入快照漂移或重复验证 arXiv 身份，导致候选覆盖结论失真。",
-    ),
-    "tests/test_crossref_authority_eval.py::test_crossref_eval_separates_match_conflict_not_found_and_failure": _description(
-        "验证 Crossref 评测严格区分标题匹配、标题冲突、规范查无和网络失败。",
-        "四类状态分别计数，失败不会被伪装成查无或元数据冲突。",
-        "临时网络故障可能错误触发论文隔离，污染 provider 选型指标。",
+    "tests/test_tool_layer.py::test_semantic_scholar_client_maps_rate_limit_to_tool_error": _description(
+        "验证 Semantic Scholar HTTP 429 被映射为 RATE_LIMITED。",
+        "限流进入可重试失败类别，不被误记为论文查无。",
+        "匿名访问限流可能污染覆盖率并错误触发论文隔离。",
     ),
 }
 
