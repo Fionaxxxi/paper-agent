@@ -84,6 +84,8 @@ arXiv authority 现由 `ARXIV_AUTHORITY_VERIFICATION_ENABLED` 独立控制，默
 
 多来源搜索支持 `MULTI_SOURCE_PARALLEL_ENABLED` 有界并行。同步 provider 通过最多 `MULTI_SOURCE_MAX_WORKERS` 个线程并发执行，但结果始终按 `MULTI_SOURCE_PROVIDERS` 配置顺序收集，因此并发完成顺序不会改变去重和重排语义。单来源不创建线程池，开关默认关闭。
 
+复杂查询还支持独立的 `MULTI_QUERY_PARALLEL_ENABLED` 子查询并行开关，最大并发由 `MULTI_QUERY_MAX_WORKERS` 控制，默认同样关闭。子查询结果按查询规划顺序收集；在来源级并行通过真实网络门槛前，不建议同时开启两级并行，以免放大限流。
+
 重排使 Reflexion 金标准论文从 Top 5 外升至第 1，并提升 RAG、LightRAG 和 DPR 排名；20 题没有 Recall 或 MRR 退化。v2 在保持所有质量指标不变的同时隔离 8 条“未经原生来源确认且标题与查询明显不符”的候选，其中包括此前进入 Top 3 的异常 Chain-of-Thought 记录；本轮没有发生实际字段修复，因为进入同一身份组的原生 arXiv 记录本身已位于主记录。
 
 ## 晋升门槛

@@ -1,3 +1,5 @@
+import time
+
 import nodes.retrieve as retrieve_module
 
 
@@ -69,3 +71,50 @@ def test_multiple_planned_queries_use_multi_query_retrieval(monkeypatch):
 
     assert calls == [("multi", queries)]
     assert result["paper_metadata"]["agentic_rag_enabled"] is True
+
+
+def _planned_result(query):
+    return {
+        "documents": [{"entry_id": query, "title": query}],
+        "retrieval_source": "arxiv",
+        "search_query": query,
+        "cache_hit_count": 0,
+        "source_statuses": [{"provider": "arxiv", "query": query}],
+        "tool_executions": [],
+        "tools_used": [f"tool-{query}"],
+    }
+
+
+def test_multi_query_parallel_preserves_planned_order(monkeypatch):
+    monkeypatch.setattr(retrieve_module.settings, "MULTI_QUERY_PARALLEL_ENABLED", True)
+    monkeypatch.setattr(retrieve_module.settings, "MULTI_QUERY_MAX_WORKERS", 2)
+    monkeypatch.setattr(
+        retrieve_module,
+        "retrieve_by_query",
+        lambda query, state: (
+            time.sleep(0.03 if query == "first" else 0.001) or _planned_result(query)
+        ),
+    )
+
+    result = retrieve_module.retrieve_multi_query({}, ["first", "second"])
+
+    assert result["paper_metadata"]["search_queries"] == ["first", "second"]
+    assert [row["title"] for row in result["documents"]] == ["first", "second"]
+
+
+def test_multi_query_single_query_does_not_create_pool(monkeypatch):
+    monkeypatch.setattr(retrieve_module.settings, "MULTI_QUERY_PARALLEL_ENABLED", True)
+    monkeypatch.setattr(
+        retrieve_module,
+        "retrieve_by_query",
+        lambda query, state: _planned_result(query),
+    )
+    monkeypatch.setattr(
+        retrieve_module,
+        "ThreadPoolExecutor",
+        lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("pool should not be used")),
+    )
+
+    result = retrieve_module.retrieve_multi_query({}, ["only"])
+
+    assert result["paper_metadata"]["search_queries"] == ["only"]

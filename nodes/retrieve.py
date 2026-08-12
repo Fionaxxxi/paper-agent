@@ -414,8 +414,20 @@ def retrieve_multi_query(state: AgentState, sub_queries: List[str]) -> AgentStat
     cache_hit_count = 0
     tools_used = list(state.get("tools_used", []))
 
-    for sub_query in sub_queries:
-        single_result = retrieve_by_query(sub_query, state)
+    if settings.MULTI_QUERY_PARALLEL_ENABLED and len(sub_queries) > 1:
+        worker_count = max(1, min(settings.MULTI_QUERY_MAX_WORKERS, len(sub_queries)))
+        with ThreadPoolExecutor(max_workers=worker_count) as pool:
+            futures = [
+                pool.submit(retrieve_by_query, sub_query, state)
+                for sub_query in sub_queries
+            ]
+            query_results = [future.result() for future in futures]
+    else:
+        query_results = [
+            retrieve_by_query(sub_query, state) for sub_query in sub_queries
+        ]
+
+    for single_result in query_results:
 
         documents = single_result.get("documents", [])
         document_groups.append(documents)

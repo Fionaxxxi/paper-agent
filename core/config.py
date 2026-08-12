@@ -20,6 +20,8 @@ class Settings(BaseSettings):
     DOI_AUTHORITY_VERIFICATION_ENABLED: bool = False
     MULTI_SOURCE_PARALLEL_ENABLED: bool = False
     MULTI_SOURCE_MAX_WORKERS: int = 2
+    MULTI_QUERY_PARALLEL_ENABLED: bool = False
+    MULTI_QUERY_MAX_WORKERS: int = 2
 
     # OpenAlex
     OPENALEX_BASE_URL: str = "https://api.openalex.org"

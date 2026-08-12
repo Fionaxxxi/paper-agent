@@ -709,6 +709,66 @@ TEST_CASE_CATALOG: dict[str, CaseDescription] = {
         "至少获得 1.5 倍加速、30% 延迟下降和 100% 结果一致率。",
         "单次偶然计时可能被误认为稳定性能提升，或并行改变业务结果。",
     ),
+    "tests/test_parallel_retrieval_online.py::test_online_parallel_ab_reports_latency_equivalence_and_gate": _description(
+        "验证在线串行/并行 A/B 同时记录延迟、结果重合率与晋升门槛。",
+        "请求数、P95、结果重合率和 acceptance_passed 均按成对实验正确计算。",
+        "在线性能结论可能缺少结果等价约束，导致以质量回归换取速度。",
+    ),
+    "tests/test_parallel_retrieval_online.py::test_online_parallel_ab_counts_rate_limit_and_blocks_gate": _description(
+        "验证外部来源限流会被单独统计并阻止并行开关晋升。",
+        "RATE_LIMITED 计数完整，acceptance_passed 为 false。",
+        "并行放大的限流风险可能被速度指标掩盖。",
+    ),
+    "tests/test_parallel_retrieval_online.py::test_online_parallel_ab_blocks_equal_fallback_results_after_network_failure": _description(
+        "验证网络全失败时，即使兜底结果完全相同也不能形成假阳性。",
+        "结果重合率可为 100%，但失败计数会阻止晋升。",
+        "相同兜底结果可能被误认成真实检索结果等价。",
+    ),
+    "tests/test_parallel_retrieval_online.py::test_online_parallel_ab_rejects_invalid_budget_and_writes_report": _description(
+        "验证在线评测拒绝空查询或非法预算，并能写出可审计 JSON。",
+        "非法输入抛出异常，合法报告可读且查询数正确。",
+        "评测可能无意产生零样本结论或无法留档。",
+    ),
+    "tests/test_retrieve_planning.py::test_multi_query_parallel_preserves_planned_order": _description(
+        "验证子查询完成顺序不同也不会改变规划顺序与合并结果顺序。",
+        "慢查询和快查询并发完成后仍按 first、second 顺序收集。",
+        "并发竞态可能使复杂任务结果不可复现。",
+    ),
+    "tests/test_retrieve_planning.py::test_multi_query_single_query_does_not_create_pool": _description(
+        "验证只有一个子查询时不创建线程池。",
+        "单子查询继续走直接调用路径。",
+        "简单任务可能承担不必要的并发调度成本。",
+    ),
+    "tests/test_parallel_retrieval_online.py::test_online_parallel_ab_reports_latency_equivalence_and_gate": _description(
+        "验证在线串行/并行 A/B 同时记录延迟、结果重合率与晋升门槛。",
+        "请求数、P95、结果重合率和 acceptance_passed 均按成对实验正确计算。",
+        "在线性能结论可能缺少结果等价约束，导致以质量回归换取速度。",
+    ),
+    "tests/test_parallel_retrieval_online.py::test_online_parallel_ab_counts_rate_limit_and_blocks_gate": _description(
+        "验证外部来源限流会被单独统计并阻止并行开关晋升。",
+        "RATE_LIMITED 计数完整，acceptance_passed 为 false。",
+        "并行放大的限流风险可能被速度指标掩盖。",
+    ),
+    "tests/test_parallel_retrieval_online.py::test_online_parallel_ab_blocks_equal_fallback_results_after_network_failure": _description(
+        "验证网络全失败时，即使兜底结果完全相同也不能形成假阳性。",
+        "结果重合率可为 100%，但失败计数会阻止晋升。",
+        "相同兜底结果可能被误认成真实检索结果等价。",
+    ),
+    "tests/test_parallel_retrieval_online.py::test_online_parallel_ab_rejects_invalid_budget_and_writes_report": _description(
+        "验证在线评测拒绝空查询或非法预算，并能写出可审计 JSON。",
+        "非法输入抛出异常，合法报告可读且查询数正确。",
+        "评测可能无意产生零样本结论或无法留档。",
+    ),
+    "tests/test_retrieve_planning.py::test_multi_query_parallel_preserves_planned_order": _description(
+        "验证子查询完成顺序不同也不会改变规划顺序与合并结果顺序。",
+        "慢查询和快查询并发完成后仍按 first、second 顺序收集。",
+        "并发竞态可能使复杂任务结果不可复现。",
+    ),
+    "tests/test_retrieve_planning.py::test_multi_query_single_query_does_not_create_pool": _description(
+        "验证只有一个子查询时不创建线程池。",
+        "单子查询继续走直接调用路径。",
+        "简单任务可能承担不必要的并发调度成本。",
+    ),
 }
 
 
