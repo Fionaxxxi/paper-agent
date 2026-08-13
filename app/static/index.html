@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>PaperAgent 演示台</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <header class="hero">
+    <div>
+      <p class="eyebrow">LANGGRAPH · TOOL LAYER · HYBRID RAG</p>
+      <h1>PaperAgent</h1>
+      <p class="subtitle">科研论文智能体演示台</p>
+    </div>
+    <div class="status"><span></span><b>API 已连接</b><small id="mode">读取运行模式中…</small></div>
+  </header>
+
+  <main>
+    <section class="panel composer">
+      <div class="examples">
+        <button data-query="ReAct 如何结合推理与行动？">ReAct 工作模式</button>
+        <button data-query="比较 GraphRAG 和 LightRAG 的核心设计">论文方法比较</button>
+        <button data-query="Agent 的规划、记忆和工具使用分别有什么作用？">Agent 架构</button>
+      </div>
+      <label for="query">论文问题</label>
+      <textarea id="query" rows="4" placeholder="输入检索、总结、比较或研究方向问题…">ReAct 如何结合推理与行动？</textarea>
+      <div class="fields">
+        <label>会话 ID<input id="conversation" value="resume-demo"></label>
+        <label>PDF 路径（可选）<input id="pdf" placeholder="D:\papers\example.pdf"></label>
+      </div>
+      <div class="actions">
+        <button id="submit" class="primary">运行 Agent <span>→</span></button>
+        <span id="requestStatus">准备就绪</span>
+      </div>
+    </section>
+
+    <section id="results" class="results hidden">
+      <div class="metrics" id="metrics"></div>
+      <article class="panel answer-card">
+        <div class="section-title"><span>最终回答</span><button id="copy">复制</button></div>
+        <div id="answer" class="answer"></div>
+      </article>
+      <div class="two-column">
+        <section class="panel">
+          <div class="section-title"><span>检索证据</span><b id="paperCount"></b></div>
+          <div id="papers" class="papers"></div>
+        </section>
+        <section class="panel trace-panel">
+          <div class="section-title"><span>LangGraph 执行轨迹</span><b id="traceId"></b></div>
+          <div id="route" class="route"></div>
+          <div id="timings" class="timings"></div>
+          <div class="tool-title">调用组件</div>
+          <div id="tools" class="chips"></div>
+        </section>
+      </div>
+    </section>
+  </main>
+  <script src="/static/app.js"></script>
+</body>
+</html>

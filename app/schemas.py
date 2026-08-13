@@ -23,6 +23,10 @@ class PaperInfo(BaseModel):
     pdf_url: Optional[str] = None
     entry_id: Optional[str] = None
     source: Optional[str] = None
+    document_id: Optional[str] = None
+    chunk_id: Optional[str] = None
+    page: Optional[int] = None
+    retrieval_score: Optional[float] = None
 
 
 class ChatData(BaseModel):

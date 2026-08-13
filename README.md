@@ -84,6 +84,8 @@ D:\miniconda3\envs\paper_agent\python.exe -m uvicorn app.api:app --host 127.0.0.
 
 浏览器打开 `http://127.0.0.1:8000/docs`，可直接使用 Swagger 调试。健康检查地址为 `http://127.0.0.1:8000/health`。
 
+项目同时提供 Web 演示台：打开 `http://127.0.0.1:8000/`，即可查看答案、论文证据、本地 Dense/Hybrid 路由、工具调用和 LangGraph 节点耗时。
+
 也可以运行命令行版本：
 
 ```powershell

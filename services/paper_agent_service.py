@@ -159,6 +159,10 @@ class PaperAgentService:
                     "pdf_url": paper.get("pdf_url"),
                     "entry_id": paper.get("entry_id"),
                     "source": paper.get("source"),
+                    "document_id": paper.get("document_id"),
+                    "chunk_id": paper.get("chunk_id"),
+                    "page": paper.get("page"),
+                    "retrieval_score": paper.get("retrieval_score"),
                 }
             )
 

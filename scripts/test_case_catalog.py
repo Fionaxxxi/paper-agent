@@ -1094,6 +1094,16 @@ TEST_CASE_CATALOG: dict[str, CaseDescription] = {
         "API 或演示界面可以直接展示本次查询采用的检索后端和门控路径。",
         "若元数据丢失，虽然检索能够运行，但无法体现 LangGraph 编排与可审计路由特色。",
     ),
+    "tests/test_demo_page.py::test_demo_page_is_served_from_fastapi_root": _description(
+        "验证 FastAPI 首页能够直接提供 PaperAgent Web 演示页，并正确引用前端脚本。",
+        "启动 Uvicorn 后访问根路径即可打开项目演示入口。",
+        "若失败，API 虽可用但简历展示页无法访问。",
+    ),
+    "tests/test_demo_page.py::test_paper_formatter_keeps_local_rag_evidence_fields": _description(
+        "验证服务层不会丢弃本地 RAG 的页码、Chunk ID 和检索分数。",
+        "Web 页面可以展示证据来源和可审计定位信息。",
+        "若失败，前端只能展示论文摘要，无法体现全文 RAG 的证据追踪能力。",
+    ),
 }
 
 
