@@ -28,3 +28,35 @@ class ReciprocalRankFusionRetriever:
                 best_rank[identity] = min(best_rank.get(identity, rank), rank)
         order = sorted(chunks, key=lambda identity: (-scores[identity], best_rank[identity], chunks[identity].document_id, identity))[:limit]
         return [(chunks[identity], round(scores[identity], 8)) for identity in order]
+
+
+class ConfidenceGatedHybridRetriever:
+    """Dense 默认路径；仅在低置信度且小间隔时触发 Hybrid。"""
+
+    name = "confidence_gated_bm25_dense_rrf"
+    version = "1.0"
+
+    def __init__(self, dense, hybrid, maximum_dense_top1: float = .65, maximum_dense_margin: float = .05):
+        self.dense,self.hybrid=dense,hybrid;self.maximum_dense_top1=maximum_dense_top1;self.maximum_dense_margin=maximum_dense_margin;self.last_decision=None
+
+    def search(self, query: str, limit: int = 5) -> list[tuple[TextChunk, float]]:
+        dense_results=self.dense.search(query,max(limit,2));top1=dense_results[0][1];margin=top1-dense_results[1][1]
+        triggered=top1<=self.maximum_dense_top1 and margin<=self.maximum_dense_margin
+        self.last_decision={"route":"hybrid" if triggered else "dense","dense_top1":top1,"dense_margin":round(margin,8),"thresholds":{"maximum_dense_top1":self.maximum_dense_top1,"maximum_dense_margin":self.maximum_dense_margin}}
+        return self.hybrid.search(query,limit) if triggered else dense_results[:limit]
+
+
+class ConfidenceGatedHybridRetriever:
+    """Dense 默认路径；仅在低置信度且小间隔时触发 Hybrid。"""
+
+    name = "confidence_gated_bm25_dense_rrf"
+    version = "1.0"
+
+    def __init__(self, dense, hybrid, maximum_dense_top1: float = .65, maximum_dense_margin: float = .05):
+        self.dense,self.hybrid=dense,hybrid;self.maximum_dense_top1=maximum_dense_top1;self.maximum_dense_margin=maximum_dense_margin;self.last_decision=None
+
+    def search(self, query: str, limit: int = 5) -> list[tuple[TextChunk, float]]:
+        dense_results=self.dense.search(query,max(limit,2));top1=dense_results[0][1];margin=top1-dense_results[1][1]
+        triggered=top1<=self.maximum_dense_top1 and margin<=self.maximum_dense_margin
+        self.last_decision={"route":"hybrid" if triggered else "dense","dense_top1":top1,"dense_margin":round(margin,8),"thresholds":{"maximum_dense_top1":self.maximum_dense_top1,"maximum_dense_margin":self.maximum_dense_margin}}
+        return self.hybrid.search(query,limit) if triggered else dense_results[:limit]

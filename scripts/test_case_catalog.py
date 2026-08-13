@@ -1019,10 +1019,25 @@ TEST_CASE_CATALOG: dict[str, CaseDescription] = {
         "非法配置被拒绝，相同输入始终产生相同排序。",
         "不稳定平局或无效参数会使重复评测和缓存结果不可比较。",
     ),
+    "tests/test_local_rag_hybrid.py::test_confidence_gate_defaults_to_dense_and_audits_hybrid_trigger": _description(
+        "验证置信度门控默认使用 Dense，仅在 Top-1 分数和间隔同时低于冻结阈值时触发 Hybrid，并记录路由依据。",
+        "低置信度小间隔查询进入 Hybrid，高置信度查询保持 Dense，两个决策均可审计。",
+        "无条件融合会重现已知回归，缺少决策记录则无法解释线上检索路径。",
+    ),
     "tests/test_local_rag_hybrid_eval.py::test_hybrid_parameter_selection_uses_frozen_quality_first_order": _description(
         "验证 Hybrid 参数只按预先冻结的开发集规则选择：Recall@5、nDCG@5、回归数、延迟、较小 RRF k。",
         "质量指标优先于速度，候选并列时按固定顺序确定唯一参数。",
         "事后改变选参顺序或使用保留集调参会造成测试集泄漏和虚假提升。",
+    ),
+    "tests/test_local_rag_hybrid_gate.py::test_gate_features_use_only_runtime_rankings_and_scores": _description(
+        "验证 Hybrid 门控特征只来自请求时可见的 Dense 分数、分数间隔和两路 Top-5 重合度。",
+        "特征计算正确，且不读取用例 ID、主题名称或金标准答案。",
+        "使用题目身份或人工标签作为线上特征会造成不可泛化的数据泄漏。",
+    ),
+    "tests/test_local_rag_hybrid_gate.py::test_gate_audit_rejects_rules_with_regression_or_insufficient_gain": _description(
+        "验证门控审计拒绝任何触发回归或提升样本不足的规则。",
+        "即使规则能改善部分题，只要同时损害其他题就不能晋升。",
+        "小样本阈值可能通过挑选收益题制造虚假门控能力。",
     ),
     "tests/test_local_rag_dense_models.py::test_dense_model_matrix_changes_only_declared_embedding_properties": _description(
         "验证第二 Dense 模型通过同一评测入口配置，只声明模型自身的维度、输入长度、池化和配置身份差异。",
