@@ -1,0 +1,203 @@
+{
+  "dataset_name": "PaperAgent 本地全文 RAG 独立保留金标准 v1",
+  "dataset_version": "1.0.0-holdout",
+  "description": "在术语表冻结后人工标注的 10 题保留集；证据页与开发集不重叠。",
+  "corpus_version": "0.1.0",
+  "k_values": [
+    1,
+    3,
+    5
+  ],
+  "cases": [
+    {
+      "id": "holdout_rag_decoding",
+      "question": "开放域问答实验中，RAG-Token 和 RAG-Sequence 各使用多少篇召回文档？",
+      "language": "zh",
+      "category": "implementation",
+      "difficulty": "simple",
+      "reference_answer": "开放域问答测试中，RAG-Token 使用 15 篇召回文档；RAG-Sequence 使用 50 篇。",
+      "evidence": [
+        {
+          "document_id": "rag_2005_11401",
+          "chunk_id": "rag_2005_11401:p17:c95",
+          "page_start": 17,
+          "page_end": 17,
+          "quote": "Appendices for Retrieval-Augmented Generation for\nKnowledge-Intensive NLP Tasks\nA Implementation Details\nFor Open-domain QA we report test numbers using 15 retrieved documents for RAG-Token models.\nFor RAG-Sequence models, we report test results using 50 retrieved documents, and we use the\nThorough Decoding approach since answers are generally short. We use greedy decoding for QA as\nwe did not ﬁnd beam search improved results. For Open-MSMarco and Jeopardy question gener",
+          "source_path": "data/papers/2005.11401_rag.pdf",
+          "relevance_grade": 3
+        }
+      ]
+    },
+    {
+      "id": "holdout_dpr_corpus",
+      "question": "DPR 把英文维基百科切成什么样的基本检索单元，最终得到多少个？",
+      "language": "zh",
+      "category": "implementation",
+      "difficulty": "simple",
+      "reference_answer": "DPR 将文章切成互不重叠的 100 词文本块，并在每块前加入文章标题和 [SEP]，最终得到 21,015,324 个 passage。",
+      "evidence": [
+        {
+          "document_id": "dpr_2004_04906",
+          "chunk_id": "dpr_2004_04906:p4:c22",
+          "page_start": 4,
+          "page_end": 4,
+          "quote": "es.\nWe then split each article into multiple, disjoint text\nblocks of 100 words as passages, serving as our\nbasic retrieval units, following (Wang et al., 2019),\nwhich results in 21,015,324 passages in the end.5\nEach passage is also prepended with the title of the\nWikipedia article where the passage is from, along\nwith an [SEP] token.\n4.2 Question Answering Datasets\nWe use the same ﬁve QA datasets and train-\ning/dev/testing splitting method as in previous\nwork (Lee et al., 2019). Below we brieﬂ",
+          "source_path": "data/papers/2004.04906_dpr.pdf",
+          "relevance_grade": 3
+        }
+      ]
+    },
+    {
+      "id": "holdout_selfrag_threshold",
+      "question": "Self-RAG 的检索阈值增大时，检索频率和不同任务的性能如何变化？",
+      "language": "zh",
+      "category": "analysis",
+      "difficulty": "complex",
+      "reference_answer": "阈值 δ 越大，检索越少；少检索造成的性能下降在 PubHealth 较小、在 PopQA 较大。",
+      "evidence": [
+        {
+          "document_id": "self_rag_2310_11511",
+          "chunk_id": "self_rag_2310_11511:p10:c63",
+          "page_start": 10,
+          "page_end": 10,
+          "quote": "of reward tokens. We evaluate how this adaptive threshold affects\noverall accuracy and frequency of retrieval, and we evaluate the performance with varying numbers\nof threshold δ (larger δ results in less retrieval) on PubHealth and PopQA. Figure 3c shows that\nthe model’s retrieval frequencies dramatically change on both datasets. as δ varies. On one hand,\nperformance deterioration by retrieving less is smaller on PubHealth but larger in PopQA.\nEffects of training data size. We conduct an analysis of how the",
+          "source_path": "data/papers/2310.11511_self_rag.pdf",
+          "relevance_grade": 3
+        }
+      ]
+    },
+    {
+      "id": "holdout_graphrag_directness",
+      "question": "GraphRAG 评测中的 Directness 衡量什么，为什么把它作为控制准则？",
+      "language": "zh",
+      "category": "evaluation",
+      "difficulty": "complex",
+      "reference_answer": "Directness 衡量回答是否具体、清晰且简洁地回应问题；它作为控制准则用于检验其他评测结果是否合理，而且通常与全面性和多样性相对，因此不期望同一方法赢得全部四项。",
+      "evidence": [
+        {
+          "document_id": "graph_rag_2404_16130",
+          "chunk_id": "graph_rag_2404_16130:p8:c42",
+          "page_start": 8,
+          "page_end": 8,
+          "quote": "Furthermore, we use a “control criterion” called Directness that answers “How specifically and\nclearly does the answer address the question?” . In plain terms, directness evaluates the concision\nof an answer in a generic sense that applies to any generated LLM summarization. We include it to\nbehave as a reference against which we can judg",
+          "source_path": "data/papers/2404.16130_graph_rag.pdf",
+          "relevance_grade": 3
+        }
+      ]
+    },
+    {
+      "id": "holdout_graphrag_cost",
+      "question": "GraphRAG 在 Podcast 数据集上构建图索引使用什么窗口，耗时多久？",
+      "language": "zh",
+      "category": "cost",
+      "difficulty": "simple",
+      "reference_answer": "实验使用 600-token 窗口建立图索引，在指定虚拟机和 GPT-4 Turbo 接口条件下耗时 281 分钟。",
+      "evidence": [
+        {
+          "document_id": "graph_rag_2404_16130",
+          "chunk_id": "graph_rag_2404_16130:p9:c48",
+          "page_start": 9,
+          "page_end": 9,
+          "quote": "of 8k tokens for generating community summaries, community\nanswers, and global answers (explained in Appendix C). Graph indexing with a 600 token window\n(explained in Section A.2) took 281 minutes for the Podcast dataset, running on a virtual machine\n(16GB RAM, Intel(R) Xeon(R) Platinum 8171M CPU @ 2.60GHz) and using a public OpenAI\nendpoint for gpt-4-turbo (2M TPM, 10k RPM).\nWe implemented Leiden community detection using the graspologic library (Chung et al., 2019).\nThe prompts used to gen",
+          "source_path": "data/papers/2404.16130_graph_rag.pdf",
+          "relevance_grade": 3
+        }
+      ]
+    },
+    {
+      "id": "holdout_lightrag_domains",
+      "question": "LightRAG 从 UltraDomain 中选择了哪些领域进行实验？",
+      "language": "zh",
+      "category": "dataset",
+      "difficulty": "simple",
+      "reference_answer": "选择了 Agriculture、CS、Legal 和 Mix 四个领域。",
+      "evidence": [
+        {
+          "document_id": "light_rag_2410_05779",
+          "chunk_id": "light_rag_2410_05779:p5:c33",
+          "page_start": 5,
+          "page_end": 5,
+          "quote": "). The UltraDomain data is sourced from 428\ncollege textbooks and encompasses 18 distinct domains, including agriculture, social sciences, and\nhumanities. From these, we chose the Agriculture, CS, Legal, and Mix datasets. Each dataset contains\nbetween 600,000 and 5,000,000 tokens, with detailed information provided in Table 4. Below is a\nspecific introduction to the four domains utilized in our experiments:\n• Agriculture: This domain focuses on agricultural practices, covering a range of topics including\nb",
+          "source_path": "data/papers/2410.05779_light_rag.pdf",
+          "relevance_grade": 3
+        }
+      ]
+    },
+    {
+      "id": "holdout_react_errors",
+      "question": "ReAct 在 HotpotQA 错误分析中，推理错误和无信息搜索分别占多少？",
+      "language": "zh",
+      "category": "error_analysis",
+      "difficulty": "simple",
+      "reference_answer": "ReAct 的失败样本中，推理错误占 47%，搜索结果为空或无用占 23%。",
+      "evidence": [
+        {
+          "document_id": "react_2210_03629",
+          "chunk_id": "react_2210_03629:p6:c37",
+          "page_start": 6,
+          "page_end": 6,
+          "quote": "cts 94% 86%\nFalse positive Hallucinated reasoning trace or facts 6% 14%\nFailure\nReasoning error Wrong reasoning trace (including failing to recover from repetitive steps) 47% 16%\nSearch result error Search return empty or does not contain useful information 23% -\nHallucination Hallucinated reasoning trace or facts 0% 56%\nLabel ambiguity Right prediction but did not match the label precisely 29% 28%\nTable 2: Types of success and failure modes of ReAct and CoT on HotpotQA, as well as their\npercen",
+          "source_path": "data/papers/2210.03629_react.pdf",
+          "relevance_grade": 3
+        }
+      ]
+    },
+    {
+      "id": "holdout_reflexion_limit",
+      "question": "Reflexion 在 WebShop 实验中暴露了什么局限？",
+      "language": "zh",
+      "category": "limitation",
+      "difficulty": "complex",
+      "reference_answer": "当任务陷入需要高度创造性行为才能跳出的局部最优时，Reflexion 难以改进；实验四次尝试后因无提升而终止，并且失败后的自我反思不够有帮助。",
+      "evidence": [
+        {
+          "document_id": "reflexion_2303_11366",
+          "chunk_id": "reflexion_2303_11366:p14:c69",
+          "page_start": 14,
+          "page_end": 14,
+          "quote": "B.1 WebShop Limitation\nIn 5, we briefly state that Reflexion struggles to overcome local minima choices that require extremely\ncreative behavior to escape. We observe this shortcoming in an experiment on WebShop [ 29].\nWebShop is a web-based problem-solving benchmark that tests agents to navigate an e-commerce\nwebsite to locate and purchase products given requests from clients. We test a two-",
+          "source_path": "data/papers/2303.11366_reflexion.pdf",
+          "relevance_grade": 3
+        }
+      ]
+    },
+    {
+      "id": "holdout_agent_memory_read",
+      "question": "LLM Agent Survey 总结的记忆读取通常考虑哪三个评分因素？",
+      "language": "zh",
+      "category": "memory",
+      "difficulty": "simple",
+      "reference_answer": "通常考虑新近性、相关性和重要性三个因素，并通过权重平衡。",
+      "evidence": [
+        {
+          "document_id": "agent_survey_2308_11432",
+          "chunk_id": "agent_survey_2308_11432:p8:c41",
+          "page_start": 8,
+          "page_end": 8,
+          "quote": "key of memory read-\ning lies in how to extract valuable information from\nhistory actions. Usually, there are three commonly\nused criteria for information extraction, that is, the\nrecency, relevance, and importance [20]. Memories\nthat are more recent, relevant, and important are\nmore likely to be extracted. Formally, we conclude\nthe following equation from existing literature for\nmemory information extraction:\nm∗ = arg max\nm∈M\n\u0010\nαsrec(q, m) +βsrel(q, m) +γsimp(m)\n\u0011\n,\n(1)\nwhere q is the query, for example, the",
+          "source_path": "data/papers/2308.11432_agent_survey.pdf",
+          "relevance_grade": 3
+        }
+      ]
+    },
+    {
+      "id": "holdout_agent_toolformer",
+      "question": "LLM Agent Survey 如何概括 ToolFormer 学习使用外部工具的方式？",
+      "language": "zh",
+      "category": "tool_use",
+      "difficulty": "simple",
+      "reference_answer": "ToolFormer 使用自监督学习，并借助工具 API 的示例来学习何时以及如何调用外部工具。",
+      "evidence": [
+        {
+          "document_id": "agent_survey_2308_11432",
+          "chunk_id": "agent_survey_2308_11432:p15:c79",
+          "page_start": 15,
+          "page_end": 15,
+          "quote": "le of\ngenerating precise input arguments for API calls,\neffectively mitigating hallucination issues during\nexternal API usage. ToolFormer [15] employs self-\nsupervised learning to determine when and how\nto invoke external tools, using demonstrations of\ntool APIs for training. API-Bank [70] offers a com-\nprehensive benchmark with a diverse collection of\nAPI tools to systematically evaluate tool-augmented\nLLMs, alongside robust training datasets designed\nto enhance their integration capabilities. ToolL-\nLaMA [14] proposes a",
+          "source_path": "data/papers/2308.11432_agent_survey.pdf",
+          "relevance_grade": 3
+        }
+      ]
+    }
+  ]
+}

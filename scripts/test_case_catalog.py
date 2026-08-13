@@ -934,6 +934,26 @@ TEST_CASE_CATALOG: dict[str, CaseDescription] = {
         "重复页的 Recall、MRR、nDCG 均不超过 1，nDCG 恰为 1。",
         "同一页可能被重复计分，导致 nDCG 大于 100% 并制造虚假检索提升。",
     ),
+    "tests/test_rag_holdout_dataset.py::test_holdout_has_ten_cases_and_no_development_evidence_pages": _description(
+        "验证独立保留集包含 10 题、覆盖全部 8 篇论文，并且证据页不与开发集重叠。",
+        "保留集与开发集页面集合完全不相交，可用于检查冻结术语表的初步泛化。",
+        "保留题可能复用术语表设计时已见证据，导致把开发集拟合误判为泛化收益。",
+    ),
+    "tests/test_rag_holdout_dataset.py::test_holdout_evidence_is_present_on_declared_pdf_page": _description(
+        "逐题重新解析真实 PDF，验证保留集证据原文存在于声明页面。",
+        "10 个保留问题的原文片段和页码均可回溯到本地论文。",
+        "保留集可能含错误页码或不可核验的证据，使泛化评测失去可信基础。",
+    ),
+    "tests/test_rag_holdout_dataset.py::test_holdout_builder_reproduces_frozen_json": _description(
+        "验证保留集可由冻结人工规格、PDF 和固定 Chunker 确定性重建。",
+        "重建 JSON 与已提交保留集逐字段一致。",
+        "评测输入可能漂移，无法确认不同检索方案是否使用同一保留集。",
+    ),
+    "tests/test_local_rag_rewrite_ab.py::test_holdout_ab_detects_rank_regression_when_recall_at_five_is_unchanged": _description(
+        "验证查询扩展即使保持 Recall@5，也会因相关证据排名下降而被标记为逐题回归。",
+        "保留集 Recall@5 差值为 0、nDCG@5 差值为负，且至少记录一个 regressed 用例。",
+        "逐题结论可能只看是否进入 Top5，掩盖证据从前排下滑的真实排序损失。",
+    ),
 }
 
 
