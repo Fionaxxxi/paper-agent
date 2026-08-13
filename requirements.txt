@@ -23,6 +23,12 @@ pypdf>=5.0.0
 # Optional local Dense RAG candidate (ONNX, no PyTorch)
 fastembed>=0.7,<0.8
 
+# Official Model Context Protocol SDK
+mcp>=2,<3
+
+# Official Model Context Protocol SDK
+mcp>=2,<3
+
 pytest>=8.0.0
 
 

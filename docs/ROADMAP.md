@@ -1410,6 +1410,8 @@ Push / Pull Request
 
 2026-08-13 已启动阶段 3 MCP Client：新增传输无关的 `MCPToolAdapter` 和最小 `MCPClient.call_tool` 契约，使 MCP 工具直接复用现有 Tool Registry、只读 Policy、Pydantic 输入输出校验、超时/重试 Executor 与统一 ToolResult。适配器兼容结构化结果包装，远程错误转换为统一执行错误，并在审计元数据记录 MCP Server 身份、版本、传输方式和远程工具名；相关工具层测试 22/22 通过。当前完成的是稳定接缝，尚未宣称连接真实 MCP Server；下一步接入一个可信、只读 MCP Server，并把一个论文检索或项目资源工具注册到默认运行时。
 
+2026-08-13 已完成首个真实 MCP 链路：采用官方 MCP Python SDK 2.x，通过 stdio 短生命周期 Client 启动 `paperagent-corpus` Server。Server 只读访问版本控制内的 `corpus_sources.json`，暴露 `search_corpus` Tool 和 `paperagent://corpus/catalog` Resource，不访问网络、不读取 API Key、不修改文件。`paper.catalog.search.mcp` 已注册到默认 Tool Registry，继续受只读 Policy、Pydantic 双端 Schema、15 秒超时和统一 ToolResult 约束；真实调用成功返回 ReAct 论文并记录 Server 1.0.0、stdio 和远程工具名，相关轻量测试 24/24 通过。当前每次调用包含约 3 秒 Server 冷启动，适合单用户演示；未来并发场景再评估长连接或 Streamable HTTP。下一步完成 MCP Tool Router 路由与主工作流的显式使用场景，然后结束阶段 3 Client v1，进入阶段 4 有限 Agent Loop 与 Reflection。
+
 2026-08-12 子查询并行已完成 5 次确定性离线重复基准：3 个子查询、2 个 worker 时，中位延迟由 265.4ms 降至 172.3ms，加速 1.54 倍、延迟下降 35.09%，结果与规划顺序一致率 100%，达到阶段门槛并收口。
 
 随后已开始 Retrieval Replan v1：现有“低分后只扩大结果数”的普通重试升级为可审计的失败分类与受限动作。暂时工具失败保持原查询，零结果放宽字面限制，有结果但低相关时追加综述上下文；新查询覆盖旧子查询计划，仍受最多重试一次约束，全程不增加 LLM 调用或付费工具。下一步评测 Replan 相对普通重试的恢复率、无效重试率和动作分类准确率。

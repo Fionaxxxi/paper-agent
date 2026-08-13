@@ -1114,6 +1114,16 @@ TEST_CASE_CATALOG: dict[str, CaseDescription] = {
         "无效参数不会发送给 MCP Server，远程失败也不会伪装成成功结果。",
         "若失败，不可信参数或 MCP 错误可能绕过工具执行约束进入工作流。",
     ),
+    "tests/test_mcp_stdio_integration.py::test_real_stdio_mcp_server_returns_local_paper_catalog": _description(
+        "验证 PaperAgent 通过官方 MCP SDK 和 stdio 真正启动只读 Server、完成协议调用并返回本地论文目录。",
+        "真实 MCP 调用返回 ReAct 论文，并记录 stdio 传输和 Server 身份。",
+        "若失败，项目只有适配器单元测试，不能证明真实 MCP 协议链路可用。",
+    ),
+    "tests/test_mcp_stdio_integration.py::test_real_stdio_mcp_server_is_registered_in_default_runtime": _description(
+        "验证真实 MCP 目录工具已经进入 PaperAgent 默认 Tool Registry，且风险等级保持只读。",
+        "主工作流可发现该工具，同时 Tool Policy 仍能按只读权限管理。",
+        "若失败，MCP Server 虽能单独运行但尚未接入项目统一工具运行时。",
+    ),
 }
 
 
