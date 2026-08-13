@@ -1,6 +1,7 @@
 import numpy as np
 import pytest
 
+from eval_harness.local_rag_dense_eval import warm_up_retriever
 from local_rag.contracts import TextChunk
 from local_rag.dense import DenseIndexCache, DenseRetriever, _normalize
 
@@ -52,3 +53,11 @@ def test_dense_retriever_reuses_cached_vectors_without_document_embedding():
 
     retriever = DenseRetriever([_chunk("c1", "relevant")], QueryOnlyEmbedding(), vectors=np.asarray([[5.0, 0.0]]))
     assert retriever.search("query", 1)[0][0].chunk_id == "c1"
+
+
+def test_dense_warmup_is_fixed_and_excluded_from_formal_timing():
+    retriever = DenseRetriever([_chunk("c1", "relevant")], FakeEmbedding(), vectors=np.asarray([[1.0, 0.0]]))
+    warmup = warm_up_retriever(retriever, query="query", count=2)
+    assert warmup["count"] == 2
+    assert len(warmup["latency_ms"]) == 2
+    assert warmup["excluded_from_formal_timing"] is True

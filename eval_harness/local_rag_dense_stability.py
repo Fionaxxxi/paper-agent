@@ -21,6 +21,8 @@ def analyze(run_paths: list[Path], output_path: Path, expected_model: str | None
     reference = runs[0]
     models = {run.get("config", {}).get("model") for run in runs}
     model_match = len(models) == 1 and (expected_model is None or models == {expected_model})
+    warmup_protocols = {(run.get("warmup", {}).get("query"), run.get("warmup", {}).get("count"), run.get("warmup", {}).get("excluded_from_formal_timing")) for run in runs}
+    warmup_protocol_match = len(warmup_protocols) == 1 and next(iter(warmup_protocols)) == ("academic paper semantic retrieval warmup", 2, True)
     quality_equal = all(run[split]["summary"][key] == reference[split]["summary"][key] for run in runs[1:] for split in ("development", "holdout") for key in QUALITY_KEYS)
     rankings_equal = all(
         [result["chunk_id"] for result in case["results"]] == [result["chunk_id"] for result in reference[split]["cases"][index]["results"]]
@@ -42,9 +44,9 @@ def analyze(run_paths: list[Path], output_path: Path, expected_model: str | None
     timing = {name: {"values": values, "mean": round(statistics.mean(values), 4), "min": min(values), "max": max(values), "cv": _cv(values)} for name, values in series.items()}
     all_cache_hits = all(run["cache"]["hit"] for run in runs)
     latency_stable = timing["development_average_query_ms"]["cv"] <= .5 and timing["holdout_average_query_ms"]["cv"] <= .5 and max(series["index_build_ms"]) < 100
-    stability_validated = model_match and all_cache_hits and quality_equal and rankings_equal and scores_equal and latency_stable
+    stability_validated = model_match and warmup_protocol_match and all_cache_hits and quality_equal and rankings_equal and scores_equal and latency_stable
     next_step = "Dense + BM25 Hybrid 互补对照" if stability_validated else "隔离首次查询预热后重新评测性能稳定性"
-    report = {"report_version":"1.1","run_count":len(runs),"models":sorted(model for model in models if model),"expected_model":expected_model,"model_match":model_match,"all_cache_hits":all_cache_hits,"fingerprint_count":len({run["cache"]["fingerprint"] for run in runs}),"quality_equal":quality_equal,"top5_rankings_equal":rankings_equal,"scores_equal":scores_equal,"timing":timing,"decision":{"stability_validated":stability_validated,"latency_stable":latency_stable,"production_default":False,"next_step":next_step}}
+    report = {"report_version":"1.2","run_count":len(runs),"models":sorted(model for model in models if model),"expected_model":expected_model,"model_match":model_match,"warmup_protocol_match":warmup_protocol_match,"warmup_runs":[run.get("warmup") for run in runs],"all_cache_hits":all_cache_hits,"fingerprint_count":len({run["cache"]["fingerprint"] for run in runs}),"quality_equal":quality_equal,"top5_rankings_equal":rankings_equal,"scores_equal":scores_equal,"timing":timing,"decision":{"stability_validated":stability_validated,"latency_stable":latency_stable,"production_default":False,"next_step":next_step}}
     output_path.parent.mkdir(parents=True,exist_ok=True);output_path.write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding="utf-8");return report
 
 

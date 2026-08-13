@@ -974,6 +974,11 @@ TEST_CASE_CATALOG: dict[str, CaseDescription] = {
         "构造阶段复用缓存，搜索阶段仅调用一次查询 Embedding。",
         "每次启动仍重复编码 1098 个 Chunk，持久化缓存无法降低冷启动成本。",
     ),
+    "tests/test_local_rag_dense.py::test_dense_warmup_is_fixed_and_excluded_from_formal_timing": _description(
+        "验证 Dense 正式评测前执行固定次数的查询预热，并将预热延迟与正式查询指标明确隔离。",
+        "预热执行两次、逐次记录耗时，且报告明确标记不计入正式计时。",
+        "ONNX 首次推理初始化可能混入测试集延迟，制造虚假的性能波动。",
+    ),
     "tests/test_local_rag_dense_compare.py::test_dense_comparison_uses_holdout_quality_and_keeps_production_off": _description(
         "验证 Dense 晋升判断以独立保留集质量为依据，并与生产默认开关分离。",
         "保留集 Recall@5 提升 20 个百分点且 nDCG 为正，但存在 3 个逐题回归，超过最多 2 个的门槛，因此候选晋升和生产默认均保持关闭。",
@@ -998,6 +1003,11 @@ TEST_CASE_CATALOG: dict[str, CaseDescription] = {
         "验证 MiniLM/MPNet 稳定性并列比较保留 MPNet 的失败判定，不因平均质量收益或模型间比值覆盖原始闸门。",
         "报告展示性能倍数，但 MPNet CV 超限时仍保持稳定性未通过和生产关闭。",
         "跨模型汇总可能错误抹平单模型波动，使失败候选绕过稳定性门槛。",
+    ),
+    "tests/test_local_rag_dense_warmup_compare.py::test_warmup_comparison_requires_failed_before_and_passed_after": _description(
+        "验证预热对照只在同一模型由预热前失败转为预热后通过时，才判断首次初始化解释了稳定性问题。",
+        "报告正确计算均值和 CV 变化，并将下一步推进到 Hybrid 互补实验。",
+        "仅凭一次更快结果可能错误归因预热效果，或绕过稳定性门槛。",
     ),
     "tests/test_local_rag_dense_models.py::test_dense_model_matrix_changes_only_declared_embedding_properties": _description(
         "验证第二 Dense 模型通过同一评测入口配置，只声明模型自身的维度、输入长度、池化和配置身份差异。",
