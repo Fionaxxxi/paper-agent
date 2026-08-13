@@ -949,6 +949,26 @@ TEST_CASE_CATALOG: dict[str, CaseDescription] = {
         "重建 JSON 与已提交保留集逐字段一致。",
         "评测输入可能漂移，无法确认不同检索方案是否使用同一保留集。",
     ),
+    "tests/test_rag_holdout_v2_dataset.py::test_holdout_v2_has_eight_papers_and_no_v1_evidence_pages": _description(
+        "验证门控验证集 v2 覆盖全部 8 篇论文，且证据页与开发集及 holdout v1 完全不重叠。",
+        "v2 恰含 8 题和 8 篇论文，所有证据页均为此前未见页面。",
+        "复用已查看证据页会造成验证集泄漏，无法证明门控泛化。",
+    ),
+    "tests/test_rag_holdout_v2_dataset.py::test_holdout_v2_quotes_equal_declared_chunks": _description(
+        "验证 v2 每条人工引文与当前 Parser/Chunker 生成的声明 Chunk 完全一致。",
+        "Chunk 身份、论文、页码和引文文本一一对应。",
+        "错误页码或切分漂移会使 Recall 指标基于不存在的证据。",
+    ),
+    "tests/test_rag_holdout_v2_dataset.py::test_holdout_v2_builder_reproduces_frozen_json": _description(
+        "验证 v2 构建脚本能够从冻结标注和语料确定性重建提交的数据集。",
+        "重新生成的 JSON 与仓库版本逐字段一致。",
+        "手工编辑或非确定生成会破坏数据集版本和实验复现性。",
+    ),
+    "tests/test_local_rag_gated_hybrid_v2_eval.py::test_gated_v2_outcomes_count_improvements_regressions_and_unchanged": _description(
+        "验证冻结门控在 v2 上的逐题对照能正确区分提升、回归和不变。",
+        "三种结果各被准确计数一次，并保留逐题差值。",
+        "错误的逐题归类会让平均指标掩盖真实回归并误导晋升判断。",
+    ),
     "tests/test_local_rag_rewrite_ab.py::test_holdout_ab_detects_rank_regression_when_recall_at_five_is_unchanged": _description(
         "验证查询扩展即使保持 Recall@5，也会因相关证据排名下降而被标记为逐题回归。",
         "保留集 Recall@5 差值为 0、nDCG@5 差值为负，且至少记录一个 regressed 用例。",

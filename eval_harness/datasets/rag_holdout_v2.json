@@ -1,0 +1,165 @@
+{
+  "dataset_name": "PaperAgent 未见门控验证集 v2",
+  "dataset_version": "2.0.0",
+  "description": "8 篇论文各 1 题；证据页与开发集及 holdout v1 完全隔离，人工阅读 PDF 页面后标注。",
+  "corpus_version": "0.1.0",
+  "k_values": [
+    1,
+    3,
+    5
+  ],
+  "cases": [
+    {
+      "id": "v2_rag_fast_decoding",
+      "question": "为什么 RAG-Sequence 的 Fast Decoding 比 Thorough Decoding 更高效？",
+      "language": "zh",
+      "category": "method",
+      "difficulty": "complex",
+      "reference_answer": "Fast Decoding 假设未在某文档 beam 中生成的候选概率近似为零，因此候选集生成后不必再为缺失候选执行额外前向传播。",
+      "evidence": [
+        {
+          "document_id": "rag_2005_11401",
+          "chunk_id": "rag_2005_11401:p4:c21",
+          "page_start": 4,
+          "page_end": 4,
+          "quote": " withpη(z|x) and then sum the probabilities across\nbeams for the marginals. We refer to this decoding procedure as “Thorough Decoding.” For longer\noutput sequences,|Y| can become large, requiring many forward passes. For more efﬁcient decoding,\nwe can make a further approximation thatpθ(y|x,zi)≈ 0 wherey was not generated during beam\nsearch fromx,zi. This avoids the need to run additional forward passes once the candidate set Y has\nbeen generated. We refer to this decoding procedure as “Fast Decoding.”\n3 Experiments\nWe experiment with RAG in a wide range of knowledge-intensive tasks. For all experiments, we use\na single Wikipedia dump for our non-parametric knowledge source. Following Lee et al. [31] and\nKarpukhin et al. [26], we use the December 2018 dump. Each Wikipedia article is split ",
+          "source_path": "data/papers/2005.11401_rag.pdf",
+          "relevance_grade": 3
+        }
+      ]
+    },
+    {
+      "id": "v2_dpr_score_fusion",
+      "question": "DPR 论文怎样组合 BM25 与 Dense Passage Retriever 的结果，融合权重如何确定？",
+      "language": "zh",
+      "category": "method",
+      "difficulty": "complex",
+      "reference_answer": "先分别取得 BM25 和 DPR 的 top-2000 passage，合并候选后用 BM25(q,p)+λ·sim(q,p) 重排；λ=1.1，由开发集检索准确率选择。",
+      "evidence": [
+        {
+          "document_id": "dpr_2004_04906",
+          "chunk_id": "dpr_2004_04906:p5:c30",
+          "page_start": 5,
+          "page_end": 5,
+          "quote": "o obtain a single retriever that works well\nacross the board. To this end, we train a multi-\ndataset encoder by combining training data from\nall datasets excluding SQuAD.8 In addition to DPR,\nwe also present the results of BM25, the traditional\nretrieval method9 and BM25+DPR, using a linear\ncombination of their scores as the new ranking\nfunction. Speciﬁcally, we obtain two initial sets\nof top-2000 passages based on BM25 and DPR,\nrespectively, and rerank the union of them using\nBM25(q,p) +λ· sim(q,p ) as the ranking function.\nWe usedλ = 1.1 based on the retrieval accuracy in\nthe development set.\n5.1 Main Results\nTable 2 compares different passage retrieval sys-\ntems on ﬁve QA datasets, using the top-k accuracy\n(k∈{ 20, 100}). With the exception of SQuAD,\nDPR performs consistently better tha",
+          "source_path": "data/papers/2004.04906_dpr.pdf",
+          "relevance_grade": 3
+        }
+      ]
+    },
+    {
+      "id": "v2_selfrag_adaptive_threshold",
+      "question": "Self-RAG 在推理阶段如何通过阈值决定是否检索？",
+      "language": "zh",
+      "category": "method",
+      "difficulty": "simple",
+      "reference_answer": "将 Retrieve=Yes token 在 Retrieve 选项中的归一化生成概率与阈值比较，超过阈值就触发检索。",
+      "evidence": [
+        {
+          "document_id": "self_rag_2310_11511",
+          "chunk_id": "self_rag_2310_11511:p6:c37",
+          "page_start": 6,
+          "page_end": 6,
+          "quote": "ically decides when to retrieve text passages by\npredicting Retrieve . Alternatively, our framework allows a threshold to be set. Specifically, if the prob-\nability of generating the Retrieve =Yes token normalized over all output tokens in Retrieve surpasses a\ndesignated threshold, we trigger retrieval (details in Appendix Section A.3).\nTree-decoding with critique tokens. At each segment step t, when retrieval is required, based either\non hard or soft conditions, R retrieves K passages, and the generator M processes each passage in\nparallel and outputs K different continuation candidates. We conduct a segment-level beam search\n(with the beam size=B) to obtain the top-B segment continuations at each timestamp t, and return\nthe best sequence at the end of generation. The score of each segmen",
+          "source_path": "data/papers/2310.11511_self_rag.pdf",
+          "relevance_grade": 3
+        }
+      ]
+    },
+    {
+      "id": "v2_graphrag_entity_matching",
+      "question": "GraphRAG 原型怎样处理实体匹配和重复实体？",
+      "language": "zh",
+      "category": "method",
+      "difficulty": "complex",
+      "reference_answer": "原型使用精确字符串匹配协调实体名称，也允许换成软匹配；重复实体通常会在后续摘要中聚到同一社区，因此系统对重复具有一定韧性。",
+      "evidence": [
+        {
+          "document_id": "graph_rag_2404_16130",
+          "chunk_id": "graph_rag_2404_16130:p5:c28",
+          "page_start": 5,
+          "page_end": 5,
+          "quote": "hips are aggregated into graph edges, where the num-\nber of duplicates for a given relationship becomes edge weights. Claims are aggregated similarly.\nIn this manuscript, our analysis uses exact string matching forentity matching – the task of reconcil-\ning different extracted names for the same entity (Barlaug and Gulla, 2021; Christen and Christen,\n2012; Elmagarmid et al., 2006). However, softer matching approaches can be used with minor ad-\njustments to prompts or code. Furthermore, GraphRAG is generally resilient to duplicate entities\nsince duplicates are typically clustered together for summarization in subsequent steps.\n3.1.4 Knowledge Graph → Graph Communities\nGiven the graph index created in the previous step, a variety of community detection algorithms\nmay be used to partition the",
+          "source_path": "data/papers/2404.16130_graph_rag.pdf",
+          "relevance_grade": 3
+        }
+      ]
+    },
+    {
+      "id": "v2_lightrag_evaluation_dimensions",
+      "question": "LightRAG 使用 LLM 比较答案时采用哪四个评测维度？",
+      "language": "zh",
+      "category": "experiment",
+      "difficulty": "simple",
+      "reference_answer": "四个维度是 Comprehensiveness、Diversity、Empowerment 和 Overall。",
+      "evidence": [
+        {
+          "document_id": "light_rag_2410_05779",
+          "chunk_id": "light_rag_2410_05779:p6:c41",
+          "page_start": 6,
+          "page_end": 6,
+          "quote": "ix 7.3.4. In total, we utilize four evaluation dimensions, including:\ni) Comprehensiveness: How thoroughly does the answer address all aspects and details of the\nquestion? ii) Diversity: How varied and rich is the answer in offering different perspectives and\ninsights related to the question? iii) Empowerment: How effectively does the answer enable the\nreader to understand the topic and make informed judgments? iv) Overall: This dimension assesses\nthe cumulative performance across the three preceding criteria to identify the best overall answer.\nThe LLM directly compares two answers for each dimension and selects the superior response for\neach criterion. After identifying the winning answer for the three dimensions, the LLM combines the\nresults to determine the overall better answer. To en",
+          "source_path": "data/papers/2410.05779_light_rag.pdf",
+          "relevance_grade": 3
+        }
+      ]
+    },
+    {
+      "id": "v2_react_language_action",
+      "question": "ReAct 为什么把语言加入 Agent 动作空间，语言动作会直接改变外部环境吗？",
+      "language": "zh",
+      "category": "method",
+      "difficulty": "complex",
+      "reference_answer": "语言动作作为 thought/reasoning trace，用于整合当前上下文并支持后续推理或行动；它不会直接作用于外部环境，因此不会产生观察反馈。",
+      "evidence": [
+        {
+          "document_id": "react_2210_03629",
+          "chunk_id": "react_2210_03629:p3:c21",
+          "page_start": 3,
+          "page_end": 3,
+          "quote": "ereL is the\nspace of language. An action ˆat∈L in the language space, which we will refer to as a thought or a\nreasoning trace, does not affect the external environment, thus leading to no observation feedback.\nInstead, a thought ˆat aims to compose useful information by reasoning over the current contextct,\nand update the contextct+1 = (ct, ˆat) to support future reasoning or acting. As shown in Figure 1,\nthere could be various types of useful thoughts, e.g. decomposing task goals and create action plans\n(2b, Act 1; 1d, Thought 1), injecting commonsense knowledge relevant to task solving (2b, Act 1),\nextracting important parts from observations (1d, Thought2, 4), track progress and transit action plans\n(2b, Act 8), handle exceptions and adjust action plans (1d, Thought 3), and so on.\nHowe",
+          "source_path": "data/papers/2210.03629_react.pdf",
+          "relevance_grade": 3
+        }
+      ]
+    },
+    {
+      "id": "v2_reflexion_long_memory",
+      "question": "Reflexion 论文指出长期记忆在 ALFWorld 中主要帮助解决哪两类情况？",
+      "language": "zh",
+      "category": "memory",
+      "difficulty": "complex",
+      "reference_answer": "一是识别长轨迹中的早期错误并提出新动作或长期计划；二是需要检查过多表面或容器时，利用跨试验经验更彻底地搜索房间。",
+      "evidence": [
+        {
+          "document_id": "reflexion_2303_11366",
+          "chunk_id": "reflexion_2303_11366:p6:c32",
+          "page_start": 6,
+          "page_end": 6,
+          "quote": "all of these cases by using self-reflection to distill long, failed trajectories into\nrelevant experiences that can are used as \"self-hints\" in the future. There are two main cases in which\nlong-term memory helps an agent in AlfWorld: 1) An early mistake in a long trajectory can be easily\nidentified. The agent can suggest a new action choice or even a new long-term plan. 2) There are too\nmany surfaces/containers to check for an item. The agent can exploit its experience memory over\nseveral trials to thoroughly search a room. In 3, the learning curve suggests that the learning process\noccurs over several experiences, meaning that the agent is successfully balancing cases 1 and 2 shown\nin the immediate spike in the improvement between the first two trials, then a steady increase over\nthe nex",
+          "source_path": "data/papers/2303.11366_reflexion.pdf",
+          "relevance_grade": 3
+        }
+      ]
+    },
+    {
+      "id": "v2_agent_planning_no_feedback",
+      "question": "Agent Survey 如何定义无反馈规划？",
+      "language": "zh",
+      "category": "planning",
+      "difficulty": "simple",
+      "reference_answer": "Agent 执行动作后不会收到能影响未来行为的反馈；单路径推理把任务分解成级联中间步骤，每一步只连接一个后续步骤。",
+      "evidence": [
+        {
+          "document_id": "agent_survey_2308_11432",
+          "chunk_id": "agent_survey_2308_11432:p10:c51",
+          "page_start": 10,
+          "page_end": 10,
+          "quote": "g module aims to empower\nthe agents with such human capability, which is\nexpected to make the agent behave more reasonably,\npowerfully, and reliably. In specific, we summarize\nexisting studies based on whether the agent can\nreceive feedback in the planing process, which are\ndetailed as follows:\nPlanning without Feedback: In this method, the\nagents do not receive feedback that can influence its\nfuture behaviors after taking actions. In the follow-\ning, we present several representative strategies.\n• Single-path Reasoning. In this strategy, the\nfinal task is decomposed into several intermediate\nsteps. These steps are connected in a cascading man-\nner, with each step leading to only one subsequent\nstep. LLMs follow these steps to achieve the final\ngoal. Specifically, Chain of Thought (CoT) [4",
+          "source_path": "data/papers/2308.11432_agent_survey.pdf",
+          "relevance_grade": 3
+        }
+      ]
+    }
+  ]
+}
