@@ -989,6 +989,16 @@ TEST_CASE_CATALOG: dict[str, CaseDescription] = {
         "三个运行的检索结果完全一致，查询延迟变异系数不超过 50%，但生产开关仍保持关闭。",
         "单次偶然结果或不稳定排名可能被错误当成可复现能力，导致后续模型对照失去公平基线。",
     ),
+    "tests/test_local_rag_dense_stability.py::test_dense_stability_rejects_mixed_or_unexpected_models": _description(
+        "验证稳定性评测拒绝混入其他 Embedding 模型或不符合预期模型身份的运行文件。",
+        "只有全部运行来自同一指定模型时，稳定性才可能通过。",
+        "MiniLM 与 MPNet 结果误混可能制造虚假的稳定性结论或错误的耗时统计。",
+    ),
+    "tests/test_local_rag_dense_stability_compare.py::test_stability_comparison_preserves_failed_candidate_decision": _description(
+        "验证 MiniLM/MPNet 稳定性并列比较保留 MPNet 的失败判定，不因平均质量收益或模型间比值覆盖原始闸门。",
+        "报告展示性能倍数，但 MPNet CV 超限时仍保持稳定性未通过和生产关闭。",
+        "跨模型汇总可能错误抹平单模型波动，使失败候选绕过稳定性门槛。",
+    ),
     "tests/test_local_rag_dense_models.py::test_dense_model_matrix_changes_only_declared_embedding_properties": _description(
         "验证第二 Dense 模型通过同一评测入口配置，只声明模型自身的维度、输入长度、池化和配置身份差异。",
         "MiniLM 与 MPNet 共用语料、Chunker、相似度、缓存和指标逻辑，未知模型被拒绝。",
