@@ -989,6 +989,16 @@ TEST_CASE_CATALOG: dict[str, CaseDescription] = {
         "三个运行的检索结果完全一致，查询延迟变异系数不超过 50%，但生产开关仍保持关闭。",
         "单次偶然结果或不稳定排名可能被错误当成可复现能力，导致后续模型对照失去公平基线。",
     ),
+    "tests/test_local_rag_dense_models.py::test_dense_model_matrix_changes_only_declared_embedding_properties": _description(
+        "验证第二 Dense 模型通过同一评测入口配置，只声明模型自身的维度、输入长度、池化和配置身份差异。",
+        "MiniLM 与 MPNet 共用语料、Chunker、相似度、缓存和指标逻辑，未知模型被拒绝。",
+        "复制评测代码或接受任意模型可能引入口径漂移，使模型质量对比失去单变量意义。",
+    ),
+    "tests/test_local_rag_dense_model_compare.py::test_dense_model_comparison_prefers_quality_gain_without_excess_regression": _description(
+        "验证第二 Dense 模型只有在保留集 nDCG 提升、Recall 不下降且逐题回归不超过 2 个时才成为首选候选。",
+        "模型候选可以晋升，但生产默认开关仍独立保持关闭。",
+        "只看平均指标或速度可能掩盖逐题回归，或者把模型候选误当成生产上线。",
+    ),
 }
 
 
