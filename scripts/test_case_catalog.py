@@ -969,6 +969,16 @@ TEST_CASE_CATALOG: dict[str, CaseDescription] = {
         "三种结果各被准确计数一次，并保留逐题差值。",
         "错误的逐题归类会让平均指标掩盖真实回归并误导晋升判断。",
     ),
+    "tests/test_local_rag_gated_hybrid_stability.py::test_gated_hybrid_stability_requires_deterministic_routes_and_rankings": _description(
+        "验证门控 Hybrid 的三次独立进程必须保持质量、Top-5、分数和路由决定一致，且平均查询延迟 CV 不超过 50%。",
+        "三次配置与缓存一致、路由和排名完全复现、延迟 CV 通过时，稳定性闸门通过。",
+        "单次运行可能掩盖非确定性排序、路由漂移或偶发性能波动。",
+    ),
+    "tests/test_local_rag_gated_hybrid_stability.py::test_gated_hybrid_stability_rejects_route_drift": _description(
+        "验证即使质量数字和延迟相同，只要独立进程的 Dense/Hybrid 路由发生漂移就必须拒绝晋升。",
+        "任一次路由与基准不同都会令稳定性判定失败。",
+        "路由不稳定会造成线上成本和结果不可预测，不能只看聚合质量指标。",
+    ),
     "tests/test_local_rag_rewrite_ab.py::test_holdout_ab_detects_rank_regression_when_recall_at_five_is_unchanged": _description(
         "验证查询扩展即使保持 Recall@5，也会因相关证据排名下降而被标记为逐题回归。",
         "保留集 Recall@5 差值为 0、nDCG@5 差值为负，且至少记录一个 regressed 用例。",
@@ -1043,6 +1053,11 @@ TEST_CASE_CATALOG: dict[str, CaseDescription] = {
         "验证置信度门控默认使用 Dense，仅在 Top-1 分数和间隔同时低于冻结阈值时触发 Hybrid，并记录路由依据。",
         "低置信度小间隔查询进入 Hybrid，高置信度查询保持 Dense，两个决策均可审计。",
         "无条件融合会重现已知回归，缺少决策记录则无法解释线上检索路径。",
+    ),
+    "tests/test_local_rag_hybrid.py::test_confidence_gate_reuses_dense_results_when_hybrid_is_triggered": _description(
+        "验证低置信度查询触发 Hybrid 后复用门控阶段已经计算的 Dense 排名，不对同一查询重复执行向量检索。",
+        "一次查询只调用一次 Dense，并额外调用一次 BM25；路由记录为 Hybrid。",
+        "若 Dense 被调用两次，会重复进行查询向量编码，增加平均延迟和 P95 尾延迟。",
     ),
     "tests/test_local_rag_hybrid_eval.py::test_hybrid_parameter_selection_uses_frozen_quality_first_order": _description(
         "验证 Hybrid 参数只按预先冻结的开发集规则选择：Recall@5、nDCG@5、回归数、延迟、较小 RRF k。",

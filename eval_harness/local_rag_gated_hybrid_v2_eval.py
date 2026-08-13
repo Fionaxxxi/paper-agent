@@ -26,7 +26,7 @@ def run(output_path: Path) -> dict:
         gated.search(case["question"],5);decisions.append({"id":case["id"],**gated.last_decision})
     outcomes=_outcomes(baseline,candidate);b,h=baseline["summary"],candidate["summary"]
     gate_passed=h["recall_at_5"]>=b["recall_at_5"] and h["ndcg_at_5"]>b["ndcg_at_5"] and outcomes["regressed"]<=1 and sum(x["route"]=="hybrid" for x in decisions)>=1
-    report={"report_version":"1.0","dataset_role":"frozen_unseen_holdout_v2","config":{"model":MODEL,"rrf_k":40,"maximum_dense_top1":.65,"maximum_dense_margin":.05,"selection_data":"development_v1_only","llm_calls":0},"cache":{"hit":True,"fingerprint":fingerprint},"warmup":warmup,"dense":baseline,"gated_hybrid":candidate,"route_decisions":decisions,"outcomes":outcomes,"decision":{"quality_gate_passed":gate_passed,"production_default":False}}
+    report={"report_version":"1.1","dataset_role":"frozen_unseen_holdout_v2","config":{"model":MODEL,"rrf_k":40,"maximum_dense_top1":.65,"maximum_dense_margin":.05,"selection_data":"development_v1_only","dense_execution":"reuse_gate_ranking","llm_calls":0},"cache":{"hit":True,"fingerprint":fingerprint},"warmup":warmup,"dense":baseline,"gated_hybrid":candidate,"route_decisions":decisions,"outcomes":outcomes,"decision":{"quality_gate_passed":gate_passed,"production_default":False}}
     output_path.parent.mkdir(parents=True,exist_ok=True);output_path.write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding="utf-8");return report
 
 
