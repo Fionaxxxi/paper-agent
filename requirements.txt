@@ -20,6 +20,9 @@ tiktoken>=0.9.0
 
 pypdf>=5.0.0
 
+# Optional local Dense RAG candidate (ONNX, no PyTorch)
+fastembed>=0.7,<0.8
+
 pytest>=8.0.0
 
 

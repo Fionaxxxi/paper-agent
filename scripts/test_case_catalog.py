@@ -954,6 +954,21 @@ TEST_CASE_CATALOG: dict[str, CaseDescription] = {
         "保留集 Recall@5 差值为 0、nDCG@5 差值为负，且至少记录一个 regressed 用例。",
         "逐题结论可能只看是否进入 Top5，掩盖证据从前排下滑的真实排序损失。",
     ),
+    "tests/test_local_rag_dense.py::test_dense_retriever_normalizes_vectors_and_ranks_by_cosine": _description(
+        "验证 Dense 检索显式归一化向量，并按余弦相似度将语义匹配块排在前面。",
+        "相关块得分为 1 且排名第一，无关正交块得分为 0。",
+        "未归一化裸点积可能受向量长度支配，产生不正确或不可比较的 Dense 排名。",
+    ),
+    "tests/test_local_rag_dense.py::test_dense_retriever_rejects_zero_vectors_and_invalid_inputs": _description(
+        "验证 Dense 检索拒绝零向量和空语料。",
+        "非法输入明确抛出 ValueError，避免除零或空索引生成伪结果。",
+        "余弦归一化可能产生 NaN，或空知识库静默输出无意义评测。",
+    ),
+    "tests/test_local_rag_dense_compare.py::test_dense_comparison_uses_holdout_quality_and_keeps_production_off": _description(
+        "验证 Dense 晋升判断以独立保留集质量为依据，并与生产默认开关分离。",
+        "保留集 Recall@5 提升 20 个百分点且 nDCG 为正，但存在 3 个逐题回归，超过最多 2 个的门槛，因此候选晋升和生产默认均保持关闭。",
+        "系统可能再次依据开发集拟合晋升，或未经重复验证就直接改动生产检索路径。",
+    ),
 }
 
 
