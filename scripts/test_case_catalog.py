@@ -964,10 +964,25 @@ TEST_CASE_CATALOG: dict[str, CaseDescription] = {
         "非法输入明确抛出 ValueError，避免除零或空索引生成伪结果。",
         "余弦归一化可能产生 NaN，或空知识库静默输出无意义评测。",
     ),
+    "tests/test_local_rag_dense.py::test_dense_index_cache_round_trips_vectors_and_invalidates_changed_corpus": _description(
+        "验证 Dense 向量缓存可以无损加载，并在语料文本、模型或处理版本变化后使用不同指纹。",
+        "加载向量保持单位长度；变更语料不会错误命中旧缓存。",
+        "陈旧向量可能与当前 Chunk 错位，使评测和生产检索返回不可追踪的错误证据。",
+    ),
+    "tests/test_local_rag_dense.py::test_dense_retriever_reuses_cached_vectors_without_document_embedding": _description(
+        "验证缓存命中时 DenseRetriever 不会重新编码全部论文，只对查询生成向量。",
+        "构造阶段复用缓存，搜索阶段仅调用一次查询 Embedding。",
+        "每次启动仍重复编码 1098 个 Chunk，持久化缓存无法降低冷启动成本。",
+    ),
     "tests/test_local_rag_dense_compare.py::test_dense_comparison_uses_holdout_quality_and_keeps_production_off": _description(
         "验证 Dense 晋升判断以独立保留集质量为依据，并与生产默认开关分离。",
         "保留集 Recall@5 提升 20 个百分点且 nDCG 为正，但存在 3 个逐题回归，超过最多 2 个的门槛，因此候选晋升和生产默认均保持关闭。",
         "系统可能再次依据开发集拟合晋升，或未经重复验证就直接改动生产检索路径。",
+    ),
+    "tests/test_local_rag_dense_cache_compare.py::test_dense_cache_comparison_requires_same_quality_and_faster_warm_build": _description(
+        "验证 Dense 缓存只有在冷启动未命中、热启动命中、质量完全一致且建库耗时下降超过 99% 时才通过。",
+        "缓存被确认只改变启动成本，不改变 Recall、MRR、nDCG 或生产开关。",
+        "缓存可能悄悄改变排序结果，或速度收益不足却被错误判定为可用。",
     ),
 }
 

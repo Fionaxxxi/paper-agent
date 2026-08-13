@@ -11,7 +11,7 @@ from pathlib import Path
 from eval_harness.local_rag_benchmark import _metrics
 from eval_harness.rag_eval_models import load_rag_dataset
 from local_rag.chunker import FixedWindowChunker
-from local_rag.dense import DenseRetriever
+from local_rag.dense import DenseIndexCache, DenseRetriever
 from local_rag.parser import PyPDFPageParser
 
 
@@ -46,8 +46,13 @@ def run(output: Path) -> dict:
     from fastembed import TextEmbedding, __version__ as fastembed_version
     papers = Path("data/papers"); chunks, parser, chunker = _chunks(papers)
     model_started=time.perf_counter(); model=TextEmbedding(MODEL_NAME,cache_dir="data/cache/fastembed",local_files_only=True); model_load_ms=(time.perf_counter()-model_started)*1000
-    index_started=time.perf_counter(); retriever=DenseRetriever(chunks,model,batch_size=32); index_ms=(time.perf_counter()-index_started)*1000
-    result={"report_version":"1.0","config":{"config_id":"dense-multilingual-minilm-v1","model":MODEL_NAME,"fastembed_version":fastembed_version,"runtime":"onnxruntime_cpu","pooling":"mean_as_fastembed_0.7.4","dimension":384,"max_tokens":512,"query_prefix":"none","document_prefix":"none","similarity":"l2_normalized_cosine","batch_size":32,"llm_calls":0},"corpus":{"chunk_count":len(chunks),"parser":parser.name,"chunker":chunker.name},"timing":{"model_load_ms":round(model_load_ms,3),"index_build_ms":round(index_ms,3)},"development":evaluate_dataset(retriever,Path("eval_harness/datasets/rag_gold_v1.json")),"holdout":evaluate_dataset(retriever,Path("eval_harness/datasets/rag_holdout_v1.json"))}
+    cache=DenseIndexCache(Path("data/cache/local_rag/dense")); fingerprint=cache.fingerprint(chunks,MODEL_NAME,f"{parser.name}:{parser.version}",f"{chunker.name}:{chunker.version}")
+    cache_started=time.perf_counter(); vectors=cache.load(fingerprint,len(chunks)); cache_load_ms=(time.perf_counter()-cache_started)*1000; cache_hit=vectors is not None
+    index_started=time.perf_counter(); retriever=DenseRetriever(chunks,model,batch_size=32,vectors=vectors); index_ms=(time.perf_counter()-index_started)*1000
+    cache_write_ms=0.0
+    if not cache_hit:
+        write_started=time.perf_counter(); cache.save(fingerprint,retriever.vectors); cache_write_ms=(time.perf_counter()-write_started)*1000
+    result={"report_version":"1.1","config":{"config_id":"dense-multilingual-minilm-v1","model":MODEL_NAME,"fastembed_version":fastembed_version,"runtime":"onnxruntime_cpu","pooling":"mean_as_fastembed_0.7.4","dimension":384,"max_tokens":512,"query_prefix":"none","document_prefix":"none","similarity":"l2_normalized_cosine","batch_size":32,"llm_calls":0},"corpus":{"chunk_count":len(chunks),"parser":parser.name,"chunker":chunker.name},"cache":{"version":cache.version,"fingerprint":fingerprint,"hit":cache_hit},"timing":{"model_load_ms":round(model_load_ms,3),"cache_load_ms":round(cache_load_ms,3),"index_build_ms":round(index_ms,3),"cache_write_ms":round(cache_write_ms,3)},"development":evaluate_dataset(retriever,Path("eval_harness/datasets/rag_gold_v1.json")),"holdout":evaluate_dataset(retriever,Path("eval_harness/datasets/rag_holdout_v1.json"))}
     output.parent.mkdir(parents=True,exist_ok=True); output.write_text(json.dumps(result,ensure_ascii=False,indent=2),encoding="utf-8"); return result
 
 
