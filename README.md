@@ -180,9 +180,9 @@ D:\miniconda3\envs\paper_agent\python.exe scripts\run_tests_with_report.py
 
 当前已经实现 LangGraph 工作流、在线多源工具层、本地 Hybrid RAG、查询规划、一次受控 Replan、Skill 路由、本地会话记忆、质量降级和可观测元数据。
 
-以下属于后续升级方向，尚不应描述为已完成功能：
+以下属于继续推进的原计划能力，尚未完成的部分不应描述为已实现功能：
 
-- MCP 工具接入与动态工具发现；
+- MCP 已完成统一工具协议适配层；真实 Server 连接与动态工具发现待实现；
 - Redis 会话和语义缓存；
 - GraphRAG、LightRAG 与 Dense/Hybrid 的统一选型评测；
 - Reflection / Reflexion 与可控 Agent Loop；

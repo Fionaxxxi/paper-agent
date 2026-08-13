@@ -152,8 +152,12 @@ class ToolExecutor:
     @staticmethod
     def _metadata(tool: Tool) -> dict[str, Any]:
         spec = tool.spec
-        return {
+        metadata = {
             "capabilities": list(spec.capabilities),
             "risk_level": spec.risk_level.value,
             "cache_policy": spec.cache_policy,
         }
+        audit_metadata = getattr(tool, "audit_metadata", None)
+        if isinstance(audit_metadata, dict):
+            metadata.update(audit_metadata)
+        return metadata

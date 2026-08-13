@@ -1104,6 +1104,16 @@ TEST_CASE_CATALOG: dict[str, CaseDescription] = {
         "Web 页面可以展示证据来源和可审计定位信息。",
         "若失败，前端只能展示论文摘要，无法体现全文 RAG 的证据追踪能力。",
     ),
+    "tests/test_mcp_adapter.py::test_readonly_mcp_tool_uses_existing_registry_policy_and_executor": _description(
+        "验证只读 MCP 工具可以注册到现有 Tool Registry，并复用 Policy、Executor、Pydantic 校验和统一 ToolResult。",
+        "MCP 调用成功映射为标准输出，同时记录 Server、版本、传输方式和远程工具名。",
+        "若失败，MCP 会形成独立旁路，破坏统一工具层和可审计性。",
+    ),
+    "tests/test_mcp_adapter.py::test_mcp_adapter_preserves_validation_and_rejects_remote_errors": _description(
+        "验证 MCP 适配器保留本地参数校验，并把远程错误转换为统一执行错误。",
+        "无效参数不会发送给 MCP Server，远程失败也不会伪装成成功结果。",
+        "若失败，不可信参数或 MCP 错误可能绕过工具执行约束进入工作流。",
+    ),
 }
 
 
