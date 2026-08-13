@@ -984,6 +984,11 @@ TEST_CASE_CATALOG: dict[str, CaseDescription] = {
         "缓存被确认只改变启动成本，不改变 Recall、MRR、nDCG 或生产开关。",
         "缓存可能悄悄改变排序结果，或速度收益不足却被错误判定为可用。",
     ),
+    "tests/test_local_rag_dense_stability.py::test_dense_stability_requires_three_deterministic_warm_processes": _description(
+        "验证 Dense 稳定性晋升至少需要三个独立热启动进程，并同时满足缓存命中、质量一致、Top-5 与分数确定性和延迟波动门槛。",
+        "三个运行的检索结果完全一致，查询延迟变异系数不超过 50%，但生产开关仍保持关闭。",
+        "单次偶然结果或不稳定排名可能被错误当成可复现能力，导致后续模型对照失去公平基线。",
+    ),
 }
 
 
