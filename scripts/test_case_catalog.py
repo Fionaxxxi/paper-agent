@@ -1009,6 +1009,21 @@ TEST_CASE_CATALOG: dict[str, CaseDescription] = {
         "报告正确计算均值和 CV 变化，并将下一步推进到 Hybrid 互补实验。",
         "仅凭一次更快结果可能错误归因预热效果，或绕过稳定性门槛。",
     ),
+    "tests/test_local_rag_hybrid.py::test_rrf_rewards_cross_retriever_agreement_without_mixing_raw_scores": _description(
+        "验证 Hybrid 使用倒数排名融合奖励 BM25 与 Dense 共同命中的证据，而不直接相加尺度不同的原始分数。",
+        "两个检索器都返回的 Chunk 通过名次贡献叠加排到首位，分数符合 RRF 公式。",
+        "直接混合 BM25 与余弦分数会被某一分值尺度主导，导致融合不可解释。",
+    ),
+    "tests/test_local_rag_hybrid.py::test_rrf_is_deterministic_and_rejects_invalid_configuration": _description(
+        "验证 RRF 参数必须为正，并在融合分数相同时按确定性身份规则打破平局。",
+        "非法配置被拒绝，相同输入始终产生相同排序。",
+        "不稳定平局或无效参数会使重复评测和缓存结果不可比较。",
+    ),
+    "tests/test_local_rag_hybrid_eval.py::test_hybrid_parameter_selection_uses_frozen_quality_first_order": _description(
+        "验证 Hybrid 参数只按预先冻结的开发集规则选择：Recall@5、nDCG@5、回归数、延迟、较小 RRF k。",
+        "质量指标优先于速度，候选并列时按固定顺序确定唯一参数。",
+        "事后改变选参顺序或使用保留集调参会造成测试集泄漏和虚假提升。",
+    ),
     "tests/test_local_rag_dense_models.py::test_dense_model_matrix_changes_only_declared_embedding_properties": _description(
         "验证第二 Dense 模型通过同一评测入口配置，只声明模型自身的维度、输入长度、池化和配置身份差异。",
         "MiniLM 与 MPNet 共用语料、Chunker、相似度、缓存和指标逻辑，未知模型被拒绝。",
