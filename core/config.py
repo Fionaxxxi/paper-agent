@@ -11,6 +11,8 @@ class Settings(BaseSettings):
 
     # Retrieval
     RETRIEVAL_MODE: str = "arxiv"
+    LOCAL_RAG_MAX_RESULTS: int = 5
+    LOCAL_RAG_MAX_RESULTS: int = 5
     ARXIV_MAX_RESULTS: int = 5
     MULTI_SOURCE_PROVIDERS: str = "arxiv,openalex"
     MULTI_SOURCE_MAX_RESULTS: int = 8

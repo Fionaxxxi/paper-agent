@@ -1084,6 +1084,16 @@ TEST_CASE_CATALOG: dict[str, CaseDescription] = {
         "模型候选可以晋升，但生产默认开关仍独立保持关闭。",
         "只看平均指标或速度可能掩盖逐题回归，或者把模型候选误当成生产上线。",
     ),
+    "tests/test_local_rag_integration.py::test_local_rag_mode_enters_main_retrieval_flow": _description(
+        "验证本地全文 RAG 已接入 LangGraph 主检索入口，并保留 Chunk、页码和门控路由信息。",
+        "配置 local_rag 后无需调用在线论文源即可返回本地全文证据，并展示 Dense/Hybrid 路由。",
+        "若失败，本地 RAG 仍只是独立实验代码，无法作为项目主流程能力展示。",
+    ),
+    "tests/test_local_rag_integration.py::test_retrieve_node_exposes_local_rag_route_in_metadata": _description(
+        "验证检索节点把本地 RAG 模式、排名策略和路由决定写入工作流响应元数据。",
+        "API 或演示界面可以直接展示本次查询采用的检索后端和门控路径。",
+        "若元数据丢失，虽然检索能够运行，但无法体现 LangGraph 编排与可审计路由特色。",
+    ),
 }
 
 

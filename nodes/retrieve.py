@@ -272,6 +272,34 @@ def retrieve_by_query(query: str, state: AgentState) -> Dict[str, Any]:
     """Retrieve one query from the configured single or multiple providers."""
 
     retrieval_mode = settings.RETRIEVAL_MODE.lower()
+    if retrieval_mode == "local_rag":
+        from local_rag.runtime import search_local_papers
+
+        local_result = search_local_papers(query, settings.LOCAL_RAG_MAX_RESULTS)
+        documents = local_result["documents"]
+        decision = local_result["decision"]
+        return {
+            "documents": documents,
+            "retrieval_source": "local_rag",
+            "retrieval_mode": retrieval_mode,
+            "cache_hit": True,
+            "search_query": query,
+            "paper_count": len(documents),
+            "tools_used": ["local_rag_retriever", f"local_rag_{decision.get('route', 'dense')}"],
+            "tool_execution": {},
+            "tool_executions": [],
+            "source_statuses": [{"provider":"local_rag","retrieval_source":"local_rag","cache_hit":True,"paper_count":len(documents)}],
+            "cache_hit_count": 1,
+            "raw_document_count": len(documents),
+            "merged_document_count": len(documents),
+            "deduplicated_count": 0,
+            "candidate_count_before_top_k": len(documents),
+            "metadata_warning_count": 0,
+            "metadata_repaired_count": 0,
+            "metadata_quarantined_count": 0,
+            "ranking_strategy": "confidence_gated_bm25_dense_rrf",
+            "local_rag_decision": decision,
+        }
     sources = get_retrieval_sources(retrieval_mode)
     if settings.MULTI_SOURCE_PARALLEL_ENABLED and len(sources) > 1:
         worker_count = max(1, min(settings.MULTI_SOURCE_MAX_WORKERS, len(sources)))
@@ -557,5 +585,7 @@ def retrieve_node(state: AgentState) -> AgentState:
             "raw_document_count": single_result.get("raw_document_count", len(documents)),
             "merged_document_count": single_result.get("merged_document_count", len(documents)),
             "deduplicated_count": single_result.get("deduplicated_count", 0),
+            "ranking_strategy": single_result.get("ranking_strategy", "source_priority"),
+            "local_rag_decision": single_result.get("local_rag_decision", {}),
         },
     }
