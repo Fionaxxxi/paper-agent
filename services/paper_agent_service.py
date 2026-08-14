@@ -10,6 +10,7 @@ from memory.conversation_memory import (
     save_message,
     update_research_memory,
 )
+from memory.llm_wiki import publish_agent_result
 from document_loader.pdf_loader import load_pdf_text
 from core.config import settings
 
@@ -118,6 +119,16 @@ class PaperAgentService:
             query=query,
             documents=result.get("documents", []),
         )
+        wiki_result = publish_agent_result(
+            result,
+            root=settings.LLM_WIKI_DIR,
+            enabled=settings.LLM_WIKI_AUTO_PUBLISH_ENABLED,
+            allowed_task_types={
+                item.strip()
+                for item in settings.LLM_WIKI_ALLOWED_TASK_TYPES.split(",")
+                if item.strip()
+            },
+        )
 
         logger.info(
             "trace_id=%s | conversation_id=%s | api workflow finished | total_time=%ss",
@@ -140,6 +151,7 @@ class PaperAgentService:
                 "memory_compressed_message_count": memory_context.compressed_message_count,
                 "memory_active_topics": memory_context.active_topics,
                 "memory_active_papers": memory_context.active_papers,
+                "llm_wiki": wiki_result.as_dict(),
                 "pdf_path": pdf_path,
                 "pdf_page_count": result.get("pdf_page_count", pdf_page_count),
                 "pdf_error": result.get("pdf_error", pdf_error),

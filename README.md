@@ -189,6 +189,8 @@ D:\miniconda3\envs\paper_agent\python.exe scripts\run_tests_with_report.py
 
 会话记忆已从逐会话 JSON 升级为项目内 SQLite：保存完整消息、用户偏好、活跃研究主题、活跃论文和研究状态 Checkpoint。请求上下文只保留最近消息原文，更早消息进行确定性提取式压缩，并按字符预算组装；旧 `data/memory/*.json` 会在首次读取时兼容迁移。当前摘要不调用 LLM，尚未实现语义摘要或正式 LangGraph SQLite Saver。
 
+Markdown LLM Wiki v1 已提供严格发布门控：只有允许的研究任务、最终答案通过 Verifier、存在可追溯论文证据且未处于证据不足模式时才可发布。笔记保存研究问题、结论、论文身份/来源/链接、验证分数和 Reflection 次数，并维护幂等索引。默认 `LLM_WIKI_AUTO_PUBLISH_ENABLED=false`，生成内容位于 `data/wiki/` 且被 Git 忽略；开启前应确认希望把合格研究结果持久化到本机。
+
 后续采用“有特色但能完成”的 Research Agent 执行路线，尚未完成的部分不应描述为已实现功能：
 
 1. 已收口统一 MCP 路由和执行元数据；
@@ -203,5 +205,12 @@ D:\miniconda3\envs\paper_agent\python.exe scripts\run_tests_with_report.py
 自动 Reflexion/自进化、在线适应、八角色分层 Agent、Best-of-N、Redis、完整 GraphRAG 选型矩阵和整篇 PDF 全自动多模态解析暂缓。GraphRAG 仅在固定的跨论文全局任务证明 Hybrid RAG 不足后做小型 PoC；测试按风险分级，Excel 在里程碑统一更新。
 
 Agent Loop 坚持有限循环：现有 Retrieval Replan 最多一次，后续 Answer Reflection 最多一次；深度研究中的计划修复、证据补充和报告修复也各最多一次，并共享总 Token、工具调用、时间和迭代预算。普通问题不会自动进入高成本深度研究流程。
+
+启用本地 Wiki 自动发布：
+
+```env
+LLM_WIKI_AUTO_PUBLISH_ENABLED=true
+LLM_WIKI_ALLOWED_TASK_TYPES=summarize,compare,recommend,literature_review,paper_critique
+```
 
 详细历史、技术决策和未来计划见 [docs/ROADMAP.md](docs/ROADMAP.md)。

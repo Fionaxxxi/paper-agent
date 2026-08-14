@@ -153,3 +153,4 @@ def test_service_injects_compressed_context_and_updates_research_memory(monkeypa
     assert captured["memory_update"][0] == "c1"
     assert captured["memory_update"][1]["documents"][0]["title"] == "ReAct"
     assert result["paper_metadata"]["memory_compressed_message_count"] == 8
+    assert result["paper_metadata"]["llm_wiki"]["reason"] == "auto_publish_disabled"

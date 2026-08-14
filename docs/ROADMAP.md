@@ -48,7 +48,7 @@ LangGraph Graph Engineering（显式状态、条件路由、恢复边和有限�
 |---:|---|---|---|
 | 1 | MCP 路由收口（已完成） | 已补齐显式 MCP Router 场景、错误映射和调用元数据；保留原生工具与 MCP 双通道 | 展示协议解耦与工具治理，而不是为了 MCP 而 MCP |
 | 2 | Verifier + 有限 Reflection（v1 已完成） | 已对空答案、完整度、任务结构和论文证据信号做确定性验证；有修复证据时最多调用 LLM 修复 1 次，无改善恢复初始答案 | 形成可解释的质量控制和失败恢复闭环；后续再扩展 Claim/Citation 精细验证 |
-| 3 | 结构化记忆 + LLM Wiki（SQLite v1 已完成） | 已使用 SQLite 保存完整消息、用户偏好、活跃主题、活跃论文和通用 Checkpoint，并提供最近窗口 + 旧消息提取式压缩；下一步补语义摘要门控、正式 LangGraph Checkpointer 与 Markdown Wiki | 展示跨轮连续性，同时保持数据透明、可删除、易演示 |
+| 3 | 结构化记忆 + LLM Wiki（Memory/Wiki v1 已完成） | 已使用 SQLite 保存完整消息、用户偏好、活跃主题、活跃论文和通用 Checkpoint，提供预算压缩；Markdown Wiki 只发布通过验证且有论文证据的研究成果。下一步补正式 LangGraph Checkpointer；语义摘要按真实长会话需求再晋升 | 展示跨轮连续性与可审阅研究成果，同时保持数据透明、可删除、易演示 |
 | 4 | 科研型 Skill + 结构化输出 | 优先实现 `LiteratureReviewSkill` 与 `PaperCritiqueSkill`；实验建议并入批判分析，报告排版并入综述输出 | 用少量高价值 Skill 覆盖真实科研任务 |
 | 5 | 轻量深度研究模式 | 增加 L0～L3 分级路由；L3 使用 Research Brief、受限任务计划、Planner / Executor / Reviewer、Evidence Coverage 和 Checkpoint | 把前述能力组合成可交付带引用研究报告的差异化闭环 |
 | 6 | 外部 MCP | 先接只读 Zotero，再接只读 GitHub；分别服务个人文献库和论文代码仓库 | 证明 MCP 的跨应用复用价值 |
@@ -1576,6 +1576,8 @@ Push / Pull Request
 2026-08-14 将“证据驱动的轻量 Research Agent”确立为后续唯一产品主线。结构化记忆、上下文压缩、Checkpoint、LiteratureReviewSkill、PaperCritiqueSkill、Tool/MCP、全文 RAG、Coverage Gate 和 Claim/Citation Verifier 不再作为孤立功能展示，而是共同服务于“复杂研究意图 → Research Analysis → Brief → Plan → Evidence → Report → Verification”的闭环。普通搜索和问答保留 L1/L2 快速路径。Research Agent MVP 的固定首要演示任务为 Agent 架构研究方向调研，必须同时展示规划、证据、恢复、成本、停止和引用轨迹。
 
 2026-08-14 已完成 Research Memory SQLite v1。旧逐会话 JSON 存储升级为项目内 `data/memory/paper_agent_memory.db`，保存完整消息、用户偏好、活跃研究主题、活跃论文与通用状态 Checkpoint；旧 JSON 在首次读取时兼容迁移且不会重复导入。服务请求现在注入最近 6 条原文、更早消息提取式摘要及结构化研究状态，并按默认 2400 字符预算组装上下文，回答后更新主题与论文。当前压缩完全确定性、不调用 LLM，正式 LangGraph SQLite Saver 扩展尚未安装，因此本轮提供存取接口而未宣称图级中断恢复。结构化存储、隔离、压缩预算、迁移、删除级联、Checkpoint、服务接入及相关 Agent 回归 42/42 通过且没有真实模型调用。下一步补正式 Checkpointer/语义摘要门控和 Markdown LLM Wiki，随后进入科研型结构化 Skill。
+
+2026-08-14 已完成 Markdown LLM Wiki v1。Wiki 不是无门控的“模型记忆”：默认关闭自动发布，只有任务类型在白名单、Answer Verifier 通过、至少存在一条可追溯论文证据且回答未处于 `insufficient_evidence` 模式时才写入 `data/wiki/`。每篇笔记包含研究问题、结论、论文身份/来源/链接、Verifier 分数、失败类型和 Reflection 次数，索引按 Trace 幂等更新；Note ID 读取拒绝路径字符。服务响应返回发布状态与拒绝原因。Wiki、Research Memory、Verifier、Reflection、图路由与目录测试 50/50 通过且没有真实模型调用。下一步接入正式 LangGraph SQLite Checkpointer，使 Research Graph 能用 `conversation_id/thread_id` 保存和恢复图状态；LLM 语义摘要暂不优先，等待真实长会话证明提取式压缩不足。
 
 2026-08-12 子查询并行已完成 5 次确定性离线重复基准：3 个子查询、2 个 worker 时，中位延迟由 265.4ms 降至 172.3ms，加速 1.54 倍、延迟下降 35.09%，结果与规划顺序一致率 100%，达到阶段门槛并收口。
 

@@ -24,6 +24,26 @@ def _description(
 
 
 TEST_CASE_CATALOG: dict[str, CaseDescription] = {
+    "tests/test_llm_wiki.py::test_verified_research_note_writes_markdown_evidence_and_index": _description(
+        "验证通过 Verifier 的研究答案和论文证据能发布为 Markdown 笔记并进入 Wiki 索引。",
+        "笔记包含结论、论文身份、来源、链接和验证状态，可由用户直接审阅。",
+        "研究成果可能无法落盘，或 Wiki 丢失证据和质量审计信息。",
+    ),
+    "tests/test_llm_wiki.py::test_wiki_publish_gate_rejects_untrusted_or_disabled_results": _description(
+        "验证 Wiki 拒绝关闭状态、不允许的任务、验证失败、无证据和证据不足结果。",
+        "只有允许且可追溯的研究成果能进入长期 Wiki，不会污染知识记忆。",
+        "普通问答或不可靠答案可能被自动固化为长期知识。",
+    ),
+    "tests/test_llm_wiki.py::test_republishing_same_trace_is_idempotent_in_index": _description(
+        "验证相同 Trace 的研究笔记重新发布时更新内容而不重复增加索引项。",
+        "修订结果可覆盖旧版本，Wiki 索引不会因重试或重复请求膨胀。",
+        "重复发布可能留下冲突结论或大量重复链接。",
+    ),
+    "tests/test_llm_wiki.py::test_wiki_reader_sanitizes_note_identifier": _description(
+        "验证 Wiki 读取接口清理 Note ID，不能使用路径穿越读取目录外文件。",
+        "合法笔记可读取，包含路径字符的非法 ID 不会越过 notes 目录。",
+        "用户提供的 Note ID 可能造成任意本地文件读取风险。",
+    ),
     "tests/test_structured_memory.py::test_sqlite_memory_persists_messages_and_returns_recent_window": _description(
         "验证 SQLite 会话消息跨 Store 实例持久化，并只把最近窗口作为原文上下文。",
         "8 条消息完整落库，最近 3 条保持顺序，更早 5 条进入提取式摘要。",

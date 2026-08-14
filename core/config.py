@@ -62,6 +62,11 @@ class Settings(BaseSettings):
     MEMORY_RECENT_MESSAGES: int = 6
     MEMORY_SUMMARY_MAX_CHARS: int = 1200
     MEMORY_CONTEXT_MAX_CHARS: int = 2400
+    LLM_WIKI_DIR: str = "data/wiki"
+    LLM_WIKI_AUTO_PUBLISH_ENABLED: bool = False
+    LLM_WIKI_ALLOWED_TASK_TYPES: str = (
+        "summarize,compare,recommend,literature_review,paper_critique"
+    )
 
     # Logging
     LOG_LEVEL: str = "INFO"

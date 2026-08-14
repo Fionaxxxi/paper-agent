@@ -111,6 +111,9 @@ data/pdfs/
 # Local memory
 data/memory/
 
+# Generated, human-reviewable LLM Wiki notes
+data/wiki/
+
 # Generated benchmark reports and spreadsheet artifacts
 eval_harness/reports/
 outputs/
