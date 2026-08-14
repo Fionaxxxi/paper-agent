@@ -1412,6 +1412,8 @@ Push / Pull Request
 
 2026-08-13 已完成首个真实 MCP 链路：采用官方 MCP Python SDK 2.x，通过 stdio 短生命周期 Client 启动 `paperagent-corpus` Server。Server 只读访问版本控制内的 `corpus_sources.json`，暴露 `search_corpus` Tool 和 `paperagent://corpus/catalog` Resource，不访问网络、不读取 API Key、不修改文件。`paper.catalog.search.mcp` 已注册到默认 Tool Registry，继续受只读 Policy、Pydantic 双端 Schema、15 秒超时和统一 ToolResult 约束；真实调用成功返回 ReAct 论文并记录 Server 1.0.0、stdio 和远程工具名，相关轻量测试 24/24 通过。当前每次调用包含约 3 秒 Server 冷启动，适合单用户演示；未来并发场景再评估长连接或 Streamable HTTP。下一步完成 MCP Tool Router 路由与主工作流的显式使用场景，然后结束阶段 3 Client v1，进入阶段 4 有限 Agent Loop 与 Reflection。
 
+2026-08-14 外部 MCP 扩展范围冻结为两个只读工具，不继续扩张 MCP 清单。第一项为 Zotero MCP，用于搜索个人文献库、读取论文元数据、Collection、标签、笔记和可用 PDF 全文；第一版禁止新增、修改或删除条目、标签和笔记。第二项为 GitHub MCP，用于查找论文对应仓库并读取 README、目录结构、依赖、配置、Issue、Release 与 Commit；第一版禁止创建 Issue、修改文件、提交代码、操作分支和合并 PR。Filesystem、Crossref、Semantic Scholar、OpenAlex、数据库和 Fetch MCP 不加入当前后续计划；已有原生数据源保持原生实现。实施顺序为先 Zotero、后 GitHub，并统一经过现有 Registry、Policy、Executor、Schema 校验和审计元数据。
+
 2026-08-12 子查询并行已完成 5 次确定性离线重复基准：3 个子查询、2 个 worker 时，中位延迟由 265.4ms 降至 172.3ms，加速 1.54 倍、延迟下降 35.09%，结果与规划顺序一致率 100%，达到阶段门槛并收口。
 
 随后已开始 Retrieval Replan v1：现有“低分后只扩大结果数”的普通重试升级为可审计的失败分类与受限动作。暂时工具失败保持原查询，零结果放宽字面限制，有结果但低相关时追加综述上下文；新查询覆盖旧子查询计划，仍受最多重试一次约束，全程不增加 LLM 调用或付费工具。下一步评测 Replan 相对普通重试的恢复率、无效重试率和动作分类准确率。

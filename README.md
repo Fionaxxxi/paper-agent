@@ -182,7 +182,7 @@ D:\miniconda3\envs\paper_agent\python.exe scripts\run_tests_with_report.py
 
 以下属于继续推进的原计划能力，尚未完成的部分不应描述为已实现功能：
 
-- MCP 已完成统一适配层，并通过官方 SDK + stdio 接入只读本地论文目录 Server；动态发现和远程 Server 待实现；
+- MCP 已完成统一适配层，并通过官方 SDK + stdio 接入只读本地论文目录 Server；后续外部 MCP 只计划接入只读 Zotero（个人文献库）和只读 GitHub（论文代码仓库），不扩张其他 MCP 清单；
 - Redis 会话和语义缓存；
 - GraphRAG、LightRAG 与 Dense/Hybrid 的统一选型评测；
 - Reflection / Reflexion 与可控 Agent Loop；
