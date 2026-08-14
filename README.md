@@ -1,5 +1,7 @@
 # PaperAgent：基于 LangGraph 的科研论文智能体
 
+[![PaperAgent CI](https://github.com/Fionaxxxi/paper-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/Fionaxxxi/paper-agent/actions/workflows/ci.yml)
+
 PaperAgent 是一个面向科研论文场景的 Agent 项目。它不只是调用一次大模型，而是使用 LangGraph 编排意图识别、查询规划、多源检索、质量判断、受控重试、Skill 选择、答案生成和运行指标记录。
 
 项目同时支持在线论文发现和本地论文全文 RAG，适合作为 Agent Engineering、Graph Engineering、RAG 和工具系统设计的综合实践项目。
@@ -84,13 +86,31 @@ D:\miniconda3\envs\paper_agent\python.exe -m uvicorn app.api:app --host 127.0.0.
 
 浏览器打开 `http://127.0.0.1:8000/docs`，可直接使用 Swagger 调试。健康检查地址为 `http://127.0.0.1:8000/health`。
 
-项目同时提供 Web 演示台：打开 `http://127.0.0.1:8000/`，即可查看答案、论文证据、本地 Dense/Hybrid 路由、工具调用和 LangGraph 节点耗时。
+项目同时提供 Research Agent Web 演示台：打开 `http://127.0.0.1:8000/`，即可查看答案、论文证据、Research Plan、依赖执行波次、Evidence Store、Coverage/Citation/Repair 质量闸门、工具调用和 LangGraph 节点耗时。页面内置“加载示例轨迹（零 API）”，即使现场没有网络或模型凭据也能展示完整 L3 研究闭环。
 
 也可以运行命令行版本：
 
 ```powershell
 D:\miniconda3\envs\paper_agent\python.exe main.py
 ```
+
+### 3. 使用 Docker 启动
+
+镜像不会包含 `.env`、本地 PDF、模型缓存、SQLite、Wiki 或评测输出。首次启动前仍需从示例创建本地配置：
+
+```powershell
+Copy-Item .env.example .env
+docker compose up --build -d
+docker compose ps
+```
+
+打开 `http://127.0.0.1:8000/` 查看 Research Agent 演示台，健康检查为 `http://127.0.0.1:8000/health`。停止服务：
+
+```powershell
+docker compose down
+```
+
+Compose 将 `./data` 和 `./logs` 挂载到容器，因此论文、索引、SQLite 记忆和日志不会随容器删除。若只演示冻结的零 API 轨迹，`.env` 可以保留占位 Key；点击“运行 Agent”前必须配置真实模型凭据。
 
 ## 四个代表性演示
 
@@ -179,13 +199,26 @@ D:\miniconda3\envs\paper_agent\python.exe -m pytest tests\test_graph_integration
 D:\miniconda3\envs\paper_agent\python.exe scripts\run_tests_with_report.py
 ```
 
+## 基础 CI
+
+GitHub Actions 在 `master` push 和 Pull Request 时执行：
+
+```text
+Node 检查前端 JavaScript 语法
+→ Python 3.10 安装依赖
+→ 运行确定性 Research Agent 核心测试
+→ 构建 Docker 运行镜像
+```
+
+CI 会显式关闭在线 LLM、外部检索评测和 LangGraph 持久化，不需要 GitHub Secrets，不会产生模型 Token，也不会下载本地 Dense 模型。完整 RAG 基准和在线能力集仍由本地显式命令运行。
+
 ## 已实现边界与后续方向
 
 当前已经实现 LangGraph 工作流、在线多源工具层、本地 Hybrid RAG、查询规划、一次受控 Replan、Skill 路由、本地会话记忆、质量降级和可观测元数据。
 
 项目后续的核心定位是“证据驱动的轻量 Research Agent”，不是继续堆叠普通论文问答功能。目标是把复杂研究意图转换成 Research Brief 和受限计划，通过 Tool / MCP / RAG 收集可追溯证据，经 Coverage、Claim/Citation Verifier 和有限 Reflection 后输出中文研究报告；简单搜索与问答仍保留快速路径。
 
-Research Analyzer v1 已接入检索前流程：L1 简单请求使用规则快速路径，L2 比较/方向请求使用结构化规则，L3 前景、趋势、代表论文和研究空白等复杂请求可调用一次 LLM 输出受 Pydantic 约束的 `ResearchAnalysis`。Policy Gate 禁止 LLM 降级高置信度 L3、选择未注册 Skill 或关闭必要检索；随后生成最多 5 个任务、并行预算 2 的 Research Brief/Plan，并检查重复、未知来源、未知依赖和循环依赖。当前 Plan 已为 Query Planner 提供多查询，但尚未实现按依赖调度的 Research Executor、Evidence Store 和 Coverage Gate。
+Research Analyzer 已接入检索前流程：L1 简单请求使用规则快速路径，L2 比较/方向请求使用结构化规则，L3 前景、趋势、代表论文和研究空白等复杂请求可调用一次 LLM 输出受 Pydantic 约束的 `ResearchAnalysis`。Policy Gate 禁止 LLM 降级高置信度 L3、选择未注册 Skill 或关闭必要检索；随后生成最多 5 个任务、并行预算 2 的 Research Brief/Plan，并检查重复、未知来源、未知依赖和循环依赖。有效 Plan 会编译为依赖执行波次，检索结果进入请求级 Evidence Store 和 Coverage Gate；Research Writer 输出再经过 Citation Validator 与零 LLM Citation Repair。
 
 最终答案现在经过确定性 Verifier：检查空答案、完整度、任务结构和论文证据引用信号。只有发现可修复缺陷且已有论文/PDF 证据时，才调用一次 LLM 执行 Answer Reflection；修复后再次验证，无改善则恢复初始答案。`ANSWER_REFLECTION_ENABLED=false` 可以关闭修复调用，但仍保留答案验证。该能力只处理当前任务，不属于跨任务 Reflexion，也不会自动写入长期记忆。
 
@@ -204,7 +237,7 @@ LangGraph 已接入官方 `SqliteSaver`，使用 `conversation_id` 作为 `threa
 5. 增加 L0～L3 分级任务路由，仅对 L3 深度研究启用 Research Brief、Planner / Executor / Reviewer、Evidence Coverage 和 Checkpoint；
 6. 依次接入只读 Zotero 和只读 GitHub 外部 MCP；
 7. 实现用户指定页面的多模态 PDF 分析；
-8. 完成 Web 轨迹展示、Docker、基础 CI 和端到端演示。
+8. 已完成 Research Agent Web 轨迹展示、零 API 冻结演示、最小 Docker 和基础 CI；后续只做可选部署与演示材料整理。
 
 自动 Reflexion/自进化、在线适应、八角色分层 Agent、Best-of-N、Redis、完整 GraphRAG 选型矩阵和整篇 PDF 全自动多模态解析暂缓。GraphRAG 仅在固定的跨论文全局任务证明 Hybrid RAG 不足后做小型 PoC；测试按风险分级，Excel 在里程碑统一更新。
 

@@ -6,11 +6,12 @@
   <title>PaperAgent 演示台</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="/static/styles.css">
+  <link rel="stylesheet" href="/static/research.css">
 </head>
 <body>
   <header class="hero">
     <div>
-      <p class="eyebrow">LANGGRAPH · TOOL LAYER · HYBRID RAG</p>
+      <p class="eyebrow">LANGGRAPH · RESEARCH AGENT · EVIDENCE HARNESS</p>
       <h1>PaperAgent</h1>
       <p class="subtitle">科研论文智能体演示台</p>
     </div>
@@ -20,6 +21,7 @@
   <main>
     <section class="panel composer">
       <div class="examples">
+        <button data-query="梳理2023年以来反思型Agent架构的代表论文、方法比较、发展趋势和研究空白">深度研究报告</button>
         <button data-query="ReAct 如何结合推理与行动？">ReAct 工作模式</button>
         <button data-query="比较 GraphRAG 和 LightRAG 的核心设计">论文方法比较</button>
         <button data-query="Agent 的规划、记忆和工具使用分别有什么作用？">Agent 架构</button>
@@ -32,12 +34,39 @@
       </div>
       <div class="actions">
         <button id="submit" class="primary">运行 Agent <span>→</span></button>
+        <button id="sample">加载示例轨迹（零 API）</button>
         <span id="requestStatus">准备就绪</span>
       </div>
     </section>
 
     <section id="results" class="results hidden">
       <div class="metrics" id="metrics"></div>
+      <section class="panel workflow-card">
+        <div class="section-title"><span>Research Agent 工作流</span><b id="taskLevel"></b></div>
+        <div id="workflow" class="workflow"></div>
+      </section>
+      <section id="researchTrace" class="research-trace hidden">
+        <div class="research-grid">
+          <article class="panel research-card">
+            <div class="section-title"><span>研究分析与计划</span><b id="planStatus"></b></div>
+            <div id="researchAnalysis"></div><div id="researchPlan" class="task-tree"></div>
+          </article>
+          <article class="panel research-card">
+            <div class="section-title"><span>有界执行波次</span><b id="scheduleStatus"></b></div>
+            <div id="schedule" class="waves"></div>
+          </article>
+        </div>
+        <div class="research-grid">
+          <article class="panel research-card">
+            <div class="section-title"><span>Evidence Store</span><b id="evidenceCount"></b></div>
+            <div id="evidenceStore" class="evidence-list"></div>
+          </article>
+          <article class="panel research-card">
+            <div class="section-title"><span>证据质量闸门</span><b>Grounded Report</b></div>
+            <div id="qualityGates" class="quality-gates"></div>
+          </article>
+        </div>
+      </section>
       <article class="panel answer-card">
         <div class="section-title"><span>最终回答</span><button id="copy">复制</button></div>
         <div id="answer" class="answer"></div>

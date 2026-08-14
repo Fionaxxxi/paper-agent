@@ -1269,6 +1269,21 @@ TEST_CASE_CATALOG: dict[str, CaseDescription] = {
         "Web 页面可以展示证据来源和可审计定位信息。",
         "若失败，前端只能展示论文摘要，无法体现全文 RAG 的证据追踪能力。",
     ),
+    "tests/test_demo_page.py::test_demo_page_exposes_research_agent_trace_panels": _description(
+        "验证FastAPI演示页包含Research工作流、计划、执行波次、Evidence和质量闸门面板。",
+        "面试演示可以直接展示研究型Agent的核心执行闭环。",
+        "若失败，新增后端能力无法通过现有Web入口直观展示。",
+    ),
+    "tests/test_demo_page.py::test_demo_script_consumes_existing_research_metadata_contract": _description(
+        "验证前端复用/chat已有Research Metadata字段渲染执行轨迹。",
+        "展示层不会增加新的LLM调用或维护第二套后端状态。",
+        "若失败，前端可能与生产工作流字段脱节或产生额外成本。",
+    ),
+    "tests/test_demo_page.py::test_demo_page_offers_zero_api_frozen_research_trace": _description(
+        "验证演示页可以加载冻结L3研究轨迹而不调用/chat、外部检索或模型。",
+        "面试现场即使网络波动也能展示Plan、Evidence和质量闸门。",
+        "若失败，项目核心架构演示仍依赖外部服务实时可用。",
+    ),
     "tests/test_mcp_adapter.py::test_readonly_mcp_tool_uses_existing_registry_policy_and_executor": _description(
         "验证只读 MCP 工具可以注册到现有 Tool Registry，并复用 Policy、Executor、Pydantic 校验和统一 ToolResult。",
         "MCP 调用成功映射为标准输出，同时记录 Server、版本、传输方式和远程工具名。",
@@ -1533,6 +1548,26 @@ TEST_CASE_CATALOG: dict[str, CaseDescription] = {
         "验证已有在线Writer原文可以运行零Token引用修复A/B。",
         "能力收益和成本增量可在不重复调用模型的情况下比较。",
         "若失败，无法证明自动修复相对原始报告的净效果。",
+    ),
+    "tests/test_deployment_config.py::test_docker_image_uses_non_root_user_and_healthcheck": _description(
+        "验证Docker运行镜像使用非root用户、健康检查和统一FastAPI入口。",
+        "容器以最小权限运行，并可由Docker判断服务是否健康。",
+        "若失败，部署配置可能失去基本安全边界或健康探测能力。",
+    ),
+    "tests/test_deployment_config.py::test_dockerignore_excludes_secrets_and_large_runtime_artifacts": _description(
+        "验证密钥、模型缓存、论文PDF、会话记忆和评测产物不会进入镜像上下文。",
+        "镜像保持可分享，且不会意外打包本地敏感信息和大型文件。",
+        "若失败，Docker构建可能泄露配置或生成体积异常的镜像。",
+    ),
+    "tests/test_deployment_config.py::test_ci_is_deterministic_and_builds_the_runtime_image": _description(
+        "验证基础CI清空真实模型凭据、关闭非测试LLM与Checkpoint，并检查前端语法和Docker构建。",
+        "每次提交都运行稳定、零API费用的核心回归，同时允许mock覆盖LLM分支。",
+        "若失败，CI可能产生外部费用、受网络波动影响或遗漏交付验证。",
+    ),
+    "tests/test_deployment_config.py::test_compose_persists_data_and_checks_service_health": _description(
+        "验证Compose挂载数据与日志目录，并通过FastAPI健康端点探测服务。",
+        "容器重建后项目数据仍保留，服务状态也可直接观察。",
+        "若失败，重建容器可能丢失运行数据或无法识别启动故障。",
     ),
 }
 

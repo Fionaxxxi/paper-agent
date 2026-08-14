@@ -1611,6 +1611,10 @@ Push / Pull Request
 
 2026-08-14 已完成零 LLM Citation Repair v1 与 v2 原文 A/B。修复器只在 Citation Validator 的唯一失败为 `uncited_synthesis_claim`，且该行明确出现 Evidence Store 中可唯一映射的论文标题时，在行末补全对应 Evidence ID；标题缺失、同名证据歧义或同时存在虚构 ID 等其他失败均不修改。LangGraph 路径更新为 `Writer → Citation Validator → Citation Repair → Answer Verify`，修复后立即重新验证并原子更新状态。复用 18,061 Token 的 v2 四份原文，唯一失败的 Agent Loop 综合比较明确包含 ReAct 与 Reflexion，安全补入两个 ID；自动通过与 Validator 通过均由 3/4 提升到 4/4，修复 1 题，Token 增量为 0，其余三题原文不变。评测器补充固定的“比较/对比/相较、差异/不同/区别”别名，避免合法表达误判。下一步暂不启用 Writer Reflection：先把该零成本修复作为默认生产路径，再整理当前阶段代码和能力报告；只有后续真实案例出现无标题但证据充分的漏引，才建立受限 Reflection A/B。
 
+2026-08-14 已完成 Research Agent Web 演示台升级。现有 FastAPI 首页直接复用 `/chat` 已暴露的研究元数据，新增 L1/L2/L3、Skill、LLM/Token、LangGraph 节点链路、Research Plan、依赖执行波次、Evidence Store 与 Coverage/Citation/Repair 三层质量闸门，不增加后端状态或模型调用。新增冻结的零 API L3 示例轨迹，现场无网络、无检索源或无模型凭据时仍可展示完整研究闭环，页面明确标记未调用 API/模型，避免把 fixture 冒充实时结果。Node 语法、FastAPI 静态契约和真实浏览器 DOM/视觉检查通过，浏览器控制台无错误。下一步优先补充最小 Docker 与基础 CI，或先录制/整理简历演示脚本；不继续扩大研究级评测。
+
+2026-08-14 已完成最小 Docker 与基础 GitHub Actions CI。运行镜像基于 Python 3.10 slim、使用非 root 用户、Uvicorn 监听 8000，并通过标准库请求 `/health`；`.dockerignore` 排除 `.env`、PDF、Dense 模型/索引、SQLite、Wiki、日志和评测产物，Compose 只在运行时挂载 `data/` 与 `logs/`。CI 在 master push/PR 上执行 Node 前端语法检查、显式关闭 LLM/Checkpoint 的确定性 Research Agent 核心测试和 Docker build，不配置模型 Secret、不运行在线检索、不下载 Dense 模型。README 增加状态徽章、Compose 启停和数据持久化说明。下一步只需验证本机实际镜像构建与容器健康状态，再整理提交；如本机 Docker Desktop/网络不可用，以 Dockerfile 静态检查和 GitHub CI 首次运行结果为准。
+
 2026-08-12 子查询并行已完成 5 次确定性离线重复基准：3 个子查询、2 个 worker 时，中位延迟由 265.4ms 降至 172.3ms，加速 1.54 倍、延迟下降 35.09%，结果与规划顺序一致率 100%，达到阶段门槛并收口。
 
 随后已开始 Retrieval Replan v1：现有“低分后只扩大结果数”的普通重试升级为可审计的失败分类与受限动作。暂时工具失败保持原查询，零结果放宽字面限制，有结果但低相关时追加综述上下文；新查询覆盖旧子查询计划，仍受最多重试一次约束，全程不增加 LLM 调用或付费工具。下一步评测 Replan 相对普通重试的恢复率、无效重试率和动作分类准确率。

@@ -16,6 +16,7 @@ uvicorn>=0.35.0
 python-dotenv>=1.0.0
 
 pydantic>=2.0.0
+pydantic-settings>=2.0.0
 
 tiktoken>=0.9.0
 
@@ -23,9 +24,6 @@ pypdf>=5.0.0
 
 # Optional local Dense RAG candidate (ONNX, no PyTorch)
 fastembed>=0.7,<0.8
-
-# Official Model Context Protocol SDK
-mcp>=2,<3
 
 # Official Model Context Protocol SDK
 mcp>=2,<3
