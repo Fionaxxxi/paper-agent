@@ -20,6 +20,7 @@ def test_dockerignore_excludes_secrets_and_large_runtime_artifacts() -> None:
     ignored = set(_read(".dockerignore").splitlines())
 
     assert ".env" in ignored
+    assert ".venv" in ignored
     assert "data/cache" in ignored
     assert "data/memory" in ignored
     assert "data/papers/*.pdf" in ignored
@@ -40,5 +41,6 @@ def test_compose_persists_data_and_checks_service_health() -> None:
     compose = _read("docker-compose.yml")
 
     assert "./data:/app/data" in compose
+    assert "paper-agent-memory:/app/data/memory" in compose
     assert "./logs:/app/logs" in compose
     assert "http://127.0.0.1:8000/health" in compose

@@ -4,6 +4,9 @@
 .env.*
 !.env.example
 .pytest_cache
+.venv
+venv
+env
 __pycache__
 *.py[cod]
 *.log

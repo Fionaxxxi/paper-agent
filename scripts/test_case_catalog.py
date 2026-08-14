@@ -1555,7 +1555,7 @@ TEST_CASE_CATALOG: dict[str, CaseDescription] = {
         "若失败，部署配置可能失去基本安全边界或健康探测能力。",
     ),
     "tests/test_deployment_config.py::test_dockerignore_excludes_secrets_and_large_runtime_artifacts": _description(
-        "验证密钥、模型缓存、论文PDF、会话记忆和评测产物不会进入镜像上下文。",
+        "验证密钥、本地虚拟环境、模型缓存、论文PDF、会话记忆和评测产物不会进入镜像上下文。",
         "镜像保持可分享，且不会意外打包本地敏感信息和大型文件。",
         "若失败，Docker构建可能泄露配置或生成体积异常的镜像。",
     ),
@@ -1565,8 +1565,8 @@ TEST_CASE_CATALOG: dict[str, CaseDescription] = {
         "若失败，CI可能产生外部费用、受网络波动影响或遗漏交付验证。",
     ),
     "tests/test_deployment_config.py::test_compose_persists_data_and_checks_service_health": _description(
-        "验证Compose挂载数据与日志目录，并通过FastAPI健康端点探测服务。",
-        "容器重建后项目数据仍保留，服务状态也可直接观察。",
+        "验证Compose挂载数据与日志目录、为SQLite记忆使用Linux命名卷，并通过FastAPI健康端点探测服务。",
+        "容器重建后项目数据仍保留，Windows环境下SQLite WAL也可稳定工作。",
         "若失败，重建容器可能丢失运行数据或无法识别启动故障。",
     ),
 }

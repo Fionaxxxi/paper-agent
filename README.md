@@ -110,7 +110,7 @@ docker compose ps
 docker compose down
 ```
 
-Compose 将 `./data` 和 `./logs` 挂载到容器，因此论文、索引、SQLite 记忆和日志不会随容器删除。若只演示冻结的零 API 轨迹，`.env` 可以保留占位 Key；点击“运行 Agent”前必须配置真实模型凭据。
+Compose 将 `./data` 和 `./logs` 挂载到容器，因此论文、索引和日志不会随容器删除。SQLite 记忆单独保存在名为 `paper-agent-memory` 的 Docker volume 中，避免 Windows bind mount 与 SQLite WAL 的兼容问题；宿主机原有记忆文件不会被容器改写。若只演示冻结的零 API 轨迹，`.env` 可以保留占位 Key；点击“运行 Agent”前必须配置真实模型凭据。
 
 ## 四个代表性演示
 
