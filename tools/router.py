@@ -2,6 +2,17 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+
+
+@dataclass(frozen=True)
+class ToolRouteDecision:
+    """可写入 Agent 轨迹的确定性工具路由结果。"""
+
+    capability: str
+    source: str
+    tool_name: str
+
 
 class ToolRouter:
     def __init__(self) -> None:
@@ -14,7 +25,15 @@ class ToolRouter:
         self._routes[key] = tool_name
 
     def resolve(self, capability: str, source: str) -> str:
+        return self.select(capability, source).tool_name
+
+    def select(self, capability: str, source: str) -> ToolRouteDecision:
         try:
-            return self._routes[(capability, source)]
+            tool_name = self._routes[(capability, source)]
         except KeyError as error:
             raise KeyError(f"no tool route for capability={capability}, source={source}") from error
+        return ToolRouteDecision(
+            capability=capability,
+            source=source,
+            tool_name=tool_name,
+        )

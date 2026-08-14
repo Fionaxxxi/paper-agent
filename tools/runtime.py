@@ -45,6 +45,11 @@ def build_default_tool_runtime() -> tuple[ToolRegistry, ToolRouter, ToolExecutor
         source="openalex",
         tool_name="paper.search.openalex",
     )
+    router.register_route(
+        capability="paper.catalog.search",
+        source="mcp_catalog",
+        tool_name="paper.catalog.search.mcp",
+    )
 
     return registry, router, ToolExecutor(registry)
 

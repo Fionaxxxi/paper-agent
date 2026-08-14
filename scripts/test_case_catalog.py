@@ -24,6 +24,21 @@ def _description(
 
 
 TEST_CASE_CATALOG: dict[str, CaseDescription] = {
+    "tests/test_tool_layer.py::test_router_exposes_an_auditable_route_decision": _description(
+        "验证 Tool Router 不只返回工具名，还能给出可写入轨迹的能力、来源和工具路由决定。",
+        "LangGraph 可以解释为什么选择某个工具，原生工具与 MCP 工具使用同一套路由记录。",
+        "工具虽然能执行，但路由依据无法进入审计轨迹，出现问题时难以定位。",
+    ),
+    "tests/test_mcp_stdio_integration.py::test_real_stdio_mcp_server_is_registered_in_default_runtime": _description(
+        "验证真实只读 MCP 工具已注册到默认运行时，并存在明确的 MCP 目录路由。",
+        "配置选择 mcp_catalog 时 Router 能稳定解析到 paper.catalog.search.mcp。",
+        "MCP 工具可能只能被单独测试，主运行时无法发现或选择它。",
+    ),
+    "tests/test_mcp_stdio_integration.py::test_main_retrieval_path_can_explicitly_route_to_mcp": _description(
+        "验证主检索函数能够通过显式 mcp_catalog 来源调用真实 stdio MCP Server，并保存完整审计元数据。",
+        "论文结果、路由能力、MCP 来源和 Server 身份均能传回 LangGraph 检索轨迹。",
+        "MCP 与主工作流仍未连通，或执行记录丢失协议来源和 Server 身份。",
+    ),
     "tests/test_benchmark.py::test_baseline_and_candidate_cover_the_same_modules": _description(
         "确认旧基线与当前候选实现使用完全相同的能力模块，保证能力对比口径一致。",
         "两组结果都覆盖意图路由、查询规划、结果合并、重试路由、LLM 用量和工具执行六个模块。",

@@ -206,6 +206,19 @@ def test_router_resolves_registered_capability_and_source():
         router.resolve("paper.search", "openalex")
 
 
+def test_router_exposes_an_auditable_route_decision():
+    router = ToolRouter()
+    router.register_route(
+        "paper.catalog.search", "mcp_catalog", "paper.catalog.search.mcp"
+    )
+
+    decision = router.select("paper.catalog.search", "mcp_catalog")
+
+    assert decision.capability == "paper.catalog.search"
+    assert decision.source == "mcp_catalog"
+    assert decision.tool_name == "paper.catalog.search.mcp"
+
+
 def test_arxiv_adapter_preserves_native_search_behavior(monkeypatch):
     calls = []
 

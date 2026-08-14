@@ -159,6 +159,9 @@ Invoke-RestMethod -Method Post -Uri http://127.0.0.1:8000/chat -ContentType "app
 | `openalex` | 使用 OpenAlex 检索 |
 | `multi_source` | 按配置组合多个在线来源 |
 | `local_rag` | 检索本地 PDF 全文知识库 |
+| `mcp_catalog` | 通过显式 Tool Router 调用只读 stdio MCP Server，查询项目论文目录；主要用于演示 MCP 主链路 |
+
+`mcp_catalog` 不由 LLM 自动触发，也不会替换默认 arXiv。它是一个明确的演示场景：修改 `.env` 后重启服务，MCP 调用的路由依据、Server 身份、版本、传输方式、耗时和错误会记录到工具执行元数据中。
 
 ## 测试
 

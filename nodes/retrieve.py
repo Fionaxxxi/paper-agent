@@ -145,13 +145,19 @@ def convert_papers_to_documents(papers: List[Dict[str, Any]], source: str) -> Li
                 "title": paper.get("title"),
                 "authors": paper.get("authors", []),
                 "year": paper.get("year"),
-                "content": paper.get("summary") or paper.get("content", ""),
+                "content": (
+                    paper.get("summary")
+                    or paper.get("content")
+                    or "；".join(paper.get("dimensions", []))
+                ),
                 "pdf_url": paper.get("pdf_url"),
-                "entry_id": paper.get("entry_id"),
+                "entry_id": paper.get("entry_id") or paper.get("arxiv_id"),
                 "doi": paper.get("doi", ""),
                 "cited_by_count": paper.get("cited_by_count", 0),
                 "landing_page_url": paper.get("landing_page_url", ""),
                 "source": paper.get("source", source),
+                "document_id": paper.get("document_id", ""),
+                "catalog_group": paper.get("group", ""),
             }
         )
 
@@ -167,7 +173,11 @@ def get_max_results(state: AgentState, source: str = "arxiv") -> int:
     max_results = (
         settings.OPENALEX_MAX_RESULTS
         if source == "openalex"
-        else settings.ARXIV_MAX_RESULTS
+        else (
+            settings.LOCAL_RAG_MAX_RESULTS
+            if source == "mcp_catalog"
+            else settings.ARXIV_MAX_RESULTS
+        )
     )
 
     if retry_count > 0:
@@ -179,7 +189,7 @@ def get_max_results(state: AgentState, source: str = "arxiv") -> int:
 def get_retrieval_sources(retrieval_mode: str) -> List[str]:
     """Resolve configured native providers without changing the default mode."""
 
-    if retrieval_mode in {"arxiv", "openalex"}:
+    if retrieval_mode in {"arxiv", "openalex", "mcp_catalog"}:
         return [retrieval_mode]
     if retrieval_mode in {"multi", "multi_source"}:
         return [
@@ -199,6 +209,8 @@ def _tool_execution_metadata(tool_result) -> Dict[str, Any]:
         "tool_error_message": tool_result.error_message,
         "tool_latency_seconds": tool_result.latency_seconds,
         "tool_attempt_count": tool_result.attempt_count,
+        "tool_source": tool_result.source,
+        "tool_metadata": dict(tool_result.metadata),
     }
 
 
@@ -221,10 +233,10 @@ def retrieve_from_source(
         }
 
     try:
-        tool_name = paper_tool_router.resolve(
-            capability="paper.search",
-            source=source,
+        capability = (
+            "paper.catalog.search" if source == "mcp_catalog" else "paper.search"
         )
+        tool_name = paper_tool_router.resolve(capability=capability, source=source)
     except KeyError as error:
         return {
             "papers": [],
@@ -240,15 +252,25 @@ def retrieve_from_source(
                 "tool_error_message": str(error),
                 "tool_latency_seconds": 0.0,
                 "tool_attempt_count": 0,
+                "tool_route": {
+                    "capability": (
+                        "paper.catalog.search"
+                        if source == "mcp_catalog"
+                        else "paper.search"
+                    ),
+                    "source": source,
+                },
             },
         }
 
+    arguments = (
+        {"query": query, "limit": get_max_results(state, source)}
+        if source == "mcp_catalog"
+        else {"query": query, "max_results": get_max_results(state, source)}
+    )
     tool_result = paper_tool_executor.execute(
         tool_name=tool_name,
-        arguments={
-            "query": query,
-            "max_results": get_max_results(state, source),
-        },
+        arguments=arguments,
     )
     papers = (
         tool_result.data.get("papers", [])
@@ -264,7 +286,14 @@ def retrieve_from_source(
         "retrieval_source": source,
         "cache_hit": False,
         "tools_used": [f"{source}_retriever", tool_name],
-        "tool_execution": _tool_execution_metadata(tool_result),
+        "tool_execution": {
+            **_tool_execution_metadata(tool_result),
+            "tool_route": {
+                "capability": capability,
+                "source": source,
+                "tool_name": tool_name,
+            },
+        },
     }
 
 
