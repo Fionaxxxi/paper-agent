@@ -2,6 +2,7 @@ from typing import Any, Dict
 
 from context.context_policy import get_context_policy
 from context.document_formatter import format_documents_for_prompt, truncate_text
+from prompts.contracts import wrap_untrusted_evidence
 
 
 def get_state_value(state: Dict[str, Any], key: str, default: Any = "") -> Any:
@@ -62,6 +63,7 @@ def build_skill_context(state: Dict[str, Any]) -> Dict[str, Any]:
             max_documents=policy.get("max_documents", 5),
             content_limit=policy.get("document_content_limit", 800),
         )
+        documents_text = wrap_untrusted_evidence(documents_text)
     else:
         documents_text = ""
 

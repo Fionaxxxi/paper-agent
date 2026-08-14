@@ -10,6 +10,7 @@ from core.llm_usage import (
     invoke_llm_with_usage,
 )
 from prompts.evaluator import EVALUATOR_TEMPLATE
+from prompts.contracts import get_prompt_version, wrap_untrusted_evidence
 
 
 def get_llm():
@@ -67,7 +68,7 @@ def llm_score_with_usage(state: AgentState):
 
     prompt = EVALUATOR_TEMPLATE.format(
         query=query,
-        documents=docs_text,
+        documents=wrap_untrusted_evidence(docs_text, "检索质量评估材料"),
     )
 
     llm = get_llm()
@@ -76,6 +77,7 @@ def llm_score_with_usage(state: AgentState):
         prompt=prompt,
         node_name="evaluate",
         model_name=settings.MODEL_NAME,
+        prompt_version=get_prompt_version("evaluate"),
     )
 
     text = response.content.strip()

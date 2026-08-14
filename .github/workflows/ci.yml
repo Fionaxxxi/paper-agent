@@ -52,6 +52,7 @@ jobs:
           tests/test_demo_page.py
           tests/test_deployment_config.py
           tests/test_zotero_mcp.py
+          tests/test_prompt_contracts.py
           tests/test_test_catalog.py
 
   docker:

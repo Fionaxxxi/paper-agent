@@ -10,6 +10,7 @@ from core.llm_usage import (
     invoke_llm_with_usage,
 )
 from prompts.reason import REASON_TEMPLATE
+from prompts.contracts import get_prompt_version
 
 #原来的关键词判断升级为三层：
 #1. rule_based_reason：规则判断 task_type 和 confidence
@@ -137,6 +138,7 @@ def llm_reason_with_usage(query: str):
         prompt=prompt,
         node_name="reason",
         model_name=settings.MODEL_NAME,
+        prompt_version=get_prompt_version("reason"),
     )
     return parse_llm_task_type(response.content), usage_record
 

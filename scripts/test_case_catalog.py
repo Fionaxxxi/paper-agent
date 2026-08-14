@@ -219,6 +219,31 @@ TEST_CASE_CATALOG: dict[str, CaseDescription] = {
         "上层会明确进入证据不足路径，不把通用论文冒充用户收藏。",
         "若失败，个人库不可用可能被公共演示数据掩盖，导致来源误导。",
     ),
+    "tests/test_prompt_contracts.py::test_external_documents_are_delimited_as_untrusted_evidence": _description(
+        "验证论文、Zotero 笔记等外部文档被稳定边界标记为不可信证据。",
+        "可疑文字保留供研究分析，但明确禁止覆盖角色、规则、密钥和工具权限。",
+        "若失败，外部材料中的 Prompt Injection 可能被模型误认为系统指令。",
+    ),
+    "tests/test_prompt_contracts.py::test_research_writer_wraps_evidence_store_snippets": _description(
+        "验证 Research Writer 的 Evidence Store snippet 也经过外部证据安全边界。",
+        "稳定引用约束与 Prompt Injection 防护在深度研究路径同时生效。",
+        "若失败，经过 Evidence Store 的恶意片段仍可能在最终写作阶段影响指令。",
+    ),
+    "tests/test_prompt_contracts.py::test_pdf_text_is_treated_as_untrusted_research_material": _description(
+        "验证 PDF 提取文本只能作为研究材料，不能要求执行代码、调用工具或泄露配置。",
+        "全文阅读路径与在线文献路径使用同一安全原则。",
+        "若失败，论文正文中的恶意指令可能影响 PDF 分析模型。",
+    ),
+    "tests/test_prompt_contracts.py::test_llm_usage_records_prompt_version_for_future_ab_comparison": _description(
+        "验证每次模型调用轨迹可记录实际 Prompt 版本。",
+        "后续 zero-shot/few-shot A/B 可按版本比较准确率、Token 和延迟。",
+        "若失败，Prompt 修改后无法准确归因能力和成本变化。",
+    ),
+    "tests/test_prompt_contracts.py::test_prompt_versions_cover_all_current_llm_prompt_families": _description(
+        "验证当前分类、分析、Skill、Writer 和 Reflection Prompt 均有唯一版本号。",
+        "新增 Prompt 家族必须显式进入版本注册表。",
+        "若失败，部分模型调用可能继续使用不可追踪的 Prompt。",
+    ),
     "tests/test_benchmark.py::test_baseline_and_candidate_cover_the_same_modules": _description(
         "确认旧基线与当前候选实现使用完全相同的能力模块，保证能力对比口径一致。",
         "两组结果都覆盖意图路由、查询规划、结果合并、重试路由、LLM 用量和工具执行六个模块。",

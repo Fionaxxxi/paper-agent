@@ -1,5 +1,6 @@
 from agent.state import AgentState
 from skills.base import BaseSkill
+from prompts.contracts import wrap_untrusted_evidence
 
 
 class PDFReadingSkill(BaseSkill):
@@ -14,6 +15,7 @@ class PDFReadingSkill(BaseSkill):
         pdf_page_count = state.get("pdf_page_count", 0)
         history_text = state.get("history_text", "无历史对话。")
 
+        secured_pdf_text = wrap_untrusted_evidence(pdf_text, "PDF 提取文本")
         return f"""
 你是一个专业的科研论文全文阅读助手。
 
@@ -30,7 +32,7 @@ PDF 页数：
 {pdf_page_count}
 
 PDF 提取文本：
-{pdf_text}
+{secured_pdf_text}
 
 当前任务是：PDF 论文全文阅读与分析。
 

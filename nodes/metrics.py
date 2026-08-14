@@ -16,6 +16,7 @@ def build_llm_usage_by_node(records: list[dict]) -> dict:
                 "output_tokens": 0,
                 "total_tokens": 0,
                 "latency_seconds": 0.0,
+                "prompt_versions": [],
             },
         )
         node_usage["call_count"] += 1
@@ -29,6 +30,9 @@ def build_llm_usage_by_node(records: list[dict]) -> dict:
             + record.get("latency_seconds", 0.0),
             4,
         )
+        prompt_version = record.get("prompt_version", "")
+        if prompt_version and prompt_version not in node_usage["prompt_versions"]:
+            node_usage["prompt_versions"].append(prompt_version)
 
     return usage_by_node
 

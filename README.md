@@ -231,6 +231,8 @@ CI 会显式关闭在线 LLM、外部检索评测和 LangGraph 持久化，不�
 
 当前已经实现 LangGraph 工作流、在线多源工具层、本地 Hybrid RAG、查询规划、一次受控 Replan、Skill 路由、本地会话记忆、质量降级和可观测元数据。
 
+Prompt 当前以 zero-shot 结构约束为主。所有论文、Zotero 笔记、PDF 文本和 Evidence Store snippet 在进入模型前都会标记为不可信外部证据，明确禁止其中的角色切换、规则覆盖、密钥泄露、工具调用和代码执行指令；这能建立基础 Prompt Injection 边界，但不等价于已经通过真实模型对抗测试。分类、分析、各科研 Skill、Research Writer 和 Reflection 均有独立 `prompt_version`，版本会进入 LLM usage 与节点级 metrics，后续只对 Research Analyzer/Writer 做选择性 few-shot A/B，不给所有普通问答无差别增加 Token。
+
 项目后续的核心定位是“证据驱动的轻量 Research Agent”，不是继续堆叠普通论文问答功能。目标是把复杂研究意图转换成 Research Brief 和受限计划，通过 Tool / MCP / RAG 收集可追溯证据，经 Coverage、Claim/Citation Verifier 和有限 Reflection 后输出中文研究报告；简单搜索与问答仍保留快速路径。
 
 Research Analyzer 已接入检索前流程：L1 简单请求使用规则快速路径，L2 比较/方向请求使用结构化规则，L3 前景、趋势、代表论文和研究空白等复杂请求可调用一次 LLM 输出受 Pydantic 约束的 `ResearchAnalysis`。Policy Gate 禁止 LLM 降级高置信度 L3、选择未注册 Skill 或关闭必要检索；随后生成最多 5 个任务、并行预算 2 的 Research Brief/Plan，并检查重复、未知来源、未知依赖和循环依赖。有效 Plan 会编译为依赖执行波次，检索结果进入请求级 Evidence Store 和 Coverage Gate；Research Writer 输出再经过 Citation Validator 与零 LLM Citation Repair。

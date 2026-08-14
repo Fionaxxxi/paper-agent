@@ -67,6 +67,7 @@ def invoke_llm_with_usage(
     prompt: str,
     node_name: str,
     model_name: str,
+    prompt_version: str = "",
 ) -> Tuple[Any, Dict[str, Any]]:
     """
     Invoke an LLM and return a normalized per-call usage record.
@@ -91,6 +92,7 @@ def invoke_llm_with_usage(
             "token_usage_available": False,
             "latency_seconds": latency_seconds,
             "error_type": type(error).__name__,
+            "prompt_version": prompt_version,
         }
         raise TrackedLLMError(error, record) from error
 
@@ -103,6 +105,7 @@ def invoke_llm_with_usage(
         **usage,
         "latency_seconds": latency_seconds,
         "error_type": "",
+        "prompt_version": prompt_version,
     }
     return response, record
 

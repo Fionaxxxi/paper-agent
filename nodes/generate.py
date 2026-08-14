@@ -10,6 +10,7 @@ from core.llm_usage import (
 from skills.router import get_skill
 from context.context_builder import attach_skill_context
 from research.writer import build_coverage_blocked_answer, build_writer_prompt
+from prompts.contracts import get_prompt_version
 
 
 def get_llm():
@@ -154,8 +155,14 @@ def generate_node(state: AgentState) -> AgentState:
         return skill.run(skill_state)
 
     prompt = skill.build_prompt(skill_state)
-    if state.get("task_level") == "L3" and state.get("research_coverage", {}).get("enabled"):
+    is_research_writer = state.get("task_level") == "L3" and state.get(
+        "research_coverage", {}
+    ).get("enabled")
+    if is_research_writer:
         prompt = build_writer_prompt(prompt, state)
+    prompt_version = get_prompt_version(
+        "research_writer" if is_research_writer else skill.name
+    )
 
     try:
         llm = get_llm()
@@ -164,6 +171,7 @@ def generate_node(state: AgentState) -> AgentState:
             prompt=prompt,
             node_name="generate",
             model_name=settings.MODEL_NAME,
+            prompt_version=prompt_version,
         )
         usage_update = build_llm_usage_update(state, usage_record)
 
@@ -173,6 +181,7 @@ def generate_node(state: AgentState) -> AgentState:
             "paper_metadata": {
                 **skill_state.get("paper_metadata", {}),
                 "skill_used": skill.name,
+                "prompt_version": prompt_version,
             },
         }
 
@@ -192,6 +201,7 @@ def generate_node(state: AgentState) -> AgentState:
                 **skill_state.get("paper_metadata", {}),
                 "generate_error": error_message,
                 "skill_used": skill.name,
+                "prompt_version": prompt_version,
             },
         }
 
@@ -205,5 +215,6 @@ def generate_node(state: AgentState) -> AgentState:
                 **skill_state.get("paper_metadata", {}),
                 "generate_error": error_message,
                 "skill_used": skill.name,
+                "prompt_version": prompt_version,
             },
         }

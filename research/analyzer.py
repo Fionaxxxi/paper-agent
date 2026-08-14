@@ -3,6 +3,7 @@ import re
 from langchain_openai import ChatOpenAI
 from core.config import settings
 from core.llm_usage import invoke_llm_with_usage
+from prompts.contracts import get_prompt_version
 from research.contracts import ResearchAnalysis
 
 DEEP_SIGNALS = ("前景", "价值", "趋势", "研究空白", "系统调研", "综述", "代表论文", "open problems", "future directions")
@@ -138,7 +139,10 @@ def analyze_with_llm(query):
 source_requirements, primary_skill, secondary_skills, requires_retrieval,
 requires_multiple_sources, requires_report, confidence, reason。
 用户请求：{query}"""
-    response, usage = invoke_llm_with_usage(llm, prompt, "research_analyze", settings.MODEL_NAME)
+    response, usage = invoke_llm_with_usage(
+        llm, prompt, "research_analyze", settings.MODEL_NAME,
+        prompt_version=get_prompt_version("research_analyze"),
+    )
     text = response.content.strip()
     # 兼容 OpenAI-compatible 模型可能返回的 thinking 标签、Markdown fenced
     # JSON 或 JSON 前后解释文字。只提取首个完整对象，不用贪婪正则吞并尾部内容。

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from typing import Any
+from prompts.contracts import wrap_untrusted_evidence
 
 
 def build_writer_prompt(base_prompt: str, state: dict[str, Any]) -> str:
@@ -28,7 +29,7 @@ def build_writer_prompt(base_prompt: str, state: dict[str, Any]) -> str:
 未覆盖声明：{json.dumps(coverage.get('uncovered_claims', []), ensure_ascii=False)}
 
 【可引用证据清单】
-{json.dumps(evidence, ensure_ascii=False, indent=2)}
+{wrap_untrusted_evidence(json.dumps(evidence, ensure_ascii=False, indent=2), 'Evidence Store')}
 
 写作规则：
 - 重要事实必须使用 `[E-xxxxxxxxxxxx]` 标注对应 evidence_id；

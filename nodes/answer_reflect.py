@@ -8,6 +8,7 @@ from core.llm_usage import (
     invoke_llm_with_usage,
 )
 from nodes.generate import get_llm, truncate_text
+from prompts.contracts import get_prompt_version, wrap_untrusted_evidence
 
 
 def build_answer_repair_prompt(state: AgentState) -> str:
@@ -19,6 +20,7 @@ def build_answer_repair_prompt(state: AgentState) -> str:
     if state.get("pdf_text"):
         evidence = truncate_text(state.get("pdf_text", ""), 2000)
 
+    evidence = wrap_untrusted_evidence(evidence, "答案修复证据")
     return f"""你是 PaperAgent 的答案修复器。只允许根据给定证据修复答案，不得增加证据中不存在的事实。
 
 用户问题：
@@ -52,6 +54,7 @@ def answer_reflect_node(state: AgentState) -> AgentState:
             prompt=build_answer_repair_prompt(state),
             node_name="answer_reflect",
             model_name=settings.MODEL_NAME,
+            prompt_version=get_prompt_version("answer_reflect"),
         )
         usage_update = build_llm_usage_update(state, usage_record)
         repaired_answer = str(response.content or "").strip() or previous_answer
