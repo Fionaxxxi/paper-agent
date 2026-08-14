@@ -14,6 +14,7 @@ from nodes.intent_router import intent_router_node
 from nodes.retrieval_replan import build_retrieval_replan
 from nodes.answer_verify import answer_verify_node, route_after_answer_verify
 from nodes.answer_reflect import answer_reflect_node
+from nodes.research_analyze import research_analyze_node
 
 from utils.timer import timed_node
 
@@ -49,6 +50,10 @@ def build_graph(checkpointer=None):
     workflow.add_node(
         "query_rewrite",
         timed_node("query_rewrite", query_rewrite_node),
+    )
+    workflow.add_node(
+        "research_analyze",
+        timed_node("research_analyze", research_analyze_node),
     )
 
     workflow.add_node(
@@ -91,10 +96,11 @@ def build_graph(checkpointer=None):
         "intent_router",
         route_after_intent,
         {
-            "query_rewrite": "query_rewrite",
+            "query_rewrite": "research_analyze",
             "end": END,
         },
     )
+    workflow.add_edge("research_analyze", "query_rewrite")
     workflow.add_node(
         "answer_verify",
         timed_node("answer_verify", answer_verify_node),

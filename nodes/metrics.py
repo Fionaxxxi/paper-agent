@@ -96,6 +96,11 @@ def metrics_node(state: AgentState) -> AgentState:
             "query_complexity",
             state.get("query_complexity", ""),
         ),
+        "task_level": state.get("task_level", paper_metadata.get("task_level", "")),
+        "research_intent": state.get("research_analysis", {}).get("intent", ""),
+        "research_analysis_source": state.get("research_analysis", {}).get("analysis_source", ""),
+        "research_plan_task_count": len(state.get("research_plan", {}).get("tasks", [])),
+        "research_plan_valid": state.get("research_plan_validation", {}).get("valid", False),
         "complexity_reason": paper_metadata.get(
             "complexity_reason",
             state.get("complexity_reason", ""),

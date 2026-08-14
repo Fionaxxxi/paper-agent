@@ -185,6 +185,8 @@ D:\miniconda3\envs\paper_agent\python.exe scripts\run_tests_with_report.py
 
 项目后续的核心定位是“证据驱动的轻量 Research Agent”，不是继续堆叠普通论文问答功能。目标是把复杂研究意图转换成 Research Brief 和受限计划，通过 Tool / MCP / RAG 收集可追溯证据，经 Coverage、Claim/Citation Verifier 和有限 Reflection 后输出中文研究报告；简单搜索与问答仍保留快速路径。
 
+Research Analyzer v1 已接入检索前流程：L1 简单请求使用规则快速路径，L2 比较/方向请求使用结构化规则，L3 前景、趋势、代表论文和研究空白等复杂请求可调用一次 LLM 输出受 Pydantic 约束的 `ResearchAnalysis`。Policy Gate 禁止 LLM 降级高置信度 L3、选择未注册 Skill 或关闭必要检索；随后生成最多 5 个任务、并行预算 2 的 Research Brief/Plan，并检查重复、未知来源、未知依赖和循环依赖。当前 Plan 已为 Query Planner 提供多查询，但尚未实现按依赖调度的 Research Executor、Evidence Store 和 Coverage Gate。
+
 最终答案现在经过确定性 Verifier：检查空答案、完整度、任务结构和论文证据引用信号。只有发现可修复缺陷且已有论文/PDF 证据时，才调用一次 LLM 执行 Answer Reflection；修复后再次验证，无改善则恢复初始答案。`ANSWER_REFLECTION_ENABLED=false` 可以关闭修复调用，但仍保留答案验证。该能力只处理当前任务，不属于跨任务 Reflexion，也不会自动写入长期记忆。
 
 会话记忆已从逐会话 JSON 升级为项目内 SQLite：保存完整消息、用户偏好、活跃研究主题、活跃论文和研究状态 Checkpoint。请求上下文只保留最近消息原文，更早消息进行确定性提取式压缩，并按字符预算组装；旧 `data/memory/*.json` 会在首次读取时兼容迁移。当前摘要不调用 LLM，尚未实现语义摘要或正式 LangGraph SQLite Saver。
@@ -207,6 +209,12 @@ LangGraph 已接入官方 `SqliteSaver`，使用 `conversation_id` 作为 `threa
 自动 Reflexion/自进化、在线适应、八角色分层 Agent、Best-of-N、Redis、完整 GraphRAG 选型矩阵和整篇 PDF 全自动多模态解析暂缓。GraphRAG 仅在固定的跨论文全局任务证明 Hybrid RAG 不足后做小型 PoC；测试按风险分级，Excel 在里程碑统一更新。
 
 Agent Loop 坚持有限循环：现有 Retrieval Replan 最多一次，后续 Answer Reflection 最多一次；深度研究中的计划修复、证据补充和报告修复也各最多一次，并共享总 Token、工具调用、时间和迭代预算。普通问题不会自动进入高成本深度研究流程。
+
+复杂研究意图分析默认开启，简单 L1/L2 不会因此调用模型：
+
+```env
+RESEARCH_ANALYSIS_WITH_LLM=true
+```
 
 启用本地 Wiki 自动发布：
 

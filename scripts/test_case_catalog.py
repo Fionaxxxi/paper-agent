@@ -24,6 +24,46 @@ def _description(
 
 
 TEST_CASE_CATALOG: dict[str, CaseDescription] = {
+    "tests/test_research_analysis.py::test_rule_analyzer_separates_simple_comparison_and_deep_research": _description(
+        "验证固定标注示例能分别识别 L1 简单检索、L2 比较和 L3 深度研究。",
+        "典型复杂研究请求获得 Literature Review、评价维度和 L3 路由候选。",
+        "任务分级错误会导致简单请求浪费 Token，或复杂请求无法进入 Research Agent。",
+    ),
+    "tests/test_research_analysis.py::test_simple_request_does_not_call_llm": _description(
+        "验证明确的单主题论文检索只使用规则分析，不调用 Research Analyzer LLM。",
+        "L1 快速路径保持零额外模型调用。",
+        "简单检索会产生不必要 Token 和路由延迟。",
+    ),
+    "tests/test_research_analysis.py::test_complex_request_uses_structured_llm_analysis_and_builds_valid_plan": _description(
+        "验证 L3 请求使用结构化 LLM 分析，并形成通过 Validator 的五任务受限计划。",
+        "LLM 字段能传递给 Brief/Plan，且调用 Token 被准确记录。",
+        "复杂意图分析与后续规划可能断裂，或额外模型成本漏记。",
+    ),
+    "tests/test_research_analysis.py::test_llm_analysis_failure_falls_back_to_bounded_rule_plan": _description(
+        "验证 LLM 超时、JSON 错误或 Schema 失败时回退到规则分析和合法计划。",
+        "Research Agent 不因结构化模型输出失败而中断，且明确记录 rule_fallback。",
+        "复杂请求可能直接失败，或使用来源不明的残缺计划继续执行。",
+    ),
+    "tests/test_research_analysis.py::test_plan_validator_rejects_cycles_unknown_sources_and_dependencies": _description(
+        "验证 Plan Validator 拒绝循环依赖、未知数据源和不存在的任务依赖。",
+        "不合法计划不能进入未来 Executor。",
+        "Scheduler 可能死循环、调用未授权来源或等待永远不会完成的任务。",
+    ),
+    "tests/test_research_analysis.py::test_brief_and_plan_respect_task_and_parallel_budgets": _description(
+        "验证 Research Brief/Plan 严格限制最多五个任务和两个并行任务。",
+        "复杂研究计划具备固定成本边界。",
+        "Planner 可能生成过多任务或超出项目并发预算。",
+    ),
+    "tests/test_research_analysis.py::test_policy_gate_prevents_llm_downgrade_and_unknown_skills": _description(
+        "验证 Policy Gate 阻止 LLM 将高置信度 L3 降级，并过滤不存在的主次 Skill。",
+        "LLM 只补充语义分析，任务等级、检索要求和可执行 Skill 仍由代码控制。",
+        "复杂研究任务可能被错误降级，或进入未注册/不安全的 Skill。",
+    ),
+    "tests/test_research_analysis.py::test_plan_validator_applies_current_brief_source_allowlist": _description(
+        "验证 Plan Validator 除全局来源白名单外，还执行当前 Research Brief 的来源范围。",
+        "计划只能使用本次任务明确允许的数据源。",
+        "Planner 可能调用虽然系统存在、但本次研究未授权的数据源。",
+    ),
     "tests/test_graph_checkpointer.py::test_official_sqlite_checkpointer_persists_state_across_graph_instances": _description(
         "验证官方 SqliteSaver 保存完整 LangGraph 状态，并能在重建 Graph 实例后按 thread_id 恢复。",
         "服务或进程重启后仍能读取已完成节点、答案和图结束位置。",

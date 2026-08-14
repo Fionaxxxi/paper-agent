@@ -193,6 +193,37 @@ def query_plan_node(state: AgentState) -> AgentState:
             **complexity_result,
         }
 
+    research_plan = state.get("research_plan", {})
+    if (
+        state.get("task_level") == "L3"
+        and state.get("research_plan_validation", {}).get("valid")
+        and research_plan.get("tasks")
+    ):
+        sub_queries = deduplicate_queries(
+            [
+                task.get("query", "")
+                for task in research_plan["tasks"]
+                if task.get("source") != "evidence_store"
+            ]
+        )
+        return {
+            "sub_queries": sub_queries,
+            "query_plan_enabled": True,
+            "query_plan_reason": "structured_research_plan",
+            "query_complexity": "complex",
+            "complexity_reason": "L3 validated research plan",
+            "paper_metadata": {
+                **state.get("paper_metadata", {}),
+                "sub_queries": sub_queries,
+                "sub_query_count": len(sub_queries),
+                "planned_query_count": len(sub_queries),
+                "query_plan_enabled": True,
+                "query_plan_reason": "structured_research_plan",
+                "query_complexity": "complex",
+                "complexity_reason": "L3 validated research plan",
+            },
+        }
+
     sub_queries = build_rule_based_sub_queries(state)
     query_complexity = complexity_result["query_complexity"]
     query_plan_reason = (

@@ -21,6 +21,11 @@ def instrumented_graph(monkeypatch):
     )
     monkeypatch.setattr(
         graph_module,
+        "research_analyze_node",
+        node("research_analyze", {"task_level": "L1"}),
+    )
+    monkeypatch.setattr(
+        graph_module,
         "query_plan_node",
         node("query_plan", {"sub_queries": ["planned query"]}),
     )
@@ -72,6 +77,7 @@ def test_standard_query_runs_the_agentic_rag_path(instrumented_graph):
     result = graph.invoke({"query": "graph rag", "retry_count": 0})
 
     assert calls == [
+        "research_analyze",
         "query_rewrite",
         "query_plan",
         "retrieve",
@@ -92,7 +98,7 @@ def test_pdf_query_skips_query_planning_and_retrieval(instrumented_graph):
         {"query": "summarize this PDF", "pdf_path": "paper.pdf", "retry_count": 0}
     )
 
-    assert calls == ["query_rewrite", "reason", "generate", "answer_verify", "metrics"]
+    assert calls == ["research_analyze", "query_rewrite", "reason", "generate", "answer_verify", "metrics"]
     assert result["answer"] == "grounded answer"
 
 

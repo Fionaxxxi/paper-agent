@@ -116,6 +116,11 @@ class PaperAgentService:
             "query_plan_reason": "",
             "query_complexity": "",
             "complexity_reason": "",
+            "task_level": "",
+            "research_analysis": {},
+            "research_brief": {},
+            "research_plan": {},
+            "research_plan_validation": {},
             "node_timings": {},
             "paper_metadata": {
                 "conversation_id": conversation_id,
@@ -187,6 +192,12 @@ class PaperAgentService:
                 "llm_wiki": wiki_result.as_dict(),
                 "langgraph_checkpoint_enabled": settings.LANGGRAPH_CHECKPOINT_ENABLED,
                 "langgraph_thread_id": conversation_id,
+                "research_analysis": result.get("research_analysis", {}),
+                "research_brief": result.get("research_brief", {}),
+                "research_plan": result.get("research_plan", {}),
+                "research_plan_validation": result.get(
+                    "research_plan_validation", {}
+                ),
                 "pdf_path": pdf_path,
                 "pdf_page_count": result.get("pdf_page_count", pdf_page_count),
                 "pdf_error": result.get("pdf_error", pdf_error),

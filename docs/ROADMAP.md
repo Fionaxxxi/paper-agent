@@ -50,7 +50,7 @@ LangGraph Graph Engineering（显式状态、条件路由、恢复边和有限�
 | 2 | Verifier + 有限 Reflection（v1 已完成） | 已对空答案、完整度、任务结构和论文证据信号做确定性验证；有修复证据时最多调用 LLM 修复 1 次，无改善恢复初始答案 | 形成可解释的质量控制和失败恢复闭环；后续再扩展 Claim/Citation 精细验证 |
 | 3 | 结构化记忆 + LLM Wiki（v1 已完成） | SQLite 保存消息和研究上下文并提供预算压缩；Markdown Wiki 只发布通过验证且有论文证据的成果；官方 LangGraph SqliteSaver 按 thread_id 保存节点级 State。语义摘要按真实长会话需求再晋升 | 展示跨轮连续性、图状态恢复与可审阅研究成果，同时保持数据透明、可删除、易演示 |
 | 4 | 科研型 Skill + 结构化输出 | 优先实现 `LiteratureReviewSkill` 与 `PaperCritiqueSkill`；实验建议并入批判分析，报告排版并入综述输出 | 用少量高价值 Skill 覆盖真实科研任务 |
-| 5 | 轻量深度研究模式 | 增加 L0～L3 分级路由；L3 使用 Research Brief、受限任务计划、Planner / Executor / Reviewer、Evidence Coverage 和 Checkpoint | 把前述能力组合成可交付带引用研究报告的差异化闭环 |
+| 5 | 轻量深度研究模式（Analyzer/Brief/Plan v1 已完成） | 已增加 L0～L3 分级、混合 Research Analyzer、Policy Gate、最多 5 任务/并行 2 的 Brief/Plan 和 Plan Validator，并把有效计划接到多查询规划；下一步实现受限 Executor、Evidence Store、Coverage Gate 和 Writer | 把前述能力组合成可交付带引用研究报告的差异化闭环 |
 | 6 | 外部 MCP | 先接只读 Zotero，再接只读 GitHub；分别服务个人文献库和论文代码仓库 | 证明 MCP 的跨应用复用价值 |
 | 7 | 单页多模态 PDF | 用户指定代表性页面，渲染后交给视觉模型分析图、表或公式，并保留页码依据 | 以可控成本展示真正的多模态能力 |
 | 8 | 工程化交付 | 完善 Web 轨迹展示、Docker、基础 CI、中文使用说明和一组端到端演示案例 | 让项目可运行、可展示、可复现 |
@@ -1578,6 +1578,8 @@ Push / Pull Request
 2026-08-14 已完成 Research Memory SQLite v1。旧逐会话 JSON 存储升级为项目内 `data/memory/paper_agent_memory.db`，保存完整消息、用户偏好、活跃研究主题、活跃论文与通用状态 Checkpoint；旧 JSON 在首次读取时兼容迁移且不会重复导入。服务请求现在注入最近 6 条原文、更早消息提取式摘要及结构化研究状态，并按默认 2400 字符预算组装上下文，回答后更新主题与论文。当前压缩完全确定性、不调用 LLM，正式 LangGraph SQLite Saver 扩展尚未安装，因此本轮提供存取接口而未宣称图级中断恢复。结构化存储、隔离、压缩预算、迁移、删除级联、Checkpoint、服务接入及相关 Agent 回归 42/42 通过且没有真实模型调用。下一步补正式 Checkpointer/语义摘要门控和 Markdown LLM Wiki，随后进入科研型结构化 Skill。
 
 2026-08-14 已完成 Markdown LLM Wiki v1。Wiki 不是无门控的“模型记忆”：默认关闭自动发布，只有任务类型在白名单、Answer Verifier 通过、至少存在一条可追溯论文证据且回答未处于 `insufficient_evidence` 模式时才写入 `data/wiki/`。每篇笔记包含研究问题、结论、论文身份/来源/链接、Verifier 分数、失败类型和 Reflection 次数，索引按 Trace 幂等更新；Note ID 读取拒绝路径字符。服务响应返回发布状态与拒绝原因。Wiki、Research Memory、Verifier、Reflection、图路由与目录测试 50/50 通过且没有真实模型调用。下一步接入正式 LangGraph SQLite Checkpointer，使 Research Graph 能用 `conversation_id/thread_id` 保存和恢复图状态；LLM 语义摘要暂不优先，等待真实长会话证明提取式压缩不足。
+
+2026-08-14 官方 LangGraph SQLite Checkpointer 已在提交 `7eb91d7` 中完成：Graph 通过 `SqliteSaver` 编译，Chat 使用 `conversation_id` 作为 thread_id，并在每次请求显式重置全部请求级状态；测试覆盖跨 Graph 实例恢复、线程隔离、删除和关闭开关。随后完成 Research Analyzer/Brief/Plan v1：研究请求在查询改写前进入 L1/L2/L3 分级，明确简单任务不调用 LLM；高置信度复杂请求可由一次结构化 LLM 分析补充目标、评价维度和 Skill，Policy Gate 禁止 L3 降级、未知 Skill 和关闭必要检索。Research Brief/Plan 限制最多 5 任务、并行 2，Validator 检查重复任务、当前 Brief 来源白名单、未知/自依赖和循环依赖；有效 L3 Plan 的检索任务转换为现有多查询。固定 12 条分级集为 12/12、L1 误升 L3 为 0，相关 Checkpointer、Memory、Wiki、Reflection、图和规划回归 76/76 通过且没有真实模型调用。当前尚无按依赖执行的 Scheduler、Evidence Store、Coverage Gate 或研究报告 Writer，不把多查询规划描述为完整 Deep Research。
 
 2026-08-14 已接入官方 `langgraph-checkpoint-sqlite==3.1.1`。`build_graph` 支持注入 Checkpointer，服务默认将 SqliteSaver 连接到项目内 `data/memory/langgraph_checkpoints.db`，每次调用使用 `conversation_id` 作为 `configurable.thread_id`。同一线程开始新请求时显式重置 documents、answer、retry、Verifier、Reflection、规划和用量字段，避免旧 State 合并造成跨轮执行污染。测试证明完成状态可在关闭连接、重建 Graph 后恢复，不同线程严格隔离，删除线程不影响其他状态，关闭开关不创建数据库；相关 Memory、Wiki、Verifier 和图回归 53/53 通过且未调用真实模型。当前同步 SqliteSaver 适合本地单用户演示；未来只有真实并发和部署需求出现时才评估异步 Saver 或 Postgres。下一步进入科研型结构化 Skill，为 Research Agent 的 Brief、Plan、Literature Review 和 Critique 定义正式输出契约。
 

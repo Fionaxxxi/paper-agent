@@ -69,8 +69,6 @@ class Settings(BaseSettings):
     )
     LANGGRAPH_CHECKPOINT_ENABLED: bool = True
     LANGGRAPH_CHECKPOINT_DB_PATH: str = "data/memory/langgraph_checkpoints.db"
-    LANGGRAPH_CHECKPOINT_ENABLED: bool = True
-    LANGGRAPH_CHECKPOINT_DB_PATH: str = "data/memory/langgraph_checkpoints.db"
 
     # Logging
     LOG_LEVEL: str = "INFO"
@@ -78,6 +76,7 @@ class Settings(BaseSettings):
 
     REASON_WITH_LLM: bool = True
     REASON_CONFIDENCE_THRESHOLD: float = 0.75
+    RESEARCH_ANALYSIS_WITH_LLM: bool = True
 
     model_config = SettingsConfigDict(
         env_file=".env",

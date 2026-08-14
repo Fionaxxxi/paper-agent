@@ -75,6 +75,11 @@ class AgentState(TypedDict, total=False):
     query_plan_reason: str
     query_complexity: str
     complexity_reason: str
+    task_level: str
+    research_analysis: Dict[str, Any]
+    research_brief: Dict[str, Any]
+    research_plan: Dict[str, Any]
+    research_plan_validation: Dict[str, Any]
 
     # query_rewrite.py 增加 rewritten_query
     # retrieve.py 增加 documents
