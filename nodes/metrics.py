@@ -182,6 +182,13 @@ def metrics_node(state: AgentState) -> AgentState:
         "citation_format": paper_metadata.get("citation_format", ""),
         "answer_mode": paper_metadata.get("answer_mode", "normal"),
         "generation_skipped": paper_metadata.get("generation_skipped", False),
+        "answer_verification_score": state.get("answer_verification", {}).get("score", 0.0),
+        "answer_verification_passed": state.get("answer_verification", {}).get("passed", False),
+        "answer_failure_types": state.get("answer_verification", {}).get("failure_types", []),
+        "answer_reflection_count": state.get("answer_reflection_count", 0),
+        "answer_reflection_status": state.get("answer_reflection", {}).get("status", "not_triggered"),
+        "answer_reflection_restored": state.get("answer_reflection_restored", False),
+        "answer_stop_reason": state.get("answer_stop_reason", ""),
 
         # Memory
         "conversation_id": state.get("conversation_id", ""),

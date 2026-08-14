@@ -24,6 +24,46 @@ def _description(
 
 
 TEST_CASE_CATALOG: dict[str, CaseDescription] = {
+    "tests/test_answer_reflection.py::test_verifier_accepts_a_grounded_structured_answer": _description(
+        "验证确定性 Verifier 能接受结构完整且明确关联论文证据的答案。",
+        "合格答案不会触发额外 Reflection LLM 调用。",
+        "Verifier 可能误报合格答案，造成不必要 Token、延迟或答案改写。",
+    ),
+    "tests/test_answer_reflection.py::test_verifier_only_requests_reflection_when_repair_evidence_exists": _description(
+        "验证同样的答案缺陷只有在存在论文或 PDF 修复证据时才允许进入 Reflection。",
+        "有证据的缺陷可修复，无证据时立即停止而不是要求模型猜测。",
+        "系统可能基于空上下文修复答案并引入幻觉，或错过可修复问题。",
+    ),
+    "tests/test_answer_reflection.py::test_insufficient_evidence_answer_does_not_enter_reflection": _description(
+        "验证已经明确披露证据不足的安全降级答案不会再次进入答案循环。",
+        "检索预算耗尽后流程稳定停止，不会通过润色掩盖证据不足。",
+        "低质量检索可能继续消耗 Token，或被模型改写成无依据结论。",
+    ),
+    "tests/test_answer_reflection.py::test_reflection_feature_flag_keeps_verification_but_disables_repair": _description(
+        "验证关闭 ANSWER_REFLECTION_ENABLED 后仍保留质量检查，但不会进入 LLM 修复节点。",
+        "项目可以独立关闭 Reflection 成本并保留 Verifier 观测与基线对照。",
+        "功能开关可能无效，导致禁用状态仍产生额外模型调用。",
+    ),
+    "tests/test_answer_reflection.py::test_reflection_uses_one_tracked_llm_call_and_keeps_evidence_in_prompt": _description(
+        "验证 Reflection 只使用现有证据修复答案，并将本次模型调用纳入 Token 统计。",
+        "修复 Prompt 包含论文证据，调用次数和 30 个测试 Token 均被准确记录。",
+        "Reflection 可能脱离证据生成，或其额外成本没有进入可观测指标。",
+    ),
+    "tests/test_answer_reflection.py::test_second_verification_restores_initial_answer_when_score_does_not_improve": _description(
+        "验证修复答案没有提高验证分数时恢复初始答案并按无改善原因停止。",
+        "Reflection 不会把原答案改得更差，也不会继续第三轮循环。",
+        "无效修复可能覆盖较优答案或导致循环失去停止边界。",
+    ),
+    "tests/test_answer_reflection.py::test_graph_runs_answer_reflection_at_most_once": _description(
+        "验证 LangGraph 的生成、验证、反思、再验证路径最多执行一次 Reflection。",
+        "失败答案经过一次修复后进入 Metrics，图不存在无限答案循环。",
+        "条件边或计数状态错误，可能跳过修复或重复调用大模型。",
+    ),
+    "tests/test_answer_reflection.py::test_metrics_records_answer_loop_quality_and_stop_outcome": _description(
+        "验证 Metrics 暴露答案分数、Reflection 次数、原答案恢复状态和最终停止原因。",
+        "Web、日志和后续评测能够解释答案循环的质量与停止结果。",
+        "循环虽然执行但缺少可观测数据，无法统计修复收益、退化或预算停止。",
+    ),
     "tests/test_tool_layer.py::test_router_exposes_an_auditable_route_decision": _description(
         "验证 Tool Router 不只返回工具名，还能给出可写入轨迹的能力、来源和工具路由决定。",
         "LangGraph 可以解释为什么选择某个工具，原生工具与 MCP 工具使用同一套路由记录。",

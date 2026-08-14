@@ -78,6 +78,7 @@ class PaperAgentService:
             "llm_call_count": 0,
             "llm_failed_call_count": 0,
             "llm_usage": [],
+            "answer_reflection_count": 0,
             "node_timings": {},
             "paper_metadata": {
                 "conversation_id": conversation_id,

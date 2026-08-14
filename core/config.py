@@ -48,6 +48,8 @@ class Settings(BaseSettings):
     LLM_TIMEOUT: int = 120
     MAX_GENERATE_DOCS: int = 3
     DOC_CONTENT_LIMIT: int = 1000
+    ANSWER_REFLECTION_ENABLED: bool = True
+    ANSWER_REFLECTION_ENABLED: bool = True
 
     # PDF
     PDF_MAX_CHARS: int = 12000

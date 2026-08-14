@@ -17,6 +17,14 @@ class AgentState(TypedDict, total=False):
 
     # 最终答案
     answer: str
+    answer_verification: Dict[str, Any]
+    answer_initial_score: float
+    answer_initial_verification: Dict[str, Any]
+    answer_reflection_count: int
+    answer_reflection: Dict[str, Any]
+    answer_before_reflection: str
+    answer_reflection_restored: bool
+    answer_stop_reason: str
 
     # 工具调用记录
     tools_used: List[str]

@@ -12,6 +12,8 @@ from nodes.metrics import metrics_node
 from nodes.query_plan import query_plan_node
 from nodes.intent_router import intent_router_node
 from nodes.retrieval_replan import build_retrieval_replan
+from nodes.answer_verify import answer_verify_node, route_after_answer_verify
+from nodes.answer_reflect import answer_reflect_node
 
 from utils.timer import timed_node
 
@@ -93,6 +95,14 @@ def build_graph():
             "end": END,
         },
     )
+    workflow.add_node(
+        "answer_verify",
+        timed_node("answer_verify", answer_verify_node),
+    )
+    workflow.add_node(
+        "answer_reflect",
+        timed_node("answer_reflect", answer_reflect_node),
+    )
     workflow.add_conditional_edges(
         "query_rewrite",
         route_after_query_rewrite,
@@ -116,7 +126,16 @@ def build_graph():
 
     workflow.add_edge("retry", "retrieve")
     workflow.add_edge("reason", "generate")
-    workflow.add_edge("generate", "metrics")
+    workflow.add_edge("generate", "answer_verify")
+    workflow.add_conditional_edges(
+        "answer_verify",
+        route_after_answer_verify,
+        {
+            "reflect": "answer_reflect",
+            "finish": "metrics",
+        },
+    )
+    workflow.add_edge("answer_reflect", "answer_verify")
     workflow.add_edge("metrics", END)
 
     return workflow.compile()

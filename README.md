@@ -183,6 +183,8 @@ D:\miniconda3\envs\paper_agent\python.exe scripts\run_tests_with_report.py
 
 当前已经实现 LangGraph 工作流、在线多源工具层、本地 Hybrid RAG、查询规划、一次受控 Replan、Skill 路由、本地会话记忆、质量降级和可观测元数据。
 
+最终答案现在经过确定性 Verifier：检查空答案、完整度、任务结构和论文证据引用信号。只有发现可修复缺陷且已有论文/PDF 证据时，才调用一次 LLM 执行 Answer Reflection；修复后再次验证，无改善则恢复初始答案。`ANSWER_REFLECTION_ENABLED=false` 可以关闭修复调用，但仍保留答案验证。该能力只处理当前任务，不属于跨任务 Reflexion，也不会自动写入长期记忆。
+
 后续采用“有特色但能完成”的执行路线，尚未完成的部分不应描述为已实现功能：
 
 1. 已收口统一 MCP 路由和执行元数据；

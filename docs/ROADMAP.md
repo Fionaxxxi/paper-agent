@@ -28,7 +28,7 @@ LangGraph Graph Engineering（显式状态、条件路由、恢复边和有限�
 | 顺序 | 阶段 | 交付边界 | 项目价值 |
 |---:|---|---|---|
 | 1 | MCP 路由收口（已完成） | 已补齐显式 MCP Router 场景、错误映射和调用元数据；保留原生工具与 MCP 双通道 | 展示协议解耦与工具治理，而不是为了 MCP 而 MCP |
-| 2 | Verifier + 有限 Reflection | 对引用、证据覆盖和答案结构做验证；最多修复 1 次，按失败类型生成修复指令，超预算返回当前最佳答案 | 形成可解释的质量控制和失败恢复闭环 |
+| 2 | Verifier + 有限 Reflection（v1 已完成） | 已对空答案、完整度、任务结构和论文证据信号做确定性验证；有修复证据时最多调用 LLM 修复 1 次，无改善恢复初始答案 | 形成可解释的质量控制和失败恢复闭环；后续再扩展 Claim/Citation 精细验证 |
 | 3 | 结构化记忆 + LLM Wiki | 使用 SQLite/检查点保存会话摘要、用户偏好、活跃论文；将确认后的研究结论写入可阅读的 Markdown Wiki | 展示跨轮连续性，同时保持数据透明、可删除、易演示 |
 | 4 | 科研型 Skill + 结构化输出 | 优先实现 `LiteratureReviewSkill` 与 `PaperCritiqueSkill`；实验建议并入批判分析，报告排版并入综述输出 | 用少量高价值 Skill 覆盖真实科研任务 |
 | 5 | 轻量深度研究模式 | 增加 L0～L3 分级路由；L3 使用 Research Brief、受限任务计划、Planner / Executor / Reviewer、Evidence Coverage 和 Checkpoint | 把前述能力组合成可交付带引用研究报告的差异化闭环 |
@@ -1537,6 +1537,8 @@ Push / Pull Request
 2026-08-14 已完成 MCP Client v1 路由收口。默认 Tool Router 新增 `paper.catalog.search / mcp_catalog → paper.catalog.search.mcp` 确定性路由，设置 `RETRIEVAL_MODE=mcp_catalog` 后，LangGraph 主检索函数会使用 MCP 参数契约调用真实只读 stdio Server；默认 arXiv 模式不变，LLM 不会自行触发 MCP。工具执行轨迹现在保留 capability、source、tool name，以及 MCP Server、版本、传输方式、远程工具名、耗时和统一错误。代表性工具层、真实 MCP、主检索、多源回归与测试目录验证 35/35 通过，阶段 1 收口；下一步进入 Verifier 与最多一次的有限 Reflection 修复。
 
 2026-08-14 路线 V3 将有限 Agent Loop 与 HTC Research Graph 中适合 PaperAgent 的设计合并。保留 L0 Direct、L1 Fast Research QA、L2 Standard Research、L3 Deep Research 四级任务路由；基础工作流只包含最多一次 Retrieval Replan 和最多一次 Answer Reflection。L3 在前述能力成熟后增加 Research Brief、最多 5 个任务的受限计划、并行数 2 的 Executor、Evidence Coverage、Citation/Claim Verifier 和 SQLite Checkpoint，并限制计划修复、证据补充和报告修复各最多一次且共享总预算。第一版不建设通用 Job 平台、任意 DAG、自由 Supervisor 或多角色辩论。Router、Loop 和 Research Graph 必须在模块完成时立即进行固定标注、集成、失败停止、质量和成本测试，不将首次能力验证推迟到最终阶段。
+
+2026-08-14 已完成 Answer Verifier 与有限 Reflection v1。LangGraph 在 Generate 后新增确定性 Answer Verify 节点，检查空答案、最小完整度、比较/总结/推荐任务结构以及论文标题证据信号；已经明确披露检索证据不足的降级答案直接停止。有证据且缺陷可修复时，Answer Reflect 使用证据约束 Prompt 调用 LLM 一次，随后再次验证；分数无改善时恢复初始答案，任何路径最多 Reflection 一次。Metrics 记录验证分数、失败类型、Reflection 状态、原答案恢复与停止原因，支持 `ANSWER_REFLECTION_ENABLED=false` 关闭修复调用。代表性 Verifier、Fake LLM、LangGraph 循环、低质量停止、LLM 用量和检索回归测试全部通过且未调用真实模型。当前是单任务 Reflection，不写长期经验；下一步进入 SQLite 结构化记忆、上下文压缩与 LLM Wiki。
 
 2026-08-12 子查询并行已完成 5 次确定性离线重复基准：3 个子查询、2 个 worker 时，中位延迟由 265.4ms 降至 172.3ms，加速 1.54 倍、延迟下降 35.09%，结果与规划顺序一致率 100%，达到阶段门槛并收口。
 

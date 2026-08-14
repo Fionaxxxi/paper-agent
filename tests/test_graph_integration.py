@@ -49,6 +49,19 @@ def instrumented_graph(monkeypatch):
         "metrics_node",
         node("metrics", {"token_usage": 0}),
     )
+    monkeypatch.setattr(
+        graph_module,
+        "answer_verify_node",
+        node(
+            "answer_verify",
+            {
+                "answer_verification": {
+                    "passed": True,
+                    "should_reflect": False,
+                }
+            },
+        ),
+    )
 
     return graph_module.build_graph(), calls
 
@@ -65,6 +78,7 @@ def test_standard_query_runs_the_agentic_rag_path(instrumented_graph):
         "evaluate",
         "reason",
         "generate",
+        "answer_verify",
         "metrics",
     ]
     assert result["answer"] == "grounded answer"
@@ -78,7 +92,7 @@ def test_pdf_query_skips_query_planning_and_retrieval(instrumented_graph):
         {"query": "summarize this PDF", "pdf_path": "paper.pdf", "retry_count": 0}
     )
 
-    assert calls == ["query_rewrite", "reason", "generate", "metrics"]
+    assert calls == ["query_rewrite", "reason", "generate", "answer_verify", "metrics"]
     assert result["answer"] == "grounded answer"
 
 
