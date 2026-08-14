@@ -38,7 +38,7 @@ def route_after_query_rewrite(state):
 
     return "query_plan"
 
-def build_graph():
+def build_graph(checkpointer=None):
     workflow = StateGraph(AgentState)
 
     workflow.add_node(
@@ -138,4 +138,4 @@ def build_graph():
     workflow.add_edge("answer_reflect", "answer_verify")
     workflow.add_edge("metrics", END)
 
-    return workflow.compile()
+    return workflow.compile(checkpointer=checkpointer)

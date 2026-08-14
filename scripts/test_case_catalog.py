@@ -24,6 +24,21 @@ def _description(
 
 
 TEST_CASE_CATALOG: dict[str, CaseDescription] = {
+    "tests/test_graph_checkpointer.py::test_official_sqlite_checkpointer_persists_state_across_graph_instances": _description(
+        "验证官方 SqliteSaver 保存完整 LangGraph 状态，并能在重建 Graph 实例后按 thread_id 恢复。",
+        "服务或进程重启后仍能读取已完成节点、答案和图结束位置。",
+        "Checkpoint 可能只存在内存，无法支持后续 Research Graph 的中断恢复。",
+    ),
+    "tests/test_graph_checkpointer.py::test_sqlite_checkpointer_isolates_threads_and_supports_deletion": _description(
+        "验证不同 thread_id 的图状态严格隔离，并支持删除指定线程全部 Checkpoint。",
+        "两个会话分别保留 greeting/thanks 状态，删除一个不会影响另一个。",
+        "图状态可能跨会话泄漏，或用户删除会话后仍残留执行轨迹。",
+    ),
+    "tests/test_graph_checkpointer.py::test_checkpointer_can_be_disabled_without_creating_a_database": _description(
+        "验证关闭 Checkpoint 开关时不创建 SQLite 文件。",
+        "测试、无状态部署或故障降级可以完全禁用图持久化。",
+        "功能开关可能无效，导致禁用状态仍产生本地状态文件。",
+    ),
     "tests/test_llm_wiki.py::test_verified_research_note_writes_markdown_evidence_and_index": _description(
         "验证通过 Verifier 的研究答案和论文证据能发布为 Markdown 笔记并进入 Wiki 索引。",
         "笔记包含结论、论文身份、来源、链接和验证状态，可由用户直接审阅。",

@@ -191,6 +191,8 @@ D:\miniconda3\envs\paper_agent\python.exe scripts\run_tests_with_report.py
 
 Markdown LLM Wiki v1 已提供严格发布门控：只有允许的研究任务、最终答案通过 Verifier、存在可追溯论文证据且未处于证据不足模式时才可发布。笔记保存研究问题、结论、论文身份/来源/链接、验证分数和 Reflection 次数，并维护幂等索引。默认 `LLM_WIKI_AUTO_PUBLISH_ENABLED=false`，生成内容位于 `data/wiki/` 且被 Git 忽略；开启前应确认希望把合格研究结果持久化到本机。
 
+LangGraph 已接入官方 `SqliteSaver`，使用 `conversation_id` 作为 `thread_id`，将节点级 State 快照保存到 `data/memory/langgraph_checkpoints.db`。同一线程的新请求会显式重置检索、答案、重试和验证等临时字段，避免上一轮状态污染；可通过 `LANGGRAPH_CHECKPOINT_ENABLED=false` 完全关闭。该数据库服务于图状态恢复，和保存可读会话/研究上下文的 `paper_agent_memory.db` 职责不同。
+
 后续采用“有特色但能完成”的 Research Agent 执行路线，尚未完成的部分不应描述为已实现功能：
 
 1. 已收口统一 MCP 路由和执行元数据；

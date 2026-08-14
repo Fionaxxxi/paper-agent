@@ -67,6 +67,10 @@ class Settings(BaseSettings):
     LLM_WIKI_ALLOWED_TASK_TYPES: str = (
         "summarize,compare,recommend,literature_review,paper_critique"
     )
+    LANGGRAPH_CHECKPOINT_ENABLED: bool = True
+    LANGGRAPH_CHECKPOINT_DB_PATH: str = "data/memory/langgraph_checkpoints.db"
+    LANGGRAPH_CHECKPOINT_ENABLED: bool = True
+    LANGGRAPH_CHECKPOINT_DB_PATH: str = "data/memory/langgraph_checkpoints.db"
 
     # Logging
     LOG_LEVEL: str = "INFO"

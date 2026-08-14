@@ -127,15 +127,16 @@ def test_service_injects_compressed_context_and_updates_research_memory(monkeypa
     captured = {}
 
     class FakeGraph:
-        def invoke(self, state):
+        def invoke(self, state, config=None):
             captured["state"] = state
+            captured["config"] = config
             return {
                 "answer": "基于 ReAct 的研究回答",
                 "documents": [{"title": "ReAct"}],
                 "paper_metadata": {},
             }
 
-    monkeypatch.setattr(service_module, "build_graph", lambda: FakeGraph())
+    monkeypatch.setattr(service_module, "build_graph", lambda **kwargs: FakeGraph())
     monkeypatch.setattr(service_module, "load_memory_context", lambda _: context)
     monkeypatch.setattr(service_module, "save_message", lambda *args: None)
     monkeypatch.setattr(
@@ -152,5 +153,8 @@ def test_service_injects_compressed_context_and_updates_research_memory(monkeypa
     assert "最近对话" in captured["state"]["history_text"]
     assert captured["memory_update"][0] == "c1"
     assert captured["memory_update"][1]["documents"][0]["title"] == "ReAct"
+    assert captured["config"]["configurable"]["thread_id"] == "c1"
+    assert captured["state"]["documents"] == []
+    assert captured["state"]["answer_verification"] == {}
     assert result["paper_metadata"]["memory_compressed_message_count"] == 8
     assert result["paper_metadata"]["llm_wiki"]["reason"] == "auto_publish_disabled"

@@ -11,6 +11,7 @@ from memory.conversation_memory import (
     update_research_memory,
 )
 from memory.llm_wiki import publish_agent_result
+from memory.graph_checkpointer import get_default_graph_checkpointer
 from document_loader.pdf_loader import load_pdf_text
 from core.config import settings
 
@@ -26,8 +27,13 @@ class PaperAgentService:
     4. 整理 API 响应数据
     """
 
-    def __init__(self):
-        self.graph = build_graph()
+    def __init__(self, checkpointer=None):
+        if checkpointer is None:
+            checkpointer = get_default_graph_checkpointer(
+                settings.LANGGRAPH_CHECKPOINT_DB_PATH,
+                enabled=settings.LANGGRAPH_CHECKPOINT_ENABLED,
+            )
+        self.graph = build_graph(checkpointer=checkpointer)
 
     def chat(
             self,
@@ -72,12 +78,20 @@ class PaperAgentService:
             "history_text": history_text,
 
             "query": query,
+            "input_intent": "",
+            "documents": [],
+            "retrieval_score": 0.0,
+            "retrieval_outcome": "",
+            "retrieval_stop_reason": "",
+            "answer": "",
             "pdf_path": pdf_path or "",
             "pdf_text": pdf_text,
             "pdf_page_count": pdf_page_count,
             "pdf_error": pdf_error,
 
             "retry_count": 0,
+            "retry_query": "",
+            "retrieval_replan": {},
             "tools_used": [],
             "token_usage": 0,
             "input_token_usage": 0,
@@ -86,6 +100,22 @@ class PaperAgentService:
             "llm_failed_call_count": 0,
             "llm_usage": [],
             "answer_reflection_count": 0,
+            "answer_verification": {},
+            "answer_initial_score": 0.0,
+            "answer_initial_verification": {},
+            "answer_reflection": {},
+            "answer_before_reflection": "",
+            "answer_reflection_restored": False,
+            "answer_stop_reason": "",
+            "error_message": None,
+            "is_valid": True,
+            "rewritten_query": "",
+            "task_type": "",
+            "sub_queries": [],
+            "query_plan_enabled": False,
+            "query_plan_reason": "",
+            "query_complexity": "",
+            "complexity_reason": "",
             "node_timings": {},
             "paper_metadata": {
                 "conversation_id": conversation_id,
@@ -94,13 +124,16 @@ class PaperAgentService:
                 "memory_compressed_message_count": memory_context.compressed_message_count,
                 "memory_active_topics": memory_context.active_topics,
                 "memory_active_papers": memory_context.active_papers,
+                "langgraph_checkpoint_enabled": settings.LANGGRAPH_CHECKPOINT_ENABLED,
+                "langgraph_thread_id": conversation_id,
                 "pdf_path": pdf_path,
                 "pdf_page_count": pdf_page_count,
                 "pdf_error": pdf_error,
             },
         }
 
-        result = self.graph.invoke(initial_state)
+        checkpoint_config = {"configurable": {"thread_id": conversation_id}}
+        result = self.graph.invoke(initial_state, config=checkpoint_config)
 
         total_time = round(time.perf_counter() - start_time, 2)
 
@@ -152,6 +185,8 @@ class PaperAgentService:
                 "memory_active_topics": memory_context.active_topics,
                 "memory_active_papers": memory_context.active_papers,
                 "llm_wiki": wiki_result.as_dict(),
+                "langgraph_checkpoint_enabled": settings.LANGGRAPH_CHECKPOINT_ENABLED,
+                "langgraph_thread_id": conversation_id,
                 "pdf_path": pdf_path,
                 "pdf_page_count": result.get("pdf_page_count", pdf_page_count),
                 "pdf_error": result.get("pdf_error", pdf_error),

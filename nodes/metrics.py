@@ -197,6 +197,8 @@ def metrics_node(state: AgentState) -> AgentState:
         "memory_compressed_message_count": paper_metadata.get("memory_compressed_message_count", 0),
         "memory_active_topic_count": len(paper_metadata.get("memory_active_topics", [])),
         "memory_active_paper_count": len(paper_metadata.get("memory_active_papers", [])),
+        "langgraph_checkpoint_enabled": paper_metadata.get("langgraph_checkpoint_enabled", False),
+        "langgraph_thread_id": paper_metadata.get("langgraph_thread_id", ""),
 
         # PDF
         "pdf_path": state.get("pdf_path", ""),
