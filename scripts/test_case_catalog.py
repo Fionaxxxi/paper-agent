@@ -24,6 +24,41 @@ def _description(
 
 
 TEST_CASE_CATALOG: dict[str, CaseDescription] = {
+    "tests/test_structured_memory.py::test_sqlite_memory_persists_messages_and_returns_recent_window": _description(
+        "验证 SQLite 会话消息跨 Store 实例持久化，并只把最近窗口作为原文上下文。",
+        "8 条消息完整落库，最近 3 条保持顺序，更早 5 条进入提取式摘要。",
+        "服务重启后可能丢失记忆，或上下文窗口、摘要计数和消息顺序错误。",
+    ),
+    "tests/test_structured_memory.py::test_research_context_is_structured_deduplicated_and_conversation_scoped": _description(
+        "验证用户偏好、活跃主题和论文以结构化字段保存、去重，并按 conversation_id 隔离。",
+        "同一会话能合并 Research Context，不同会话不会读取彼此研究状态。",
+        "研究上下文可能重复膨胀或跨会话泄漏，污染后续 Research Plan。",
+    ),
+    "tests/test_structured_memory.py::test_context_compression_respects_budget_and_keeps_each_memory_layer": _description(
+        "验证上下文压缩遵守字符预算，同时保留研究状态、旧消息摘要和最近消息。",
+        "有限上下文中三层信息均存在，长度不超过预算加固定分隔符。",
+        "长会话可能无限增长，或压缩时完全丢失偏好、历史或最新问题。",
+    ),
+    "tests/test_structured_memory.py::test_checkpoint_round_trip_and_conversation_delete": _description(
+        "验证研究状态 Checkpoint 可保存恢复，并在删除会话时级联清理消息和检查点。",
+        "Research Plan 状态可恢复，用户删除会话后不会残留相关状态。",
+        "中断研究任务无法恢复，或删除操作留下隐私和状态残留。",
+    ),
+    "tests/test_structured_memory.py::test_invalid_message_role_is_rejected": _description(
+        "验证 MemoryStore 拒绝 user、assistant、system 之外的消息角色。",
+        "非法角色不会进入会话上下文，消息契约保持稳定。",
+        "未知角色可能污染 Prompt 格式或被错误解释成可信系统消息。",
+    ),
+    "tests/test_structured_memory.py::test_legacy_json_is_migrated_once_into_sqlite": _description(
+        "验证已有 data/memory JSON 会话在首次读取时迁移到 SQLite，重复读取不会重复导入。",
+        "用户旧会话仍可使用，迁移后消息数量和内容保持一致。",
+        "切换存储后可能丢失旧会话，或每次读取重复插入历史消息。",
+    ),
+    "tests/test_structured_memory.py::test_service_injects_compressed_context_and_updates_research_memory": _description(
+        "验证服务把结构化研究状态、旧摘要和最近消息注入 AgentState，并在回答后更新研究记忆。",
+        "MemoryStore 已真正接入请求链路，API 元数据能报告被压缩的历史数量。",
+        "存储模块虽能单独运行，但主服务可能仍使用旧上下文或没有保存研究状态。",
+    ),
     "tests/test_answer_reflection.py::test_verifier_accepts_a_grounded_structured_answer": _description(
         "验证确定性 Verifier 能接受结构完整且明确关联论文证据的答案。",
         "合格答案不会触发额外 Reflection LLM 调用。",

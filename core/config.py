@@ -57,6 +57,12 @@ class Settings(BaseSettings):
     # Cache
     CACHE_DIR: str = "data/cache"
 
+    # Structured memory (kept inside the D-drive project by default)
+    MEMORY_DB_PATH: str = "data/memory/paper_agent_memory.db"
+    MEMORY_RECENT_MESSAGES: int = 6
+    MEMORY_SUMMARY_MAX_CHARS: int = 1200
+    MEMORY_CONTEXT_MAX_CHARS: int = 2400
+
     # Logging
     LOG_LEVEL: str = "INFO"
     LOG_FILE: str = "logs/paper_agent.log"

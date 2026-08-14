@@ -187,6 +187,8 @@ D:\miniconda3\envs\paper_agent\python.exe scripts\run_tests_with_report.py
 
 最终答案现在经过确定性 Verifier：检查空答案、完整度、任务结构和论文证据引用信号。只有发现可修复缺陷且已有论文/PDF 证据时，才调用一次 LLM 执行 Answer Reflection；修复后再次验证，无改善则恢复初始答案。`ANSWER_REFLECTION_ENABLED=false` 可以关闭修复调用，但仍保留答案验证。该能力只处理当前任务，不属于跨任务 Reflexion，也不会自动写入长期记忆。
 
+会话记忆已从逐会话 JSON 升级为项目内 SQLite：保存完整消息、用户偏好、活跃研究主题、活跃论文和研究状态 Checkpoint。请求上下文只保留最近消息原文，更早消息进行确定性提取式压缩，并按字符预算组装；旧 `data/memory/*.json` 会在首次读取时兼容迁移。当前摘要不调用 LLM，尚未实现语义摘要或正式 LangGraph SQLite Saver。
+
 后续采用“有特色但能完成”的 Research Agent 执行路线，尚未完成的部分不应描述为已实现功能：
 
 1. 已收口统一 MCP 路由和执行元数据；

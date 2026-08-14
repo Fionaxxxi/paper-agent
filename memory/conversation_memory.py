@@ -1,98 +1,100 @@
+"""兼容旧调用方式的 SQLite 会话记忆入口。"""
+
+from __future__ import annotations
+
 import json
 from pathlib import Path
-from typing import Dict, List, Any
+from typing import Any
+
+from core.config import settings
+from memory.structured_memory import MemoryContext, SQLiteMemoryStore, build_context_text
 
 
-MEMORY_DIR = Path("data/memory")
+LEGACY_MEMORY_DIR = Path("data/memory")
+_default_store: SQLiteMemoryStore | None = None
 
 
-def ensure_memory_dir() -> None:
-    MEMORY_DIR.mkdir(parents=True, exist_ok=True)
+def get_memory_store() -> SQLiteMemoryStore:
+    global _default_store
+    expected_path = Path(settings.MEMORY_DB_PATH)
+    if _default_store is None or _default_store.db_path != expected_path:
+        _default_store = SQLiteMemoryStore(expected_path)
+    return _default_store
 
 
-def get_memory_path(conversation_id: str) -> Path:
+def _legacy_path(conversation_id: str) -> Path:
     safe_id = conversation_id.replace("/", "_").replace("\\", "_")
-    return MEMORY_DIR / f"{safe_id}.json"
+    return LEGACY_MEMORY_DIR / f"{safe_id}.json"
 
 
-def load_history(conversation_id: str, max_messages: int = 6) -> List[Dict[str, Any]]:
-    """
-    读取指定 conversation_id 的历史对话。
-
-    max_messages 控制最多读取最近几条，避免 prompt 过长。
-    """
-    ensure_memory_dir()
-    memory_path = get_memory_path(conversation_id)
-
-    if not memory_path.exists():
-        return []
-
+def _migrate_legacy_if_needed(conversation_id: str, store: SQLiteMemoryStore) -> None:
+    if store.get_messages(conversation_id):
+        return
+    path = _legacy_path(conversation_id)
+    if not path.exists():
+        return
     try:
-        with memory_path.open("r", encoding="utf-8") as f:
-            data = json.load(f)
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        for message in payload.get("messages", []):
+            role = message.get("role")
+            if role in {"user", "assistant", "system"}:
+                store.append_message(conversation_id, role, message.get("content", ""))
+    except (OSError, ValueError, TypeError) as error:
+        print(f"[Memory Migration Error] {type(error).__name__}: {error}")
 
-        messages = data.get("messages", [])
-        return messages[-max_messages:]
 
-    except Exception as e:
-        print(f"[Memory Error] 读取历史失败：{type(e).__name__}: {e}")
-        return []
+def load_memory_context(conversation_id: str) -> MemoryContext:
+    store = get_memory_store()
+    _migrate_legacy_if_needed(conversation_id, store)
+    return store.load_context(
+        conversation_id,
+        recent_limit=settings.MEMORY_RECENT_MESSAGES,
+        summary_max_chars=settings.MEMORY_SUMMARY_MAX_CHARS,
+    )
+
+
+def load_history(conversation_id: str, max_messages: int = 6) -> list[dict[str, Any]]:
+    store = get_memory_store()
+    _migrate_legacy_if_needed(conversation_id, store)
+    return store.get_messages(conversation_id, limit=max_messages)
 
 
 def save_message(conversation_id: str, role: str, content: str) -> None:
-    """
-    保存一条对话消息。
-    role 可以是 user 或 assistant。
-    """
-    ensure_memory_dir()
-    memory_path = get_memory_path(conversation_id)
-
-    data = {
-        "conversation_id": conversation_id,
-        "messages": [],
-    }
-
-    if memory_path.exists():
-        try:
-            with memory_path.open("r", encoding="utf-8") as f:
-                data = json.load(f)
-
-        except Exception as e:
-            print(f"[Memory Error] 读取旧历史失败：{type(e).__name__}: {e}")
-
-    data.setdefault("messages", [])
-
-    data["messages"].append(
-        {
-            "role": role,
-            "content": content,
-        }
-    )
-
-    try:
-        with memory_path.open("w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
-
-    except Exception as e:
-        print(f"[Memory Error] 保存历史失败：{type(e).__name__}: {e}")
+    store = get_memory_store()
+    _migrate_legacy_if_needed(conversation_id, store)
+    store.append_message(conversation_id, role, content)
 
 
-def format_history_text(history: List[Dict[str, Any]]) -> str:
-    """
-    将历史消息格式化成 prompt 可用文本。
-    """
+def format_history_text(history: list[dict[str, Any]]) -> str:
     if not history:
         return "无历史对话。"
-
     lines = []
-
     for message in history:
         role = message.get("role", "")
-        content = message.get("content", "")
-
-        if role == "user":
-            lines.append(f"用户：{content}")
-        elif role == "assistant":
-            lines.append(f"助手：{content}")
-
+        if role in {"user", "assistant"}:
+            lines.append(
+                f"{('用户' if role == 'user' else '助手')}：{message.get('content', '')}"
+            )
     return "\n".join(lines)
+
+
+def format_memory_context(context: MemoryContext) -> str:
+    return build_context_text(context, settings.MEMORY_CONTEXT_MAX_CHARS)
+
+
+def update_research_memory(
+    conversation_id: str,
+    *,
+    query: str,
+    documents: list[dict[str, Any]],
+) -> None:
+    preferences = []
+    if any(marker in query for marker in ("中文", "解释每一步", "详细解释", "简洁")):
+        preferences.append(query[:200])
+    papers = [str(doc.get("title") or "") for doc in documents[:5]]
+    get_memory_store().update_research_context(
+        conversation_id,
+        preferences=preferences,
+        topics=[query[:200]],
+        papers=papers,
+    )

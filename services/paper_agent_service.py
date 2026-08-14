@@ -4,7 +4,12 @@ from typing import Any, Dict, List
 from agent.graph import build_graph
 from core.logger import logger
 from core.trace import generate_trace_id
-from memory.conversation_memory import load_history, save_message, format_history_text
+from memory.conversation_memory import (
+    format_memory_context,
+    load_memory_context,
+    save_message,
+    update_research_memory,
+)
 from document_loader.pdf_loader import load_pdf_text
 from core.config import settings
 
@@ -35,8 +40,9 @@ class PaperAgentService:
         if not conversation_id:
             conversation_id = trace_id
 
-        history = load_history(conversation_id)
-        history_text = format_history_text(history)
+        memory_context = load_memory_context(conversation_id)
+        history = memory_context.recent_messages
+        history_text = format_memory_context(memory_context)
 
         logger.info(
             "trace_id=%s | conversation_id=%s | api received query=%s",
@@ -83,6 +89,10 @@ class PaperAgentService:
             "paper_metadata": {
                 "conversation_id": conversation_id,
                 "history_count": len(history),
+                "memory_total_message_count": memory_context.total_message_count,
+                "memory_compressed_message_count": memory_context.compressed_message_count,
+                "memory_active_topics": memory_context.active_topics,
+                "memory_active_papers": memory_context.active_papers,
                 "pdf_path": pdf_path,
                 "pdf_page_count": pdf_page_count,
                 "pdf_error": pdf_error,
@@ -103,6 +113,11 @@ class PaperAgentService:
 
         save_message(conversation_id, "user", query)
         save_message(conversation_id, "assistant", answer)
+        update_research_memory(
+            conversation_id,
+            query=query,
+            documents=result.get("documents", []),
+        )
 
         logger.info(
             "trace_id=%s | conversation_id=%s | api workflow finished | total_time=%ss",
@@ -121,6 +136,10 @@ class PaperAgentService:
                 **result.get("paper_metadata", {}),
                 "conversation_id": conversation_id,
                 "history_count": len(history),
+                "memory_total_message_count": memory_context.total_message_count,
+                "memory_compressed_message_count": memory_context.compressed_message_count,
+                "memory_active_topics": memory_context.active_topics,
+                "memory_active_papers": memory_context.active_papers,
                 "pdf_path": pdf_path,
                 "pdf_page_count": result.get("pdf_page_count", pdf_page_count),
                 "pdf_error": result.get("pdf_error", pdf_error),

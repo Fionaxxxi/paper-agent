@@ -193,6 +193,10 @@ def metrics_node(state: AgentState) -> AgentState:
         # Memory
         "conversation_id": state.get("conversation_id", ""),
         "history_count": len(state.get("history", [])),
+        "memory_total_message_count": paper_metadata.get("memory_total_message_count", 0),
+        "memory_compressed_message_count": paper_metadata.get("memory_compressed_message_count", 0),
+        "memory_active_topic_count": len(paper_metadata.get("memory_active_topics", [])),
+        "memory_active_paper_count": len(paper_metadata.get("memory_active_papers", [])),
 
         # PDF
         "pdf_path": state.get("pdf_path", ""),
