@@ -6,6 +6,25 @@
 
 > 下方原整体扩展计划继续作为技术储备和设计参考；从本节发布起，只有本节列入“当前交付主线”的能力才默认进入实施。这样做不是削弱 Agent，而是把特色集中在能够完成、演示和解释的闭环上。
 
+### 当前唯一产品主线：证据驱动的轻量 Research Agent
+
+PaperAgent 后续不再以“增加更多论文问答功能”为主目标，而是以完成复杂研究任务为核心差异化：把用户的模糊研究目标转化为结构化 Research Brief 和受限计划，使用在线论文、全文 RAG 与 MCP 收集证据，检查研究问题覆盖和 Claim–Evidence 关系，最终交付带引用的中文研究报告。
+
+```text
+复杂研究意图
+→ 结构化 Research Analysis
+→ Research Brief
+→ 受限 Research Plan
+→ Tool / MCP / RAG 证据收集
+→ Evidence Coverage
+→ Literature Review / Critique
+→ Claim / Citation Verifier
+→ 有限 Reflection
+→ 可追溯中文研究报告
+```
+
+会话记忆、上下文压缩、科研 Skill、外部 MCP 和多模态 PDF 都是这条主线的支撑能力；只有能提升研究计划、证据质量、报告可靠性或演示完整性的功能才进入当前交付。普通论文搜索和问答继续作为 L1/L2 快速路径，不被高成本 Research Graph 替代。
+
 ### 项目保留的核心特色
 
 ```text
@@ -35,6 +54,20 @@ LangGraph Graph Engineering（显式状态、条件路由、恢复边和有限�
 | 6 | 外部 MCP | 先接只读 Zotero，再接只读 GitHub；分别服务个人文献库和论文代码仓库 | 证明 MCP 的跨应用复用价值 |
 | 7 | 单页多模态 PDF | 用户指定代表性页面，渲染后交给视觉模型分析图、表或公式，并保留页码依据 | 以可控成本展示真正的多模态能力 |
 | 8 | 工程化交付 | 完善 Web 轨迹展示、Docker、基础 CI、中文使用说明和一组端到端演示案例 | 让项目可运行、可展示、可复现 |
+
+阶段 3～5 共同组成 Research Agent MVP，不应被理解为三个互不相关的功能阶段：
+
+```text
+阶段 3：提供研究会话连续性、摘要、预算上下文与 Checkpoint
+→ 阶段 4：提供 Literature Review / Critique 的结构化研究产物
+→ 阶段 5：把 Analyzer、Brief、Plan、Evidence、Writer、Verifier 连接成 Research Graph
+```
+
+Research Agent MVP 完成后，项目的首要演示案例固定为：
+
+> 调研近年具有研究价值的 Agent 架构方向，检索代表论文，按照成熟度、创新空间、工程价值、可评测性与未来潜力比较，并输出带证据和引用的中文研究报告。
+
+这个案例必须展示任务分级、研究目标提取、计划、工具调用、证据覆盖、一次定向 Replan、报告验证、停止原因、Token/延迟和最终引用，而不只展示最终文本。
 
 GraphRAG 不作为当前必做主线。只有当固定测试中的“跨论文关系与全局归纳”任务明显暴露 Hybrid RAG 的不足时，才实现一个小型 `GraphRetriever` PoC，并通过相同接口比较；不预先建设 GraphRAG、LightRAG、Dense RAG 的完整研究矩阵。
 
@@ -1539,6 +1572,8 @@ Push / Pull Request
 2026-08-14 路线 V3 将有限 Agent Loop 与 HTC Research Graph 中适合 PaperAgent 的设计合并。保留 L0 Direct、L1 Fast Research QA、L2 Standard Research、L3 Deep Research 四级任务路由；基础工作流只包含最多一次 Retrieval Replan 和最多一次 Answer Reflection。L3 在前述能力成熟后增加 Research Brief、最多 5 个任务的受限计划、并行数 2 的 Executor、Evidence Coverage、Citation/Claim Verifier 和 SQLite Checkpoint，并限制计划修复、证据补充和报告修复各最多一次且共享总预算。第一版不建设通用 Job 平台、任意 DAG、自由 Supervisor 或多角色辩论。Router、Loop 和 Research Graph 必须在模块完成时立即进行固定标注、集成、失败停止、质量和成本测试，不将首次能力验证推迟到最终阶段。
 
 2026-08-14 已完成 Answer Verifier 与有限 Reflection v1。LangGraph 在 Generate 后新增确定性 Answer Verify 节点，检查空答案、最小完整度、比较/总结/推荐任务结构以及论文标题证据信号；已经明确披露检索证据不足的降级答案直接停止。有证据且缺陷可修复时，Answer Reflect 使用证据约束 Prompt 调用 LLM 一次，随后再次验证；分数无改善时恢复初始答案，任何路径最多 Reflection 一次。Metrics 记录验证分数、失败类型、Reflection 状态、原答案恢复与停止原因，支持 `ANSWER_REFLECTION_ENABLED=false` 关闭修复调用。代表性 Verifier、Fake LLM、LangGraph 循环、低质量停止、LLM 用量和检索回归测试全部通过且未调用真实模型。当前是单任务 Reflection，不写长期经验；下一步进入 SQLite 结构化记忆、上下文压缩与 LLM Wiki。
+
+2026-08-14 将“证据驱动的轻量 Research Agent”确立为后续唯一产品主线。结构化记忆、上下文压缩、Checkpoint、LiteratureReviewSkill、PaperCritiqueSkill、Tool/MCP、全文 RAG、Coverage Gate 和 Claim/Citation Verifier 不再作为孤立功能展示，而是共同服务于“复杂研究意图 → Research Analysis → Brief → Plan → Evidence → Report → Verification”的闭环。普通搜索和问答保留 L1/L2 快速路径。Research Agent MVP 的固定首要演示任务为 Agent 架构研究方向调研，必须同时展示规划、证据、恢复、成本、停止和引用轨迹。
 
 2026-08-12 子查询并行已完成 5 次确定性离线重复基准：3 个子查询、2 个 worker 时，中位延迟由 265.4ms 降至 172.3ms，加速 1.54 倍、延迟下降 35.09%，结果与规划顺序一致率 100%，达到阶段门槛并收口。
 

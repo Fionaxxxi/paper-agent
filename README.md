@@ -183,9 +183,11 @@ D:\miniconda3\envs\paper_agent\python.exe scripts\run_tests_with_report.py
 
 当前已经实现 LangGraph 工作流、在线多源工具层、本地 Hybrid RAG、查询规划、一次受控 Replan、Skill 路由、本地会话记忆、质量降级和可观测元数据。
 
+项目后续的核心定位是“证据驱动的轻量 Research Agent”，不是继续堆叠普通论文问答功能。目标是把复杂研究意图转换成 Research Brief 和受限计划，通过 Tool / MCP / RAG 收集可追溯证据，经 Coverage、Claim/Citation Verifier 和有限 Reflection 后输出中文研究报告；简单搜索与问答仍保留快速路径。
+
 最终答案现在经过确定性 Verifier：检查空答案、完整度、任务结构和论文证据引用信号。只有发现可修复缺陷且已有论文/PDF 证据时，才调用一次 LLM 执行 Answer Reflection；修复后再次验证，无改善则恢复初始答案。`ANSWER_REFLECTION_ENABLED=false` 可以关闭修复调用，但仍保留答案验证。该能力只处理当前任务，不属于跨任务 Reflexion，也不会自动写入长期记忆。
 
-后续采用“有特色但能完成”的执行路线，尚未完成的部分不应描述为已实现功能：
+后续采用“有特色但能完成”的 Research Agent 执行路线，尚未完成的部分不应描述为已实现功能：
 
 1. 已收口统一 MCP 路由和执行元数据；
 2. 增加 Verifier 与最多一次的有限 Answer Reflection 修复；
