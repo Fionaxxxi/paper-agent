@@ -6,6 +6,7 @@ from core.logger import logger
 from core.trace import generate_trace_id
 from memory.conversation_memory import (
     format_memory_context,
+    get_memory_store,
     load_memory_context,
     save_message,
     update_research_memory,
@@ -48,6 +49,11 @@ class PaperAgentService:
             conversation_id = trace_id
 
         memory_context = load_memory_context(conversation_id)
+        pending_clarification = (
+            get_memory_store().load_checkpoint(
+                conversation_id, "pending_clarification"
+            ) or {}
+        )
         history = memory_context.recent_messages
         history_text = format_memory_context(memory_context)
 
@@ -121,6 +127,18 @@ class PaperAgentService:
             "research_brief": {},
             "research_plan": {},
             "research_plan_validation": {},
+            "clarification_required": False,
+            "clarification_question": "",
+            "clarification_candidates": [],
+            "pending_clarification": pending_clarification,
+            "original_query": "",
+            "resolved_query": "",
+            "resolved_referent": "",
+            "research_schedule": {},
+            "evidence_store": {},
+            "research_coverage": {},
+            "citation_validation": {},
+            "citation_repair": {},
             "node_timings": {},
             "paper_metadata": {
                 "conversation_id": conversation_id,
@@ -139,6 +157,11 @@ class PaperAgentService:
 
         checkpoint_config = {"configurable": {"thread_id": conversation_id}}
         result = self.graph.invoke(initial_state, config=checkpoint_config)
+        get_memory_store().save_checkpoint(
+            conversation_id,
+            "pending_clarification",
+            result.get("pending_clarification", {}),
+        )
 
         total_time = round(time.perf_counter() - start_time, 2)
 
@@ -152,11 +175,12 @@ class PaperAgentService:
 
         save_message(conversation_id, "user", query)
         save_message(conversation_id, "assistant", answer)
-        update_research_memory(
-            conversation_id,
-            query=query,
-            documents=result.get("documents", []),
-        )
+        if not result.get("clarification_required"):
+            update_research_memory(
+                conversation_id,
+                query=result.get("query", query),
+                documents=result.get("documents", []),
+            )
         wiki_result = publish_agent_result(
             result,
             root=settings.LLM_WIKI_DIR,
@@ -198,6 +222,16 @@ class PaperAgentService:
                 "research_plan_validation": result.get(
                     "research_plan_validation", {}
                 ),
+                "clarification_required": result.get("clarification_required", False),
+                "clarification_question": result.get("clarification_question", ""),
+                "clarification_candidates": result.get("clarification_candidates", []),
+                "resolved_referent": result.get("resolved_referent", ""),
+                "resolved_query": result.get("resolved_query", ""),
+                "research_schedule": result.get("research_schedule", {}),
+                "evidence_store": result.get("evidence_store", {}),
+                "research_coverage": result.get("research_coverage", {}),
+                "citation_validation": result.get("citation_validation", {}),
+                "citation_repair": result.get("citation_repair", {}),
                 "pdf_path": pdf_path,
                 "pdf_page_count": result.get("pdf_page_count", pdf_page_count),
                 "pdf_error": result.get("pdf_error", pdf_error),

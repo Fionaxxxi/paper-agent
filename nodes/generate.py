@@ -9,6 +9,7 @@ from core.llm_usage import (
 )
 from skills.router import get_skill
 from context.context_builder import attach_skill_context
+from research.writer import build_coverage_blocked_answer, build_writer_prompt
 
 
 def get_llm():
@@ -115,6 +116,21 @@ def generate_node(state: AgentState) -> AgentState:
             },
         }
 
+    if (
+        state.get("task_level") == "L3"
+        and state.get("research_coverage", {}).get("enabled")
+        and not state.get("research_coverage", {}).get("writer_allowed", False)
+    ):
+        return {
+            "answer": build_coverage_blocked_answer(state),
+            "paper_metadata": {
+                **state.get("paper_metadata", {}),
+                "answer_mode": "research_coverage_blocked",
+                "generation_skipped": True,
+                "skill_used": state.get("research_analysis", {}).get("primary_skill", "qa"),
+            },
+        }
+
     if task_type != "pdf_reading" and not state.get("documents"):
         return {
             "answer": "没有检索到相关论文内容，请尝试换一个更具体的问题。"
@@ -138,6 +154,8 @@ def generate_node(state: AgentState) -> AgentState:
         return skill.run(skill_state)
 
     prompt = skill.build_prompt(skill_state)
+    if state.get("task_level") == "L3" and state.get("research_coverage", {}).get("enabled"):
+        prompt = build_writer_prompt(prompt, state)
 
     try:
         llm = get_llm()

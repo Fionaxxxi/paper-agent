@@ -41,6 +41,11 @@ def metrics_node(state: AgentState) -> AgentState:
     task_type = state.get("task_type", "unknown")
     llm_usage = state.get("llm_usage", [])
     tool_executions = paper_metadata.get("tool_executions", [])
+    research_schedule = state.get("research_schedule", {})
+    evidence_store = state.get("evidence_store", {})
+    research_coverage = state.get("research_coverage", {})
+    citation_validation = state.get("citation_validation", {})
+    citation_repair = state.get("citation_repair", {})
 
     total_time = round(sum(node_timings.values()), 2)
     input_token_usage = state.get("input_token_usage", 0)
@@ -101,6 +106,27 @@ def metrics_node(state: AgentState) -> AgentState:
         "research_analysis_source": state.get("research_analysis", {}).get("analysis_source", ""),
         "research_plan_task_count": len(state.get("research_plan", {}).get("tasks", [])),
         "research_plan_valid": state.get("research_plan_validation", {}).get("valid", False),
+        "research_schedule_enabled": research_schedule.get("enabled", False),
+        "research_schedule_status": research_schedule.get("status", "not_applicable"),
+        "research_schedule_wave_count": len(research_schedule.get("waves", [])),
+        "research_schedule_max_parallel": research_schedule.get("max_parallel_tasks", 0),
+        "evidence_store_enabled": evidence_store.get("enabled", False),
+        "evidence_count": evidence_store.get("evidence_count", 0),
+        "claim_evidence_input_count": len(evidence_store.get("claim_evidence_inputs", [])),
+        "claim_evidence_ready_count": sum(
+            item.get("coverage_ready", False)
+            for item in evidence_store.get("claim_evidence_inputs", [])
+        ),
+        "research_coverage_status": research_coverage.get("status", "not_applicable"),
+        "research_coverage_pct": research_coverage.get("coverage_pct", 0.0),
+        "research_writer_allowed": research_coverage.get("writer_allowed", True),
+        "citation_validation_status": citation_validation.get("status", "not_applicable"),
+        "citation_validation_passed": citation_validation.get("passed", True),
+        "invalid_evidence_id_count": len(citation_validation.get("invalid_evidence_ids", [])),
+        "uncited_synthesis_count": len(citation_validation.get("uncited_synthesis_lines", [])),
+        "critique_overreach_count": len(citation_validation.get("critique_overreach_lines", [])),
+        "citation_repair_status": citation_repair.get("status", "not_triggered"),
+        "citation_repaired_line_count": citation_repair.get("repaired_line_count", 0),
         "complexity_reason": paper_metadata.get(
             "complexity_reason",
             state.get("complexity_reason", ""),

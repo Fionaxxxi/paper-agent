@@ -77,8 +77,19 @@ def verify_answer(state: dict[str, Any]) -> AnswerVerification:
     score = round(sum(weight for passed, weight, _, _ in checks if passed), 2)
     failures = [failure for passed, _, failure, _ in checks if not passed]
     issues = [issue for passed, _, _, issue in checks if not passed]
+    citation_validation = state.get("citation_validation", {})
+    if citation_validation.get("enabled") and not citation_validation.get("passed", False):
+        citation_failures = citation_validation.get("failure_types", [])
+        failures.extend(failure for failure in citation_failures if failure not in failures)
+        issues.extend(citation_validation.get("issues", []))
+        score = min(score, 0.7)
     has_repair_context = bool(state.get("documents") or state.get("pdf_text"))
-    should_reflect = bool(failures and has_repair_context and not state.get("error_message"))
+    # Research citation failures先进入可观测基线；在独立验证前不自动增加
+    # Writer Reflection调用。普通答案仍沿用现有一次Reflection策略。
+    citation_failed = bool(citation_validation.get("enabled") and not citation_validation.get("passed", False))
+    should_reflect = bool(
+        failures and has_repair_context and not state.get("error_message") and not citation_failed
+    )
 
     return AnswerVerification(
         passed=not failures,

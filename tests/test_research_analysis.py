@@ -1,4 +1,4 @@
-from research.analyzer import enforce_analysis_policy, rule_analyze
+from research.analyzer import analyze_with_llm, enforce_analysis_policy, rule_analyze
 from research.contracts import ResearchAnalysis
 from research.contracts import ResearchPlan, ResearchTask
 from research.planning import build_research_brief, build_research_plan, validate_research_plan
@@ -30,6 +30,51 @@ def test_rule_analyzer_separates_simple_comparison_and_deep_research():
         if level == "L1"
     )
     assert simple_false_l3 == 0
+
+
+def test_representative_papers_alone_remains_a_simple_search():
+    """“代表论文”是证据要求，不应单独把一次检索升级为方向研究。"""
+    result = rule_analyze("检索有关 RAG 的代表论文")
+    assert result.task_level == "L1"
+    assert result.primary_skill == "qa"
+
+
+def test_l3_rule_fallback_preserves_time_trend_and_gap_constraints():
+    """结构化模型不可用时，时间范围、趋势和研究空白仍进入目标。"""
+    result = rule_analyze("调研2023年以来Agent反思机制的趋势、代表论文和研究空白")
+    objective_text = " ".join(result.objectives)
+    assert result.task_level == "L3"
+    assert "2023年以来" in objective_text
+    assert "趋势" in objective_text
+    assert "代表论文" in objective_text
+    assert "研究空白" in objective_text
+
+
+def test_llm_analysis_accepts_thinking_text_and_fenced_json(monkeypatch):
+    """兼容模型在严格 JSON 外附带 thinking 标签和 Markdown 代码块。"""
+    payload = {
+        "intent": "deep_research", "task_level": "L3", "topic": "Agent",
+        "objectives": ["梳理方向"], "evaluation_dimensions": ["价值"],
+        "source_requirements": ["academic_papers"],
+        "primary_skill": "literature_review", "secondary_skills": [],
+        "requires_retrieval": True, "requires_multiple_sources": True,
+        "requires_report": True, "confidence": 0.9, "reason": "复杂任务",
+    }
+
+    class FakeResponse:
+        content = "<think>internal</think>说明文字\n```json\n" + __import__("json").dumps(payload) + "\n```"
+        usage_metadata = {"input_tokens": 10, "output_tokens": 20, "total_tokens": 30}
+        response_metadata = {}
+
+    class FakeLLM:
+        def invoke(self, prompt):
+            return FakeResponse()
+
+    monkeypatch.setattr("research.analyzer.ChatOpenAI", lambda **kwargs: FakeLLM())
+    analysis, usage = analyze_with_llm("复杂研究任务")
+    assert analysis.task_level == "L3"
+    assert analysis.primary_skill == "literature_review"
+    assert usage["total_tokens"] == 30
 
     deep = rule_analyze("调研有价值和前景的 Agent 架构方向、代表论文与研究空白")
     assert deep.task_level == "L3"

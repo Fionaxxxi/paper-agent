@@ -1,0 +1,51 @@
+{
+  "dataset_name": "PaperAgent 研究报告端到端评测集",
+  "dataset_version": "1.0.0",
+  "frozen": true,
+  "evaluation_role": "small_representative_resume_project_eval",
+  "cases": [
+    {
+      "id": "review_agent_loop", "skill": "literature_review",
+      "query": "比较ReAct与Reflexion的Agent Loop，并指出研究空白",
+      "required_sections": ["研究范围", "方法比较", "研究空白", "证据索引"],
+      "evidence": [
+        {"evidence_id":"E-react0000001","title":"ReAct","source":"arxiv","locator":"https://arxiv.org/abs/2210.03629","snippet":"ReAct interleaves reasoning traces and actions.","task_ids":["T1"]},
+        {"evidence_id":"E-reflexion001","title":"Reflexion","source":"arxiv","locator":"https://arxiv.org/abs/2303.11366","snippet":"Reflexion uses linguistic feedback and episodic memory.","task_ids":["T2"]}
+      ],
+      "claims": [
+        {"label":"ReAct机制","keywords":["推理","行动"],"allowed_evidence_ids":["E-react0000001"]},
+        {"label":"Reflexion机制","keywords":["反馈","记忆"],"allowed_evidence_ids":["E-reflexion001"]},
+        {"label":"方法比较","keywords":["比较","差异"],"allowed_evidence_ids":["E-react0000001","E-reflexion001"]}
+      ],
+      "reference_report":"## 研究范围\n比较两种Agent Loop。\n\n## 方法比较\nReAct交替执行推理与行动 [E-react0000001]。Reflexion利用语言反馈和情景记忆 [E-reflexion001]。综合判断：二者差异在于在线行动轨迹与跨轮反思记忆 [E-react0000001] [E-reflexion001]。\n\n## 研究空白\n长期任务中的稳定反馈仍需进一步证据。\n\n## 证据索引\n- [E-react0000001] ReAct — https://arxiv.org/abs/2210.03629\n- [E-reflexion001] Reflexion — https://arxiv.org/abs/2303.11366"
+    },
+    {
+      "id":"review_rag_graph","skill":"literature_review","query":"比较RAG与GraphRAG的知识组织和适用边界",
+      "required_sections":["研究范围","方法比较","研究空白","证据索引"],
+      "evidence":[
+        {"evidence_id":"E-rag000000001","title":"Retrieval-Augmented Generation","source":"arxiv","locator":"https://arxiv.org/abs/2005.11401","snippet":"RAG combines parametric and non-parametric memory.","task_ids":["T1"]},
+        {"evidence_id":"E-graphrag0001","title":"From Local to Global: A Graph RAG Approach","source":"arxiv","locator":"https://arxiv.org/abs/2404.16130","snippet":"GraphRAG builds entity graphs and community summaries for global questions.","task_ids":["T2"]}
+      ],
+      "claims":[
+        {"label":"RAG机制","keywords":["非参数","检索"],"allowed_evidence_ids":["E-rag000000001"]},
+        {"label":"GraphRAG机制","keywords":["图","社区摘要"],"allowed_evidence_ids":["E-graphrag0001"]},
+        {"label":"适用边界","keywords":["全局","局部"],"allowed_evidence_ids":["E-rag000000001","E-graphrag0001"]}
+      ],
+      "reference_report":"## 研究范围\n比较两类检索增强方法。\n\n## 方法比较\nRAG结合参数记忆与检索得到的非参数记忆 [E-rag000000001]。GraphRAG使用实体图与社区摘要回答全局问题 [E-graphrag0001]。综合判断：局部证据检索和全局语料理解具有不同适用边界 [E-rag000000001] [E-graphrag0001]。\n\n## 研究空白\n需要继续比较质量与构建成本。\n\n## 证据索引\n- [E-rag000000001] Retrieval-Augmented Generation — https://arxiv.org/abs/2005.11401\n- [E-graphrag0001] GraphRAG — https://arxiv.org/abs/2404.16130"
+    },
+    {
+      "id":"critique_react","skill":"paper_critique","query":"批判分析ReAct的贡献和局限",
+      "required_sections":["贡献","优势","局限","证据索引"],
+      "evidence":[{"evidence_id":"E-react0000001","title":"ReAct","source":"arxiv","locator":"https://arxiv.org/abs/2210.03629","snippet":"ReAct interleaves reasoning traces and actions.","task_ids":["T1"]}],
+      "claims":[{"label":"核心贡献","keywords":["推理","行动"],"allowed_evidence_ids":["E-react0000001"]}],
+      "reference_report":"## 贡献\nReAct把推理轨迹和行动交替结合 [E-react0000001]。\n\n## 优势\n行动可以获得外部信息 [E-react0000001]。\n\n## 局限\n仅凭当前证据不足以量化所有局限。\n\n## 证据索引\n- [E-react0000001] ReAct — https://arxiv.org/abs/2210.03629"
+    },
+    {
+      "id":"review_reflection_memory","skill":"literature_review","query":"分析反思型Agent中的反馈与记忆关系",
+      "required_sections":["研究范围","方法比较","研究空白","证据索引"],
+      "evidence":[{"evidence_id":"E-reflexion001","title":"Reflexion","source":"arxiv","locator":"https://arxiv.org/abs/2303.11366","snippet":"Reflexion stores linguistic feedback in episodic memory for later trials.","task_ids":["T1"]}],
+      "claims":[{"label":"反馈记忆关系","keywords":["反馈","情景记忆"],"allowed_evidence_ids":["E-reflexion001"]}],
+      "reference_report":"## 研究范围\n分析反馈与记忆。\n\n## 方法比较\nReflexion将语言反馈写入情景记忆并用于后续尝试 [E-reflexion001]。\n\n## 研究空白\n长期记忆稳定性在当前证据中不足。\n\n## 证据索引\n- [E-reflexion001] Reflexion — https://arxiv.org/abs/2303.11366"
+    }
+  ]
+}

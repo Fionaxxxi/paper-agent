@@ -113,3 +113,18 @@ def test_smalltalk_ends_before_all_rag_and_llm_nodes(instrumented_graph):
     assert result["tools_used"] == []
     assert result["token_usage"] == 0
     assert result["paper_metadata"]["short_circuited"] is True
+
+
+def test_ambiguous_reference_ends_before_research_and_retrieval(instrumented_graph):
+    """多个上下文候选时主图返回澄清问题，不进入后续研究节点。"""
+    graph, calls = instrumented_graph
+    result = graph.invoke({
+        "query": "它有什么局限？",
+        "paper_metadata": {
+            "memory_active_papers": ["ReAct", "Reflexion"],
+        },
+    })
+    assert calls == []
+    assert result["clarification_required"] is True
+    assert result["task_type"] == "clarification"
+    assert result["llm_call_count"] == 0

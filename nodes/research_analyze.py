@@ -2,6 +2,7 @@ from agent.state import AgentState
 from core.config import settings
 from core.llm_usage import TrackedLLMError, build_llm_usage_update
 from research.analyzer import (
+    ResearchAnalysisParseError,
     analyze_with_llm,
     enforce_analysis_policy,
     rule_analyze,
@@ -22,6 +23,14 @@ def research_analyze_node(state: AgentState) -> AgentState:
         except TrackedLLMError as error:
             usage_update = build_llm_usage_update(state, error.usage_record)
             analysis = analysis.model_copy(update={"analysis_source": "rule_fallback"})
+        except ResearchAnalysisParseError as error:
+            usage_update = build_llm_usage_update(state, error.usage)
+            analysis = analysis.model_copy(update={"analysis_source": "rule_fallback"})
+            usage_update["paper_metadata"] = {
+                **state.get("paper_metadata", {}),
+                "research_analysis_parse_error": str(error),
+                "research_analysis_raw_response": error.raw_response,
+            }
         except Exception:
             analysis = analysis.model_copy(update={"analysis_source": "rule_fallback"})
     brief = build_research_brief(analysis)
@@ -38,7 +47,9 @@ def research_analyze_node(state: AgentState) -> AgentState:
         "research_plan_validation": validation.model_dump(mode="python"),
         "task_level": analysis.task_level,
         "paper_metadata": {
-            **state.get("paper_metadata", {}), "task_level": analysis.task_level,
+            **state.get("paper_metadata", {}),
+            **usage_update.get("paper_metadata", {}),
+            "task_level": analysis.task_level,
             "research_intent": analysis.intent,
             "research_analysis_source": analysis.analysis_source,
             "research_plan_valid": validation.valid,

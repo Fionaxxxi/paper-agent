@@ -52,3 +52,37 @@ class ResearchPlan(BaseModel):
 class PlanValidation(BaseModel):
     valid: bool
     errors: list[str] = Field(default_factory=list)
+
+
+class EvidenceReference(BaseModel):
+    """研究结论引用的最小可追溯证据。"""
+
+    title: str = Field(min_length=1)
+    source: str = Field(min_length=1)
+    locator: str = Field(min_length=1, description="URL、DOI、页码或 Chunk ID")
+
+
+class LiteratureReviewOutput(BaseModel):
+    """LiteratureReviewSkill 的目标输出契约。"""
+
+    topic: str = Field(min_length=1)
+    scope: str = Field(min_length=1)
+    research_landscape: list[str] = Field(min_length=1, max_length=8)
+    method_comparison: list[str] = Field(default_factory=list, max_length=8)
+    research_gaps: list[str] = Field(default_factory=list, max_length=6)
+    future_directions: list[str] = Field(default_factory=list, max_length=6)
+    evidence: list[EvidenceReference] = Field(default_factory=list, max_length=20)
+    limitations: list[str] = Field(default_factory=list, max_length=6)
+
+
+class PaperCritiqueOutput(BaseModel):
+    """PaperCritiqueSkill 的目标输出契约。"""
+
+    paper_title: str = Field(min_length=1)
+    claimed_contributions: list[str] = Field(min_length=1, max_length=8)
+    strengths: list[str] = Field(default_factory=list, max_length=8)
+    weaknesses: list[str] = Field(default_factory=list, max_length=8)
+    evidence_quality: list[str] = Field(default_factory=list, max_length=6)
+    reproducibility_risks: list[str] = Field(default_factory=list, max_length=6)
+    follow_up_questions: list[str] = Field(default_factory=list, max_length=6)
+    evidence: list[EvidenceReference] = Field(default_factory=list, max_length=12)

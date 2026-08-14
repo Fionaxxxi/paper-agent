@@ -1289,6 +1289,251 @@ TEST_CASE_CATALOG: dict[str, CaseDescription] = {
         "主工作流可发现该工具，同时 Tool Policy 仍能按只读权限管理。",
         "若失败，MCP Server 虽能单独运行但尚未接入项目统一工具运行时。",
     ),
+    "tests/test_research_skills.py::test_structured_outputs_reject_missing_required_research_content": _description(
+        "验证文献综述和论文批判 Pydantic 契约拒绝空范围、空研究版图或空贡献。",
+        "无实质内容的科研结构化结果无法进入后续 Scheduler、Evidence Store 或报告节点。",
+        "若失败，格式合法但内容为空的结果可能被误当成科研能力成功。",
+    ),
+    "tests/test_research_skills.py::test_l3_primary_skill_routes_to_literature_review": _description(
+        "验证 L3 Research Analysis 中经过白名单校验的 primary_skill 能实际选择 Literature Review Skill。",
+        "复杂研究任务从规划层进入专门综述生成路径。",
+        "若失败，Research Analyzer 虽生成 Skill 建议，但执行层仍只会运行普通回答 Skill。",
+    ),
+    "tests/test_research_skills.py::test_unknown_or_non_l3_research_skill_cannot_override_fast_path": _description(
+        "验证未知 Skill 和 L1 普通问题不能覆盖确定性的快速路由。",
+        "只有白名单内的 L3 科研 Skill 可以升级执行模式。",
+        "若失败，模型字段可能触发不存在或不必要的高成本能力。",
+    ),
+    "tests/test_research_skills.py::test_research_prompts_expose_contract_and_evidence_guardrails": _description(
+        "验证综述与批判 Prompt 同时暴露目标 Schema、证据定位要求和禁止猜测约束。",
+        "模型生成前能够看到明确的科研结构与证据边界。",
+        "若失败，模型容易输出不可审计的自由文本或无依据批评。",
+    ),
+    "tests/test_llm_online_eval.py::test_online_dataset_is_frozen_unique_and_covers_three_levels": _description(
+        "验证正式在线 LLM 数据集被冻结、编号唯一并同时覆盖 L1、L2、L3。",
+        "在线能力报告基于稳定且有层次覆盖的七个代表案例。",
+        "若失败，数据集可能被意外清空、重复计数或只展示复杂任务。",
+    ),
+    "tests/test_llm_online_eval.py::test_core_online_dataset_has_30_stratified_cases_and_valid_fixtures": _description(
+        "验证正式核心在线集恰好包含30题，覆盖任务分析、查询规划和八个科研生成案例。",
+        "所有生成案例都能从冻结 fixture 展开出可追溯论文证据。",
+        "若失败，正式集可能数量虚标、模块覆盖失衡或引用不存在的证据。",
+    ),
+    "tests/test_llm_online_eval.py::test_analysis_evaluator_reports_each_failed_check": _description(
+        "验证在线分析判分器分别检查等级、Skill、计划有效性、调用预算和调用失败。",
+        "任何关键约束失败都会在报告中明确显示，不能被总体文本掩盖。",
+        "若失败，错误的研究规划可能仍被汇总为测试通过。",
+    ),
+    "tests/test_llm_online_eval.py::test_generation_evaluator_checks_route_structure_evidence_and_cost": _description(
+        "验证在线生成判分器同时检查 Skill 路由、内容结构、论文身份和 LLM 调用成本。",
+        "只有结构完整、证据可辨认且调用次数合规的真实模型回答才能通过。",
+        "若失败，冗长但偏题、无证据或成本异常的回答可能被误判为成功。",
+    ),
+    "tests/test_research_analysis.py::test_representative_papers_alone_remains_a_simple_search": _description(
+        "验证“代表论文”单独出现时只是证据要求，不会把一次检索误升级为方向研究。",
+        "简单论文检索保持 L1、QA Skill 和零研究分析 LLM 调用。",
+        "若失败，常见检索请求会增加不必要的规划、Token 和延迟。",
+    ),
+    "tests/test_research_analysis.py::test_l3_rule_fallback_preserves_time_trend_and_gap_constraints": _description(
+        "验证L3结构化分析回退时从原问题保留时间范围、趋势、代表论文和研究空白。",
+        "即使模型输出解析失败，Research Brief与Plan仍包含用户的关键研究约束。",
+        "若失败，恢复路径虽然可运行，但会悄悄改变用户研究目标。",
+    ),
+    "tests/test_research_analysis.py::test_llm_analysis_accepts_thinking_text_and_fenced_json": _description(
+        "验证Research Analyzer能够解析模型返回的thinking标签、解释文字和Markdown fenced JSON。",
+        "结构化分析仍通过Pydantic校验并保留真实Token记录。",
+        "若失败，兼容模型的合法包装格式会触发不必要的规则回退。",
+    ),
+    "tests/test_llm_online_eval.py::test_report_only_regrades_existing_generation_without_calling_llm": _description(
+        "验证判分规则修正后能够复用已付费的模型原始输出重新判分。",
+        "报告门槛变更不会强迫用户重复调用模型。",
+        "若失败，测试框架自身的小修改会造成不必要的 API 成本。",
+    ),
+    "tests/test_llm_online_eval.py::test_provider_failure_is_not_reported_as_capability_failure": _description(
+        "验证限流、连接等模型服务失败与 Agent 输出质量失败分开记录。",
+        "报告保留 Provider 错误类型，不把基础设施波动误判为能力退化。",
+        "若失败，项目无法判断应修代码、改 Prompt 还是等待外部服务恢复。",
+    ),
+    "tests/test_llm_online_eval.py::test_provider_retry_does_not_overwrite_existing_capability_result": _description(
+        "验证定向重跑遇到Provider失败时只追加尝试历史，不覆盖已有正式能力结论。",
+        "基线结果、Token口径和失败归因保持稳定。",
+        "若失败，外部服务波动会篡改历史评测结论并造成指标不可比较。",
+    ),
+    "tests/test_clarification.py::test_unique_memory_candidate_resolves_reference_without_llm": _description(
+        "验证只有一个活跃论文候选时，Clarification Gate零LLM自动替换指代。",
+        "补全后的问题继续正常研究流程，并记录解析对象与完整查询。",
+        "若失败，明确上下文仍会造成不必要的询问或错误检索。",
+    ),
+    "tests/test_clarification.py::test_multiple_candidates_request_clarification_and_short_circuit": _description(
+        "验证存在多个可能对象时主动列出候选并短路后续执行。",
+        "系统不调用LLM、不检索，也不擅自猜测其中一个对象。",
+        "若失败，错误指代会扩散到规划、工具调用和最终报告。",
+    ),
+    "tests/test_clarification.py::test_missing_candidate_requests_explicit_object_name": _description(
+        "验证指代存在但记忆中没有候选时要求用户补充论文、方法或模型名称。",
+        "无法消解的问题不会作为检索关键词继续执行。",
+        "若失败，系统可能搜索“这个方法”等无意义文本。",
+    ),
+    "tests/test_clarification.py::test_followup_candidate_restores_pending_query": _description(
+        "验证用户回复候选名称后恢复原pending query、替换指代并清除等待状态。",
+        "澄清对话能够跨轮继续原研究任务。",
+        "若失败，主动询问会成为无法恢复的流程终点。",
+    ),
+    "tests/test_graph_integration.py::test_ambiguous_reference_ends_before_research_and_retrieval": _description(
+        "验证Clarification Gate在LangGraph主图中位于Research Analyzer和检索之前。",
+        "歧义请求以零LLM、零检索返回澄清答案。",
+        "若失败，节点单测虽通过，但主工作流仍可能绕过澄清门控。",
+    ),
+    "tests/test_research_scheduler.py::test_scheduler_builds_bounded_dependency_waves": _description(
+        "验证Research Plan按依赖编译为有界执行波次，每个波次最多包含两个任务。",
+        "独立检索可受控并行，综合任务只能排在依赖检索之后。",
+        "若失败，研究任务可能无界并发，或在证据尚未收集时提前综合。",
+    ),
+    "tests/test_research_scheduler.py::test_scheduler_reports_blocked_dependencies_instead_of_looping": _description(
+        "验证未知依赖或循环依赖会返回blocked_dependencies，而不是持续调度。",
+        "错误计划能够确定性停止并保留可诊断状态。",
+        "若失败，无效计划可能形成无法终止的Agent Loop。",
+    ),
+    "tests/test_research_scheduler.py::test_evidence_store_deduplicates_and_preserves_provenance": _description(
+        "验证Evidence Store按论文身份去重，并保留来源、定位符和关联研究任务。",
+        "相同证据只计一次，后续回答仍可追溯到原始论文。",
+        "若失败，重复论文会虚增证据量，或结论无法定位来源。",
+    ),
+    "tests/test_research_scheduler.py::test_synthesis_task_receives_claim_evidence_inputs": _description(
+        "验证综合任务从依赖任务接收证据ID集合，而不是脱离证据直接生成结论。",
+        "后续Writer和Coverage Gate可按声明检查证据覆盖。",
+        "若失败，研究报告可能出现没有论文支撑的综合判断。",
+    ),
+    "tests/test_research_scheduler.py::test_non_l3_nodes_leave_fast_path_unchanged": _description(
+        "验证L1/L2请求不会启用Research Scheduler和Evidence Store。",
+        "普通问答继续使用低延迟、低Token的快速路径。",
+        "若失败，简单输入也会承担研究型工作流的额外成本。",
+    ),
+    "tests/test_research_coverage_writer.py::test_coverage_gate_passes_only_fully_supported_claims": _description(
+        "验证所有综合声明的依赖任务都有证据时Coverage Gate判定通过。",
+        "Research Writer只在核心结论具备完整证据输入时正常生成。",
+        "若失败，完整证据可能被误阻断，或缺失证据被错误放行。",
+    ),
+    "tests/test_research_coverage_writer.py::test_coverage_gate_reports_partial_missing_dependencies": _description(
+        "验证部分声明缺证据时记录覆盖率、未覆盖声明和缺失任务。",
+        "Writer可以保留有证据内容，并对缺失部分明确降级。",
+        "若失败，部分覆盖会被粗暴视为全通过或全失败。",
+    ),
+    "tests/test_research_coverage_writer.py::test_coverage_gate_blocks_when_no_claim_has_evidence": _description(
+        "验证没有任何综合声明获得证据时禁止Research Writer运行。",
+        "零覆盖研究任务不会消耗模型Token生成无依据报告。",
+        "若失败，模型可能在没有证据时补写研究结论。",
+    ),
+    "tests/test_research_coverage_writer.py::test_non_research_coverage_keeps_fast_path_available": _description(
+        "验证普通任务未启用Evidence Store时Coverage Gate标记为不适用。",
+        "L1/L2快速路径不会被研究报告证据门控阻断。",
+        "若失败，普通论文问答可能无法进入原有生成流程。",
+    ),
+    "tests/test_research_coverage_writer.py::test_writer_prompt_contains_only_stable_evidence_contract": _description(
+        "验证Research Writer Prompt包含稳定证据ID、定位符和未覆盖声明。",
+        "模型被要求只使用真实证据ID，并生成可追溯证据索引。",
+        "若失败，报告引用可能无法追踪或出现虚构证据编号。",
+    ),
+    "tests/test_research_coverage_writer.py::test_blocked_writer_skips_llm_and_returns_safe_answer": _description(
+        "验证证据覆盖率为零时跳过LLM并返回中文安全降级报告。",
+        "系统记录generation_skipped和research_coverage_blocked，节省Token。",
+        "若失败，阻断状态仍可能触发付费模型调用。",
+    ),
+    "tests/test_research_report_eval.py::test_report_dataset_is_frozen_small_and_manually_grounded": _description(
+        "验证研究报告集固定为4个代表案例，且每项声明都有人工允许证据集合。",
+        "评测规模适合简历项目，同时保留明确的人工证据金标准。",
+        "若失败，数据可能被随意扩改或声明缺少可核验依据。",
+    ),
+    "tests/test_research_report_eval.py::test_grader_detects_hallucinated_citation_and_uncovered_claim": _description(
+        "验证评测器能够发现不存在的Evidence ID和缺少正确邻近引用的声明。",
+        "虚构引用和无证据结论都会使报告不通过。",
+        "若失败，引用格式正确但内容无依据的报告可能被误判为成功。",
+    ),
+    "tests/test_research_report_eval.py::test_reference_reports_validate_harness_without_llm": _description(
+        "验证人工参考报告只用于离线校验Harness，并明确记录零LLM调用。",
+        "参考答案100%不得被误报为真实模型能力成绩。",
+        "若失败，项目评测报告会混淆工具正确性与Agent实际表现。",
+    ),
+    "tests/test_research_report_eval.py::test_report_writer_outputs_json_and_flat_csv": _description(
+        "验证一键评测同时生成完整JSON和可由Excel直接查看的CSV明细表。",
+        "每个案例的引用、声明、结构和成本指标都可持续记录。",
+        "若失败，评测结果无法稳定保存或进行后续版本比较。",
+    ),
+    "tests/test_research_report_eval.py::test_section_aliases_are_accepted_but_citations_must_be_sentence_local": _description(
+        "验证合法中英文章节别名可以通过，同时引用不能跨句或跨bullet借用。",
+        "结构判分避免误杀，声明覆盖判分保持严格的局部证据约束。",
+        "若失败，合法报告会被误判，或无引用综合判断会借用附近引用通过。",
+    ),
+    "tests/test_research_report_eval.py::test_existing_paid_answers_can_be_regraded_without_llm": _description(
+        "验证判分规则修复后可以复用已付费的研究报告原文重新计算指标。",
+        "评测器升级不会强迫用户重复调用模型和消耗Token。",
+        "若失败，任何判分修正都会增加不必要的API费用。",
+    ),
+    "tests/test_research_report_eval.py::test_targeted_rerun_merges_without_replacing_untouched_cases": _description(
+        "验证Provider失败后可以只重跑指定案例并合并到已有完整报告。",
+        "未重跑案例的模型原文、指标和Token记录保持不变。",
+        "若失败，少量外部服务波动会迫使全部案例重复付费运行。",
+    ),
+    "tests/test_research_citation_validator.py::test_valid_grounded_report_passes_citation_validator": _description(
+        "验证Evidence ID真实、综合判断同句引用且证据索引完整的研究报告通过。",
+        "合规Writer输出不会被Citation Validator误阻断。",
+        "若失败，正确的研究报告无法进入最终答案验证。",
+    ),
+    "tests/test_research_citation_validator.py::test_unknown_evidence_id_is_rejected": _description(
+        "验证报告引用Evidence Store不存在的ID时记录invalid_evidence_id。",
+        "虚构引用不能仅凭格式正确通过验证。",
+        "若失败，读者可能收到无法定位的伪造证据编号。",
+    ),
+    "tests/test_research_citation_validator.py::test_uncited_synthesis_is_not_allowed_to_borrow_other_line_citation": _description(
+        "验证综合判断必须在同一行引用证据，不能借用其他bullet的引用。",
+        "声明级引用覆盖比章节级关键词检查更严格。",
+        "若失败，无依据综合结论会被附近论文事实掩盖。",
+    ),
+    "tests/test_research_citation_validator.py::test_paper_critique_material_gap_is_not_paper_defect": _description(
+        "验证批判报告不能把输入材料缺失写成论文贡献或实验本身的缺陷。",
+        "过度审稿判断会进入critique_evidence_overreach失败类型。",
+        "若失败，短摘要可能被错误用于否定完整论文质量。",
+    ),
+    "tests/test_research_citation_validator.py::test_non_l3_answer_keeps_validator_not_applicable": _description(
+        "验证L1/L2普通回答不启用研究引用验证器。",
+        "快速路径不增加新的处理成本或研究报告约束。",
+        "若失败，普通问答可能因没有Evidence ID而被错误阻断。",
+    ),
+    "tests/test_research_citation_validator.py::test_citation_failure_enters_answer_verification_without_reflection": _description(
+        "验证引用失败合并到最终答案验证，但当前阶段不会自动触发额外Reflection。",
+        "失败可观测且不增加未经评测的模型调用。",
+        "若失败，引用错误可能被最终Verifier忽略或造成额外Token。",
+    ),
+    "tests/test_research_citation_validator.py::test_paper_critique_prompt_distinguishes_material_from_paper_limitations": _description(
+        "验证Paper Critique Prompt明确区分材料局限与论文真实缺陷。",
+        "模型在生成前被禁止用片段缺失推断论文未做实验或无法通过审查。",
+        "若失败，首轮真实基线暴露的过度批判问题可能持续出现。",
+    ),
+    "tests/test_citation_repair.py::test_unique_title_matches_repair_uncited_synthesis_without_llm": _description(
+        "验证漏引综合判断明确出现论文标题时补全唯一对应的Evidence ID集合。",
+        "可确定修复不调用LLM，并在修复后重新通过Citation Validator。",
+        "若失败，简单漏引仍需重新生成整篇报告并消耗Token。",
+    ),
+    "tests/test_citation_repair.py::test_no_title_match_is_left_for_bounded_reflection": _description(
+        "验证综合判断没有明确论文标题时保持原文，不猜测证据归属。",
+        "无法唯一修复的案例留给后续受限Reflection或人工确认。",
+        "若失败，系统可能自动附加不支持声明的错误引用。",
+    ),
+    "tests/test_citation_repair.py::test_other_citation_failures_disable_deterministic_repair": _description(
+        "验证同时存在虚构Evidence ID等其他失败时禁止局部自动补全。",
+        "确定性修复只处理唯一、单一的uncited_synthesis_claim。",
+        "若失败，局部修复可能掩盖报告中的其他严重引用错误。",
+    ),
+    "tests/test_citation_repair.py::test_repair_node_updates_answer_and_validation_together": _description(
+        "验证LangGraph修复节点原子更新答案、修复轨迹和重新验证结果。",
+        "下游Answer Verify不会看到答案与Citation状态不一致的中间态。",
+        "若失败，修复成功后仍可能沿用旧的失败判定。",
+    ),
+    "tests/test_citation_repair.py::test_existing_online_style_report_can_run_zero_token_ab": _description(
+        "验证已有在线Writer原文可以运行零Token引用修复A/B。",
+        "能力收益和成本增量可在不重复调用模型的情况下比较。",
+        "若失败，无法证明自动修复相对原始报告的净效果。",
+    ),
 }
 
 

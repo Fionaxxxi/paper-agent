@@ -15,6 +15,12 @@ from nodes.retrieval_replan import build_retrieval_replan
 from nodes.answer_verify import answer_verify_node, route_after_answer_verify
 from nodes.answer_reflect import answer_reflect_node
 from nodes.research_analyze import research_analyze_node
+from nodes.clarification import clarification_node
+from nodes.research_schedule import research_schedule_node
+from nodes.evidence_store import evidence_store_node
+from nodes.research_coverage import research_coverage_node
+from nodes.research_citation_validate import research_citation_validate_node
+from nodes.research_citation_repair import research_citation_repair_node
 
 from utils.timer import timed_node
 
@@ -25,9 +31,13 @@ def retry_node(state: AgentState) -> AgentState:
 
 def route_after_intent(state: AgentState) -> str:
     if state.get("input_intent") == "research":
-        return "query_rewrite"
+        return "clarification"
 
     return "end"
+
+
+def route_after_clarification(state: AgentState) -> str:
+    return "end" if state.get("clarification_required") else "analyze"
 
 def route_after_query_rewrite(state):
     """
@@ -45,6 +55,10 @@ def build_graph(checkpointer=None):
     workflow.add_node(
         "intent_router",
         timed_node("intent_router", intent_router_node),
+    )
+    workflow.add_node(
+        "clarification",
+        timed_node("clarification", clarification_node),
     )
 
     workflow.add_node(
@@ -85,6 +99,14 @@ def build_graph(checkpointer=None):
         "generate",
         timed_node("generate", generate_node),
     )
+    workflow.add_node(
+        "research_citation_validate",
+        timed_node("research_citation_validate", research_citation_validate_node),
+    )
+    workflow.add_node(
+        "research_citation_repair",
+        timed_node("research_citation_repair", research_citation_repair_node),
+    )
 
     workflow.add_node(
         "metrics",
@@ -96,9 +118,26 @@ def build_graph(checkpointer=None):
         "intent_router",
         route_after_intent,
         {
-            "query_rewrite": "research_analyze",
+            "clarification": "clarification",
             "end": END,
         },
+    )
+    workflow.add_node(
+        "research_schedule",
+        timed_node("research_schedule", research_schedule_node),
+    )
+    workflow.add_node(
+        "evidence_store",
+        timed_node("evidence_store", evidence_store_node),
+    )
+    workflow.add_node(
+        "research_coverage",
+        timed_node("research_coverage", research_coverage_node),
+    )
+    workflow.add_conditional_edges(
+        "clarification",
+        route_after_clarification,
+        {"analyze": "research_analyze", "end": END},
     )
     workflow.add_edge("research_analyze", "query_rewrite")
     workflow.add_node(
@@ -118,8 +157,11 @@ def build_graph(checkpointer=None):
         },
     )
 
-    workflow.add_edge("query_plan", "retrieve")
-    workflow.add_edge("retrieve", "evaluate")
+    workflow.add_edge("query_plan", "research_schedule")
+    workflow.add_edge("research_schedule", "retrieve")
+    workflow.add_edge("retrieve", "evidence_store")
+    workflow.add_edge("evidence_store", "research_coverage")
+    workflow.add_edge("research_coverage", "evaluate")
 
     workflow.add_conditional_edges(
         "evaluate",
@@ -132,7 +174,9 @@ def build_graph(checkpointer=None):
 
     workflow.add_edge("retry", "retrieve")
     workflow.add_edge("reason", "generate")
-    workflow.add_edge("generate", "answer_verify")
+    workflow.add_edge("generate", "research_citation_validate")
+    workflow.add_edge("research_citation_validate", "research_citation_repair")
+    workflow.add_edge("research_citation_repair", "answer_verify")
     workflow.add_conditional_edges(
         "answer_verify",
         route_after_answer_verify,

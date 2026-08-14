@@ -80,6 +80,18 @@ class AgentState(TypedDict, total=False):
     research_brief: Dict[str, Any]
     research_plan: Dict[str, Any]
     research_plan_validation: Dict[str, Any]
+    original_query: str
+    resolved_query: str
+    resolved_referent: str
+    clarification_required: bool
+    clarification_question: str
+    clarification_candidates: list[str]
+    pending_clarification: Dict[str, Any]
+    research_schedule: Dict[str, Any]
+    evidence_store: Dict[str, Any]
+    research_coverage: Dict[str, Any]
+    citation_validation: Dict[str, Any]
+    citation_repair: Dict[str, Any]
 
     # query_rewrite.py 增加 rewritten_query
     # retrieve.py 增加 documents

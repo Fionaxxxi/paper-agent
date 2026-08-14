@@ -1,0 +1,95 @@
+{
+  "dataset_name": "PaperAgent 在线 LLM 冒烟集",
+  "version": "1.0",
+  "language": "zh-CN",
+  "frozen": true,
+  "purpose": "验证真实百炼兼容模型在任务分级、结构化研究分析和科研 Skill 生成上的端到端行为。",
+  "cases": [
+    {
+      "id": "analysis_l1_single_search",
+      "category": "research_analysis",
+      "description": "验证单一论文检索保持 L1 快速路径，不产生不必要的 LLM 调用。",
+      "query": "检索有关 RAG 的代表论文",
+      "expected": {"task_level": "L1", "primary_skill": "qa", "plan_valid": true, "llm_calls_min": 0, "llm_calls_max": 0}
+    },
+    {
+      "id": "analysis_l2_comparison",
+      "category": "research_analysis",
+      "description": "验证明确的双方法比较被识别为 L2，并由确定性比较 Skill 承接。",
+      "query": "比较 ReAct 和 Reflexion 的工作机制",
+      "expected": {"task_level": "L2", "primary_skill": "paper_compare", "plan_valid": true, "llm_calls_min": 0, "llm_calls_max": 0}
+    },
+    {
+      "id": "analysis_l3_research_program",
+      "category": "research_analysis",
+      "description": "验证复杂研究意图触发一次结构化 LLM 分析，并生成有效的有界研究计划。",
+      "query": "系统调研 Agent 架构的前景、代表论文与研究空白，并比较规划、记忆和反思机制的研究价值",
+      "expected": {"task_level": "L3", "primary_skill": "literature_review", "plan_valid": true, "llm_calls_min": 1, "llm_calls_max": 1}
+    },
+    {
+      "id": "generation_paper_summary",
+      "category": "generation",
+      "description": "验证真实模型能根据冻结证据完成论文总结，并保留论文身份和方法事实。",
+      "query": "总结 ReAct 的核心方法、贡献和局限",
+      "task_type": "summarize",
+      "task_level": "L1",
+      "expected_skill": "paper_summary",
+      "min_answer_chars": 260,
+      "required_any": [["研究背景", "背景"], ["核心方法", "方法"], ["局限", "限制"]],
+      "required_titles": ["ReAct"],
+      "documents": [
+        {"title": "ReAct: Synergizing Reasoning and Acting in Language Models", "year": 2022, "pdf_url": "https://arxiv.org/abs/2210.03629", "content": "ReAct interleaves reasoning traces with task-specific actions. On HotpotQA and FEVER, actions allow the model to interact with a Wikipedia API, while reasoning traces help update action plans and handle exceptions. The paper reports that ReAct improves interpretability, but prompting examples and occasional non-informative reasoning remain limitations."}
+      ]
+    },
+    {
+      "id": "generation_paper_compare",
+      "category": "generation",
+      "description": "验证真实模型能够在共同维度上比较 ReAct 与 Reflexion，而不是分别复述。",
+      "query": "比较 ReAct 与 Reflexion 在反馈、记忆、改进方式和局限上的差异",
+      "task_type": "compare",
+      "task_level": "L2",
+      "expected_skill": "paper_compare",
+      "min_answer_chars": 360,
+      "required_any": [["反馈", "feedback"], ["记忆", "memory"], ["局限", "限制"], ["综合结论", "结论"]],
+      "required_titles": ["ReAct", "Reflexion"],
+      "documents": [
+        {"title": "ReAct: Synergizing Reasoning and Acting in Language Models", "year": 2022, "pdf_url": "https://arxiv.org/abs/2210.03629", "content": "ReAct interleaves reasoning traces and actions within a task trajectory. It uses observations from external environments to update subsequent reasoning and actions."},
+        {"title": "Reflexion: Language Agents with Verbal Reinforcement Learning", "year": 2023, "pdf_url": "https://arxiv.org/abs/2303.11366", "content": "Reflexion converts task feedback into verbal reflections and stores them in an episodic memory buffer for later trials. It does not update model weights, and performance depends on useful feedback and reflection quality."}
+      ]
+    },
+    {
+      "id": "generation_literature_review",
+      "category": "generation",
+      "description": "验证 L3 Literature Review Skill 能组织研究版图、比较机制、指出空白并给出可定位证据。",
+      "query": "综述 Agent 的推理行动与反思学习路线，并指出可验证的研究空白",
+      "task_type": "recommend",
+      "task_level": "L3",
+      "primary_skill": "literature_review",
+      "expected_skill": "literature_review",
+      "min_answer_chars": 500,
+      "required_any": [["研究版图", "研究现状", "research_landscape"], ["方法比较", "方法对比", "机制比较", "method_comparison"], ["研究空白", "空白", "research_gaps"], ["未来方向", "研究方向", "future_directions"], ["证据", "引用", "来源", "evidence"]],
+      "required_titles": ["ReAct", "Reflexion"],
+      "research_brief": {"topic": "Agent 推理行动与反思学习", "research_questions": ["两类机制如何工作", "现有证据有什么局限", "哪些空白可以评测"], "citation_required": true},
+      "documents": [
+        {"title": "ReAct: Synergizing Reasoning and Acting in Language Models", "year": 2022, "pdf_url": "https://arxiv.org/abs/2210.03629", "content": "ReAct interleaves reasoning traces with actions and uses environment observations. Evidence locator: arXiv 2210.03629, Section 3."},
+        {"title": "Reflexion: Language Agents with Verbal Reinforcement Learning", "year": 2023, "pdf_url": "https://arxiv.org/abs/2303.11366", "content": "Reflexion stores verbal reflections from feedback in episodic memory for future trials without weight updates. Evidence locator: arXiv 2303.11366, Sections 2-3."}
+      ]
+    },
+    {
+      "id": "generation_paper_critique",
+      "category": "generation",
+      "description": "验证 Paper Critique Skill 区分作者贡献、证据支持的优点、弱点和复现风险。",
+      "query": "批判性分析 Reflexion 的贡献、实验依据和可复现性风险",
+      "task_type": "qa",
+      "task_level": "L3",
+      "primary_skill": "paper_critique",
+      "expected_skill": "paper_critique",
+      "min_answer_chars": 420,
+      "required_any": [["贡献", "claimed_contributions"], ["优点", "优势", "strengths"], ["弱点", "局限", "weaknesses"], ["证据质量", "实验依据", "evidence_quality"], ["可复现", "复现风险", "reproducibility_risks"]],
+      "required_titles": ["Reflexion"],
+      "documents": [
+        {"title": "Reflexion: Language Agents with Verbal Reinforcement Learning", "year": 2023, "pdf_url": "https://arxiv.org/abs/2303.11366", "content": "Reflexion uses linguistic feedback, verbal self-reflection, and episodic memory instead of weight updates. The paper evaluates decision-making, reasoning, and programming tasks and reports improvements over baselines. Results depend on the evaluator feedback, reflection model, prompts, memory window, model version, and environment setup. Evidence locator: arXiv 2303.11366, Sections 2-4."}
+      ]
+    }
+  ]
+}
