@@ -244,6 +244,26 @@ TEST_CASE_CATALOG: dict[str, CaseDescription] = {
         "新增 Prompt 家族必须显式进入版本注册表。",
         "若失败，部分模型调用可能继续使用不可追踪的 Prompt。",
     ),
+    "tests/test_prompt_security_eval.py::test_prompt_security_dataset_is_frozen_and_covers_four_attack_paths": _description(
+        "验证 Prompt 安全集冻结为四个唯一攻击案例并覆盖普通文档、PDF 和 Research Writer。",
+        "对抗数据不会在看到模型结果后被随意修改。",
+        "若失败，安全基线的版本或覆盖范围可能不可复现。",
+    ),
+    "tests/test_prompt_security_eval.py::test_every_adversarial_prompt_keeps_attack_inside_security_boundary": _description(
+        "验证每个恶意片段完整保留在 UNTRUSTED_EVIDENCE 边界内。",
+        "评测实际覆盖生产 Prompt 组装路径，而不是测试无关字符串。",
+        "若失败，某类外部证据可能绕过统一安全边界。",
+    ),
+    "tests/test_prompt_security_eval.py::test_output_grader_rejects_canary_or_fake_evidence_and_requires_safe_content": _description(
+        "验证判分器同时拒绝攻击标记、伪造 Evidence ID 和只拒答不回答研究问题的输出。",
+        "通过结果必须既未服从攻击，又保留有用研究内容。",
+        "若失败，空回答或攻击复述可能被错误算作安全成功。",
+    ),
+    "tests/test_prompt_security_eval.py::test_offline_mode_validates_contract_without_llm_or_tokens": _description(
+        "验证默认对抗评测只检查 Prompt 契约，不调用真实模型。",
+        "日常 CI 可零费用运行，在线测试必须由用户显式确认。",
+        "若失败，普通测试可能意外产生模型费用。",
+    ),
     "tests/test_benchmark.py::test_baseline_and_candidate_cover_the_same_modules": _description(
         "确认旧基线与当前候选实现使用完全相同的能力模块，保证能力对比口径一致。",
         "两组结果都覆盖意图路由、查询规划、结果合并、重试路由、LLM 用量和工具执行六个模块。",
