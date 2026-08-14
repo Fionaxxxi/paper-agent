@@ -2,7 +2,7 @@
 
 本文档是项目后续能力升级计划的唯一正式来源。开发应按照下方依赖顺序推进，后续阶段不得绕过前置阶段建立的接口、评测门槛或安全控制。
 
-## 当前执行版路线（V2，优先级高于下方历史规划）
+## 当前执行版路线（V3，优先级高于下方历史规划）
 
 > 下方原整体扩展计划继续作为技术储备和设计参考；从本节发布起，只有本节列入“当前交付主线”的能力才默认进入实施。这样做不是削弱 Agent，而是把特色集中在能够完成、演示和解释的闭环上。
 
@@ -14,7 +14,8 @@ LangGraph Graph Engineering（显式状态、条件路由、恢复边和有限�
 → 在线多源检索 + 置信度门控的本地 Hybrid RAG
 → Verifier + 单次有限 Reflection 修复
 → 结构化记忆 + Markdown LLM Wiki
-→ 科研 Skill + 复杂任务下的轻量 Planner / Executor / Reviewer
+→ 科研 Skill + 分级任务路由 + 轻量深度研究模式
+→ Research Brief + Planner / Executor / Reviewer + Evidence Coverage
 → Zotero / GitHub 只读外部 MCP
 → 单页多模态 PDF 分析
 → Web 演示、Docker 和基础 CI
@@ -26,11 +27,11 @@ LangGraph Graph Engineering（显式状态、条件路由、恢复边和有限�
 
 | 顺序 | 阶段 | 交付边界 | 项目价值 |
 |---:|---|---|---|
-| 1 | MCP 路由收口 | 补齐显式 MCP Router 场景、错误映射和调用元数据；保留已有原生工具与 MCP 双通道 | 展示协议解耦与工具治理，而不是为了 MCP 而 MCP |
+| 1 | MCP 路由收口（已完成） | 已补齐显式 MCP Router 场景、错误映射和调用元数据；保留原生工具与 MCP 双通道 | 展示协议解耦与工具治理，而不是为了 MCP 而 MCP |
 | 2 | Verifier + 有限 Reflection | 对引用、证据覆盖和答案结构做验证；最多修复 1 次，按失败类型生成修复指令，超预算返回当前最佳答案 | 形成可解释的质量控制和失败恢复闭环 |
 | 3 | 结构化记忆 + LLM Wiki | 使用 SQLite/检查点保存会话摘要、用户偏好、活跃论文；将确认后的研究结论写入可阅读的 Markdown Wiki | 展示跨轮连续性，同时保持数据透明、可删除、易演示 |
 | 4 | 科研型 Skill + 结构化输出 | 优先实现 `LiteratureReviewSkill` 与 `PaperCritiqueSkill`；实验建议并入批判分析，报告排版并入综述输出 | 用少量高价值 Skill 覆盖真实科研任务 |
-| 5 | 轻量 Multi-Agent | 仅复杂任务启用 Planner、Executor、Reviewer 三角色；普通问答继续走单图，限制轮数和 Token | 展示协作能力但避免角色膨胀 |
+| 5 | 轻量深度研究模式 | 增加 L0～L3 分级路由；L3 使用 Research Brief、受限任务计划、Planner / Executor / Reviewer、Evidence Coverage 和 Checkpoint | 把前述能力组合成可交付带引用研究报告的差异化闭环 |
 | 6 | 外部 MCP | 先接只读 Zotero，再接只读 GitHub；分别服务个人文献库和论文代码仓库 | 证明 MCP 的跨应用复用价值 |
 | 7 | 单页多模态 PDF | 用户指定代表性页面，渲染后交给视觉模型分析图、表或公式，并保留页码依据 | 以可控成本展示真正的多模态能力 |
 | 8 | 工程化交付 | 完善 Web 轨迹展示、Docker、基础 CI、中文使用说明和一组端到端演示案例 | 让项目可运行、可展示、可复现 |
@@ -39,10 +40,64 @@ GraphRAG 不作为当前必做主线。只有当固定测试中的“跨论文�
 
 保留一个可选的特色增强项：人工门控的离线策略改进。系统可以根据失败轨迹提出 Prompt、路由阈值或查询模板候选，在少量固定案例上对比，由人批准后版本化启用并可回滚；不允许 Agent 自动修改生产代码或自行上线策略。
 
+### 工作流分级与有限 Agent Loop
+
+参考 HTC Research Graph 的边界设计，但只吸收适合 PaperAgent 的部分。系统共用 Tool、RAG、Evidence、Memory 和 Trace 基础设施，并按照任务复杂度选择最小充分流程：
+
+```text
+L0 Direct
+→ 问候、感谢、身份和固定帮助；本地返回，不调用 LLM 或工具
+
+L1 Fast Research QA
+→ 单一明确论文问题；一次分析、最多一次检索、生成和验证
+
+L2 Standard Research
+→ 比较、总结和少量子问题；查询计划、受限并行、证据合并、生成和验证
+
+L3 Deep Research
+→ 多来源调研、技术选型或正式综述；Research Brief、任务计划、证据覆盖和研究报告
+```
+
+普通请求不得未经明确规则和预算判断自动升级成高成本 L3。第一版 L3 只允许最多 5 个研究任务、并行数 2，输出中文 Markdown；不实现任意 DAG、通用 Supervisor 或角色自由对话。
+
+系统保留两个基础有限循环，并在 L3 中组合使用：
+
+```text
+Loop A：Retrieval Replan（已有第一版）
+检索证据不足 → 按失败类型修改查询或来源 → 最多重新检索 1 次
+
+Loop B：Answer Reflection（下一阶段）
+答案验证失败 → 生成结构化修复指令 → 最多重新生成 1 次 → 再验证
+```
+
+L3 深度研究增加受限研究回边：计划不合法最多修复 1 次；Evidence Coverage 不足最多补充计划 1 次；报告验证失败最多修复 1 次。各回边独立计数，但一次执行必须受统一 Token、工具调用、时间和总迭代预算控制，不能彼此嵌套重启完整流程。
+
+所有循环都必须记录 `failure_type`、触发证据、采取动作、前后评分、额外 Token/延迟和 `stop_reason`。出现无可用证据、相同失败重复、质量没有改善或预算耗尽时停止，并返回当前最佳答案或明确的证据不足说明。
+
+### 轻量深度研究模式目标流程
+
+```text
+复杂研究请求
+→ Task Level Router（L3）
+→ Research Brief（目标、范围、研究问题、来源、输出要求）
+→ Research Planner（最多 5 个带简单依赖的任务）
+→ Plan Validator（空任务、重复、循环依赖和预算检查）
+→ Executor（最多并行 2 个，调用现有 Tool / MCP / RAG）
+→ Evidence Store（标准化、去重、来源和 Claim–Evidence 关联）
+→ Coverage Gate（逐研究问题检查证据覆盖）
+→ 必要时定向 Replan 1 次
+→ LiteratureReviewSkill 生成中文 Markdown 报告
+→ Citation / Claim Verifier
+→ 必要时 Reflection 修复 1 次
+→ 保存报告与 Checkpoint
+```
+
+第一版不单独建设完整 Research Job 平台。先复用 FastAPI 请求、LangGraph 状态和 SQLite Checkpoint；只有真实任务证明同步请求不足时，再晋升为异步 Job API、进度事件流和中断恢复。
+
 ### 明确暂缓的研究型能力
 
 - 跨任务自动 Reflexion 经验晋升、全自动 Agent 自进化和受控在线适应；
-- 八角色分层 Multi-Agent、Multi-Trajectory / Best-of-N 大规模候选搜索；
+- 八角色分层 Multi-Agent、角色自由辩论、通用 Supervisor、任意动态 DAG 和 Multi-Trajectory / Best-of-N 大规模候选搜索；
 - 自动解析整篇论文全部图表、公式和版面的完整多模态流水线；
 - 在没有真实并发和共享缓存需求前引入 Redis；
 - GraphRAG / LightRAG / 多 Embedding / 多重排器的全组合选型平台；
@@ -58,9 +113,14 @@ GraphRAG 不作为当前必做主线。只有当固定测试中的“跨论文�
 | 普通实现、小型 Skill 或文档调整 | 2～5 个代表性测试，必要时加 1 个 Smoke Test；每个案例记录目的和结果含义 | 测试输出或中文 Markdown 记录 |
 | 工作流、权限、记忆和失败恢复 | 定向单元测试 + 1 条集成路径 + 1 条失败/停止路径 | 中文 Markdown 汇总 |
 | 检索算法、模型或路由策略变更 | 使用小型固定样本比较质量、回归和延迟，确认没有明显退化 | 一份阶段对比表 |
+| 意图、任务分级或 Agent 路由 | 固定人工标注集，检查准确率、研究请求误短路率、错误升级率、无效 LLM/工具调用率和路由延迟 | 一份阶段对比表 |
+| Verifier / Reflection / Agent Loop | 固定缺陷案例，检查缺陷识别准确率、修复成功率、正确答案破坏率、停止率、额外 Token 和延迟 | 中文 Markdown 汇总 |
+| 深度研究模式 | 2～3 个代表性复杂任务，分别覆盖正常完成、证据不足与预算停止；检查研究问题覆盖率、引用有效率、任务完成率和恢复次数 | 中文阶段报告 |
 | 里程碑或发布版本 | 完整回归，并更新测试用例说明与 Excel 汇总 | Excel + 中文阶段报告 |
 
 因此，后续新增测试仍必须说明“测试什么、为什么测试、通过或失败代表什么”，但不再要求每次小改动都生成 Excel；Excel 只在里程碑统一更新。
+
+准确度和性能测试不推迟到项目最后：每完成 Router、Verifier、Loop、Memory 或 Research Graph 中的一个可独立节点，立即执行该节点的固定案例与一条上下游集成路径；阶段结束再进行少量真实 LLM 冒烟，最终里程碑只负责完整回归和汇总，不负责第一次发现模块问题。
 
 ## 当前能力基线
 
@@ -1475,6 +1535,8 @@ Push / Pull Request
 2026-08-14 外部 MCP 扩展范围冻结为两个只读工具，不继续扩张 MCP 清单。第一项为 Zotero MCP，用于搜索个人文献库、读取论文元数据、Collection、标签、笔记和可用 PDF 全文；第一版禁止新增、修改或删除条目、标签和笔记。第二项为 GitHub MCP，用于查找论文对应仓库并读取 README、目录结构、依赖、配置、Issue、Release 与 Commit；第一版禁止创建 Issue、修改文件、提交代码、操作分支和合并 PR。Filesystem、Crossref、Semantic Scholar、OpenAlex、数据库和 Fetch MCP 不加入当前后续计划；已有原生数据源保持原生实现。实施顺序为先 Zotero、后 GitHub，并统一经过现有 Registry、Policy、Executor、Schema 校验和审计元数据。
 
 2026-08-14 已完成 MCP Client v1 路由收口。默认 Tool Router 新增 `paper.catalog.search / mcp_catalog → paper.catalog.search.mcp` 确定性路由，设置 `RETRIEVAL_MODE=mcp_catalog` 后，LangGraph 主检索函数会使用 MCP 参数契约调用真实只读 stdio Server；默认 arXiv 模式不变，LLM 不会自行触发 MCP。工具执行轨迹现在保留 capability、source、tool name，以及 MCP Server、版本、传输方式、远程工具名、耗时和统一错误。代表性工具层、真实 MCP、主检索、多源回归与测试目录验证 35/35 通过，阶段 1 收口；下一步进入 Verifier 与最多一次的有限 Reflection 修复。
+
+2026-08-14 路线 V3 将有限 Agent Loop 与 HTC Research Graph 中适合 PaperAgent 的设计合并。保留 L0 Direct、L1 Fast Research QA、L2 Standard Research、L3 Deep Research 四级任务路由；基础工作流只包含最多一次 Retrieval Replan 和最多一次 Answer Reflection。L3 在前述能力成熟后增加 Research Brief、最多 5 个任务的受限计划、并行数 2 的 Executor、Evidence Coverage、Citation/Claim Verifier 和 SQLite Checkpoint，并限制计划修复、证据补充和报告修复各最多一次且共享总预算。第一版不建设通用 Job 平台、任意 DAG、自由 Supervisor 或多角色辩论。Router、Loop 和 Research Graph 必须在模块完成时立即进行固定标注、集成、失败停止、质量和成本测试，不将首次能力验证推迟到最终阶段。
 
 2026-08-12 子查询并行已完成 5 次确定性离线重复基准：3 个子查询、2 个 worker 时，中位延迟由 265.4ms 降至 172.3ms，加速 1.54 倍、延迟下降 35.09%，结果与规划顺序一致率 100%，达到阶段门槛并收口。
 
