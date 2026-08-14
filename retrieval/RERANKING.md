@@ -88,6 +88,8 @@ arXiv authority 现由 `ARXIV_AUTHORITY_VERIFICATION_ENABLED` 独立控制，默
 
 检索低分后的第二轮由确定性 Retrieval Replan v1 生成 `retry_query` 和 `retrieval_replan` 审计记录。动作仅包括暂时失败原查询重试、零结果放宽查询、低相关结果扩展综述上下文；最多执行一次，且 `retry_query` 优先于旧的 `sub_queries`。
 
+轻量离线验收使用 6 个预先标注的查询修复 Oracle：分类准确率 100%，候选查询命中率 100%，语义失败原样重试率 0%，0 次 LLM。这里的“命中”只表示生成了人工指定的修复查询，不等价于在线论文源恢复成功；逐例 JSON/CSV 位于 `eval_harness/reports/retrieval_replan_eval.*`。
+
 重排使 Reflexion 金标准论文从 Top 5 外升至第 1，并提升 RAG、LightRAG 和 DPR 排名；20 题没有 Recall 或 MRR 退化。v2 在保持所有质量指标不变的同时隔离 8 条“未经原生来源确认且标题与查询明显不符”的候选，其中包括此前进入 Top 3 的异常 Chain-of-Thought 记录；本轮没有发生实际字段修复，因为进入同一身份组的原生 arXiv 记录本身已位于主记录。
 
 ## 晋升门槛

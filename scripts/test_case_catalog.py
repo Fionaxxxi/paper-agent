@@ -960,9 +960,9 @@ TEST_CASE_CATALOG: dict[str, CaseDescription] = {
         "重规划动作可能被旧 sub_queries 遮蔽，形成伪 Replan。",
     ),
     "tests/test_retrieval_replan_eval.py::test_replan_outperforms_plain_retry_and_meets_acceptance_gate": _description(
-        "验证固定故障集中 Replan 相对原样重试提升恢复率并减少无效重试。",
-        "分类准确率 100%，候选恢复率达到门槛、语义失败无效重试率为 0，且不调用 LLM。",
-        "Replan 可能只改变查询形式却没有改善受控恢复结果，或引入额外 Token 成本。",
+        "验证固定故障集中 Replan 相对原样重试提升离线 Oracle 查询命中率并减少无效重试。",
+        "分类准确、语义失败不再原样重试，且不调用 LLM；该结果不代表在线检索恢复率。",
+        "Replan 规则可能未生成预先标注的目标修复查询，或引入额外 Token 成本。",
     ),
     "tests/test_retrieval_stop_decision.py::test_first_low_score_requests_replan": _description(
         "验证首次检索低于质量门槛时输出明确的 Replan 请求状态。",
