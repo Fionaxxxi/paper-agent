@@ -180,13 +180,17 @@ D:\miniconda3\envs\paper_agent\python.exe scripts\run_tests_with_report.py
 
 当前已经实现 LangGraph 工作流、在线多源工具层、本地 Hybrid RAG、查询规划、一次受控 Replan、Skill 路由、本地会话记忆、质量降级和可观测元数据。
 
-以下属于继续推进的原计划能力，尚未完成的部分不应描述为已实现功能：
+后续采用“有特色但能完成”的执行路线，尚未完成的部分不应描述为已实现功能：
 
-- MCP 已完成统一适配层，并通过官方 SDK + stdio 接入只读本地论文目录 Server；后续外部 MCP 只计划接入只读 Zotero（个人文献库）和只读 GitHub（论文代码仓库），不扩张其他 MCP 清单；
-- Redis 会话和语义缓存；
-- GraphRAG、LightRAG 与 Dense/Hybrid 的统一选型评测；
-- Reflection / Reflexion 与可控 Agent Loop；
-- 分层长期记忆和 Agent 自进化；
-- 多 Agent 协作、多模态论文图表理解与 LLM Wiki。
+1. 收口统一 MCP 路由和执行元数据；
+2. 增加 Verifier 与最多一次的有限 Reflection 修复；
+3. 使用 SQLite/检查点建立结构化记忆，并生成可阅读的 Markdown LLM Wiki；
+4. 实现 Literature Review、Paper Critique 等高价值科研 Skill 和结构化输出；
+5. 只对复杂任务启用 Planner / Executor / Reviewer 轻量三 Agent；
+6. 依次接入只读 Zotero 和只读 GitHub 外部 MCP；
+7. 实现用户指定页面的多模态 PDF 分析；
+8. 完成 Web 轨迹展示、Docker、基础 CI 和端到端演示。
+
+自动 Reflexion/自进化、在线适应、八角色分层 Agent、Best-of-N、Redis、完整 GraphRAG 选型矩阵和整篇 PDF 全自动多模态解析暂缓。GraphRAG 仅在固定的跨论文全局任务证明 Hybrid RAG 不足后做小型 PoC；测试按风险分级，Excel 在里程碑统一更新。
 
 详细历史、技术决策和未来计划见 [docs/ROADMAP.md](docs/ROADMAP.md)。
