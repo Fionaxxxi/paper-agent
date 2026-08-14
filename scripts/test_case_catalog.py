@@ -189,6 +189,36 @@ TEST_CASE_CATALOG: dict[str, CaseDescription] = {
         "论文结果、路由能力、MCP 来源和 Server 身份均能传回 LangGraph 检索轨迹。",
         "MCP 与主工作流仍未连通，或执行记录丢失协议来源和 Server 身份。",
     ),
+    "tests/test_zotero_mcp.py::test_zotero_client_uses_versioned_get_and_keeps_key_out_of_url": _description(
+        "验证 Zotero 客户端固定使用 Web API v3 GET 请求，并从元数据、笔记和 PDF 子附件生成统一结果。",
+        "API Key 只进入请求头，不出现在 URL 或返回数据中。",
+        "若失败，认证信息可能泄漏，或个人文献证据无法规范化。",
+    ),
+    "tests/test_zotero_mcp.py::test_zotero_client_requires_explicit_library_and_rejects_unknown_type": _description(
+        "验证缺少 Library ID 或使用未知库类型时立即拒绝执行。",
+        "错误配置不会发送含糊或越界的 Zotero 请求。",
+        "若失败，工具可能访问错误的个人库或群组库地址。",
+    ),
+    "tests/test_zotero_mcp.py::test_zotero_mcp_tool_is_registered_read_only": _description(
+        "验证 Zotero MCP 已注册到默认 Registry、Router，并被标记为只读能力。",
+        "主工作流只能通过 library.search/zotero 路由选择该工具。",
+        "若失败，工具可能绕过统一权限层或无法被工作流发现。",
+    ),
+    "tests/test_zotero_mcp.py::test_zotero_schema_rejects_path_like_collection_key": _description(
+        "验证 Collection Key 只能使用字母数字，拒绝路径式输入。",
+        "用户参数不能改变 Zotero API 的固定资源边界。",
+        "若失败，恶意参数可能构造非预期的 API 路径。",
+    ),
+    "tests/test_zotero_mcp.py::test_main_retrieval_path_routes_zotero_items_to_documents": _description(
+        "验证 RETRIEVAL_MODE=zotero 时主检索链把 Zotero Item 转成统一文档并保留 MCP 审计轨迹。",
+        "个人文献可以进入 Evidence Store 和 Research Writer，默认其他检索模式不变。",
+        "若失败，Zotero 只能独立调用，无法参与 Research Agent 主流程。",
+    ),
+    "tests/test_zotero_mcp.py::test_zotero_failure_stays_empty_instead_of_using_public_fallback": _description(
+        "验证 Zotero 配置或调用失败时返回空个人库结果和真实错误，不注入公共 fallback 论文。",
+        "上层会明确进入证据不足路径，不把通用论文冒充用户收藏。",
+        "若失败，个人库不可用可能被公共演示数据掩盖，导致来源误导。",
+    ),
     "tests/test_benchmark.py::test_baseline_and_candidate_cover_the_same_modules": _description(
         "确认旧基线与当前候选实现使用完全相同的能力模块，保证能力对比口径一致。",
         "两组结果都覆盖意图路由、查询规划、结果合并、重试路由、LLM 用量和工具执行六个模块。",

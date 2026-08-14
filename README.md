@@ -180,8 +180,23 @@ Invoke-RestMethod -Method Post -Uri http://127.0.0.1:8000/chat -ContentType "app
 | `multi_source` | 按配置组合多个在线来源 |
 | `local_rag` | 检索本地 PDF 全文知识库 |
 | `mcp_catalog` | 通过显式 Tool Router 调用只读 stdio MCP Server，查询项目论文目录；主要用于演示 MCP 主链路 |
+| `zotero` | 通过只读 MCP Server 搜索个人或群组 Zotero 文献库、标签和笔记 |
 
 `mcp_catalog` 不由 LLM 自动触发，也不会替换默认 arXiv。它是一个明确的演示场景：修改 `.env` 后重启服务，MCP 调用的路由依据、Server 身份、版本、传输方式、耗时和错误会记录到工具执行元数据中。
+
+### Zotero 只读 MCP
+
+先在 Zotero 账户设置中创建只读 API Key，并在 `.env` 配置：
+
+```env
+RETRIEVAL_MODE=zotero
+ZOTERO_LIBRARY_TYPE=user
+ZOTERO_LIBRARY_ID=你的数字用户ID
+ZOTERO_API_KEY=你的只读Key
+ZOTERO_MAX_RESULTS=5
+```
+
+群组库将 `ZOTERO_LIBRARY_TYPE` 改为 `group`，并填写群组 ID。PaperAgent 固定请求 Zotero Web API v3，只提供 GET 搜索；Key 仅通过 `Zotero-API-Key` 请求头传递。v1 返回文献元数据、标签、Collection Key、子笔记和 PDF 附件 Key；它只能识别 PDF 附件是否存在，尚未下载或解析附件全文。配置缺失或调用失败时返回空个人库结果和错误轨迹，不使用公共 fallback 论文掩盖失败。
 
 ## 测试
 

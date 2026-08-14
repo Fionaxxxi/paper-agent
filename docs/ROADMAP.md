@@ -1515,6 +1515,8 @@ Push / Pull Request
 
 2026-08-14 已完成 Retrieval Replan v1 轻量验收。冻结 6 个离线 Oracle 案例，覆盖超时/网络错误、带引号的零结果窄查询和有结果但低相关三类失败；失败分类准确率 100%，目标修复查询命中率由原样重试的 33.33% 提升到 100%，语义失败原样无效重试率由 100% 降到 0%，全程 0 LLM。报告同时输出 JSON 与 UTF-8 BOM CSV，逐例记录失败类型、动作、原查询、目标查询和候选查询。该结果只证明确定性分类与查询修复命中人工 Oracle，不宣称 arXiv/OpenAlex 在线恢复率；按简历项目轻量策略不扩大 Replan 数据集，后续只做代表性在线冒烟。阶段收口后回到原能力路线，下一步优先接入只读 Zotero MCP v1，再接只读 GitHub MCP。
 
+2026-08-14 已完成只读 Zotero MCP v1 代码接入。PaperAgent 自带 `paperagent-zotero` stdio MCP Server，通过固定 GET 请求调用 Zotero 官方 Web API v3；私有库 Key 只放在 `Zotero-API-Key` 请求头。`library.search.zotero.mcp` 已注册到统一 Registry，经过只读 Policy、Pydantic Schema、超时 Executor 和审计元数据，`RETRIEVAL_MODE=zotero` 可显式接入主检索、Evidence Store 与 Research Writer，默认 arXiv 不变。v1 支持个人/群组库、关键词、Tag、Collection Key、元数据、子笔记和 PDF 附件 Key；尚未下载/解析 PDF，也未解析 Collection 名称。Zotero 失败保持空结果和真实错误，不使用公共 fallback 冒充用户收藏。6 个代表测试加 MCP/检索回归共 25/25 通过，0 在线请求、0 LLM。下一步由用户配置只读 Library ID/API Key 后做一次真实冒烟；随后进入只读 GitHub MCP v1。
+
 2026-08-14 已完成 Retrieval Replan v1 轻量验收。冻结 6 个离线 Oracle 案例，覆盖超时/网络错误、带引号的零结果窄查询和有结果但低相关三类失败；失败分类准确率 100%，目标修复查询命中率由原样重试的 33.33% 提升到 100%，语义失败原样无效重试率由 100% 降到 0%，全程 0 LLM。报告同时输出 JSON 与 UTF-8 BOM CSV，逐例记录失败类型、动作、原查询、目标查询和候选查询。该结果只证明确定性分类与查询修复命中人工 Oracle，不宣称 arXiv/OpenAlex 在线恢复率；按简历项目轻量策略不扩大 Replan 数据集，后续只做代表性在线冒烟。阶段收口后回到原能力路线，下一步优先接入只读 Zotero MCP v1，再接只读 GitHub MCP。
 
 2026-08-12 Replan v1 已完成 6 类确定性故障对照：失败分类准确率 100%，普通原样重试恢复率 33.33%，Replan 恢复率 100%，提升 66.67 个百分点；语义失败的无效重试率由 100% 降为 0%，LLM 调用为 0，达到阶段门槛并收口。该结论基于固定故障与模拟成功条件，只证明分类和动作映射逻辑，不代表真实网络检索恢复率。

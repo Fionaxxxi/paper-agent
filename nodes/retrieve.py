@@ -148,16 +148,22 @@ def convert_papers_to_documents(papers: List[Dict[str, Any]], source: str) -> Li
                 "content": (
                     paper.get("summary")
                     or paper.get("content")
+                    or paper.get("abstract")
+                    or "；".join(paper.get("notes", []))
                     or "；".join(paper.get("dimensions", []))
                 ),
                 "pdf_url": paper.get("pdf_url"),
-                "entry_id": paper.get("entry_id") or paper.get("arxiv_id"),
+                "entry_id": paper.get("entry_id") or paper.get("arxiv_id") or paper.get("item_key"),
                 "doi": paper.get("doi", ""),
                 "cited_by_count": paper.get("cited_by_count", 0),
                 "landing_page_url": paper.get("landing_page_url", ""),
                 "source": paper.get("source", source),
                 "document_id": paper.get("document_id", ""),
                 "catalog_group": paper.get("group", ""),
+                "tags": paper.get("tags", []),
+                "collection_keys": paper.get("collection_keys", []),
+                "notes": paper.get("notes", []),
+                "pdf_attachment_keys": paper.get("pdf_attachment_keys", []),
             }
         )
 
@@ -174,7 +180,9 @@ def get_max_results(state: AgentState, source: str = "arxiv") -> int:
         settings.OPENALEX_MAX_RESULTS
         if source == "openalex"
         else (
-            settings.LOCAL_RAG_MAX_RESULTS
+            settings.ZOTERO_MAX_RESULTS
+            if source == "zotero"
+            else settings.LOCAL_RAG_MAX_RESULTS
             if source == "mcp_catalog"
             else settings.ARXIV_MAX_RESULTS
         )
@@ -189,7 +197,7 @@ def get_max_results(state: AgentState, source: str = "arxiv") -> int:
 def get_retrieval_sources(retrieval_mode: str) -> List[str]:
     """Resolve configured native providers without changing the default mode."""
 
-    if retrieval_mode in {"arxiv", "openalex", "mcp_catalog"}:
+    if retrieval_mode in {"arxiv", "openalex", "mcp_catalog", "zotero"}:
         return [retrieval_mode]
     if retrieval_mode in {"multi", "multi_source"}:
         return [
@@ -234,7 +242,11 @@ def retrieve_from_source(
 
     try:
         capability = (
-            "paper.catalog.search" if source == "mcp_catalog" else "paper.search"
+            "paper.catalog.search"
+            if source == "mcp_catalog"
+            else "library.search"
+            if source == "zotero"
+            else "paper.search"
         )
         tool_name = paper_tool_router.resolve(capability=capability, source=source)
     except KeyError as error:
@@ -256,6 +268,8 @@ def retrieve_from_source(
                     "capability": (
                         "paper.catalog.search"
                         if source == "mcp_catalog"
+                        else "library.search"
+                        if source == "zotero"
                         else "paper.search"
                     ),
                     "source": source,
@@ -265,7 +279,7 @@ def retrieve_from_source(
 
     arguments = (
         {"query": query, "limit": get_max_results(state, source)}
-        if source == "mcp_catalog"
+        if source in {"mcp_catalog", "zotero"}
         else {"query": query, "max_results": get_max_results(state, source)}
     )
     tool_result = paper_tool_executor.execute(
@@ -273,7 +287,7 @@ def retrieve_from_source(
         arguments=arguments,
     )
     papers = (
-        tool_result.data.get("papers", [])
+        tool_result.data.get("items" if source == "zotero" else "papers", [])
         if tool_result.success and isinstance(tool_result.data, dict)
         else []
     )
@@ -408,14 +422,18 @@ def retrieve_by_query(query: str, state: AgentState) -> Dict[str, Any]:
         else:
             retrieval_source = source_results[0]["retrieval_source"]
     else:
-        documents = convert_papers_to_documents(FALLBACK_PAPERS, "fallback")
-        retrieval_source = "fallback"
+        documents = (
+            []
+            if retrieval_mode == "zotero"
+            else convert_papers_to_documents(FALLBACK_PAPERS, "fallback")
+        )
+        retrieval_source = "zotero" if retrieval_mode == "zotero" else "fallback"
         merge_result = {
             "raw_document_count": 0,
             "merged_document_count": len(documents),
             "deduplicated_count": 0,
         }
-        if "fallback_retriever" not in tools_used:
+        if retrieval_mode != "zotero" and "fallback_retriever" not in tools_used:
             tools_used.append("fallback_retriever")
 
     cache_hit_count = sum(result["cache_hit"] for result in source_results)

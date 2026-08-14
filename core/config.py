@@ -38,6 +38,13 @@ class Settings(BaseSettings):
     SEMANTIC_SCHOLAR_BASE_URL: str = "https://api.semanticscholar.org/graph/v1"
     SEMANTIC_SCHOLAR_API_KEY: str = ""
 
+    # Zotero read-only MCP
+    ZOTERO_API_BASE_URL: str = "https://api.zotero.org"
+    ZOTERO_LIBRARY_TYPE: str = "user"
+    ZOTERO_LIBRARY_ID: str = ""
+    ZOTERO_API_KEY: str = ""
+    ZOTERO_MAX_RESULTS: int = 5
+
     # Tool execution
     TOOL_TIMEOUT_SECONDS: float = 45.0
 

@@ -6,6 +6,7 @@ from tools.executor import ToolExecutor
 from tools.openalex_adapter import OpenAlexSearchTool
 from tools.semantic_scholar_adapter import SemanticScholarLookupTool
 from tools.mcp_paper_catalog import build_paper_catalog_mcp_tool
+from tools.mcp_zotero import build_zotero_mcp_tool
 from tools.registry import ToolRegistry
 from tools.router import ToolRouter
 
@@ -18,6 +19,7 @@ def build_default_tool_runtime() -> tuple[ToolRegistry, ToolRouter, ToolExecutor
     registry.register(CrossrefLookupTool())
     registry.register(SemanticScholarLookupTool())
     registry.register(build_paper_catalog_mcp_tool())
+    registry.register(build_zotero_mcp_tool())
 
     router = ToolRouter()
     router.register_route(
@@ -49,6 +51,11 @@ def build_default_tool_runtime() -> tuple[ToolRegistry, ToolRouter, ToolExecutor
         capability="paper.catalog.search",
         source="mcp_catalog",
         tool_name="paper.catalog.search.mcp",
+    )
+    router.register_route(
+        capability="library.search",
+        source="zotero",
+        tool_name="library.search.zotero.mcp",
     )
 
     return registry, router, ToolExecutor(registry)
