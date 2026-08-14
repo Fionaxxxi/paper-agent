@@ -1,0 +1,13 @@
+{
+  "name": "Research Analyzer Prompt A/B v1",
+  "version": "1.0.0",
+  "frozen": true,
+  "cases": [
+    {"id":"time_trend_gap","query":"调研2023年以来Agent反思机制的趋势、代表论文和研究空白","expected_level":"L3","expected_skill":"literature_review","objective_terms":["2023年以来","趋势","研究空白"],"dimension_any":["反馈","记忆","评测"],"requires_multiple_sources":true},
+    {"id":"architecture_value","query":"系统调研Agent架构的前景、价值、代表论文与研究空白","expected_level":"L3","expected_skill":"literature_review","objective_terms":["价值","代表论文","研究空白"],"dimension_any":["价值","成本","潜力"],"requires_multiple_sources":true},
+    {"id":"compare_research_value","query":"比较GraphRAG和LightRAG哪个更有研究价值，并分析趋势与研究空白","expected_level":"L3","expected_skill":"literature_review","objective_terms":["比较","趋势","研究空白"],"dimension_any":["价值","成本","效果"],"requires_multiple_sources":true},
+    {"id":"multi_dimension_architecture","query":"系统比较Agent规划、记忆和工具使用架构的前景、成本、可评测性与研究空白","expected_level":"L3","expected_skill":"literature_review","objective_terms":["比较","研究空白"],"dimension_any":["成本","可评测性"],"requires_multiple_sources":true},
+    {"id":"graphrag_open_problems","query":"系统调研GraphRAG研究前景、代表论文和开放问题，并形成综述报告","expected_level":"L3","expected_skill":"literature_review","objective_terms":["代表论文"],"dimension_any":["成本","效果","前景"],"requires_multiple_sources":true},
+    {"id":"self_evolution","query":"系统调研Agent自进化的趋势、价值、代表论文和研究空白","expected_level":"L3","expected_skill":"literature_review","objective_terms":["趋势","价值","代表论文","研究空白"],"dimension_any":["价值","安全","评测"],"requires_multiple_sources":true}
+  ]
+}

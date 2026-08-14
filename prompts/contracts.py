@@ -6,7 +6,8 @@ from __future__ import annotations
 PROMPT_VERSIONS = {
     "reason": "reason_v1",
     "evaluate": "evaluate_v1",
-    "research_analyze": "research_analyzer_v1",
+    "research_analyze": "research_analyzer_v1_zero_shot",
+    "research_analyze_few_shot": "research_analyzer_v2_few_shot",
     "qa": "qa_v2_security",
     "paper_summary": "paper_summary_v2_security",
     "paper_compare": "paper_compare_v2_security",

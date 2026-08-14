@@ -54,6 +54,7 @@ jobs:
           tests/test_zotero_mcp.py
           tests/test_prompt_contracts.py
           tests/test_prompt_security_eval.py
+          tests/test_research_analyzer_prompt_ab.py
           tests/test_test_catalog.py
 
   docker:

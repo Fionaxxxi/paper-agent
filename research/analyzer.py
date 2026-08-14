@@ -130,18 +130,54 @@ def enforce_analysis_policy(
     )
 
 
-def analyze_with_llm(query):
-    llm = ChatOpenAI(model=settings.MODEL_NAME, api_key=settings.OPENAI_API_KEY,
-                     base_url=settings.OPENAI_BASE_URL, temperature=0,
-                     timeout=settings.LLM_TIMEOUT, max_retries=1)
-    prompt = f"""将用户研究请求转换为严格 JSON，不要输出额外文字。
+def build_analyzer_prompt(query: str, variant: str = "zero_shot") -> str:
+    instruction = """将用户研究请求转换为严格 JSON，不要输出额外文字。
 字段：intent, task_level(L1/L2/L3), topic, objectives(1-6), evaluation_dimensions,
 source_requirements, primary_skill, secondary_skills, requires_retrieval,
 requires_multiple_sources, requires_report, confidence, reason。
+等级边界：L1 是单一搜索/事实问题；L2 是单主题方向分析或明确方法比较；
+L3 是同时要求趋势、价值、代表论文、研究空白、时间范围或多维系统报告中的多个目标。
+primary_skill 只能是 qa、paper_compare、research_direction、literature_review、paper_critique。"""
+    if variant == "zero_shot":
+        return f"""{instruction}
 用户请求：{query}"""
+    if variant != "few_shot":
+        raise ValueError("Research Analyzer Prompt variant 必须是 zero_shot 或 few_shot")
+    examples = """
+示例1
+用户请求：检索有关 RAG 的代表论文
+输出：{"intent":"paper_search","task_level":"L1","topic":"RAG","objectives":["检索代表论文"],"evaluation_dimensions":[],"source_requirements":["academic_papers"],"primary_skill":"qa","secondary_skills":[],"requires_retrieval":true,"requires_multiple_sources":false,"requires_report":false,"confidence":0.96,"reason":"单一论文检索，代表论文只是证据要求"}
+
+示例2
+用户请求：比较 ReAct 和 Reflexion 的机制
+输出：{"intent":"research_comparison","task_level":"L2","topic":"ReAct 与 Reflexion","objectives":["比较两种机制"],"evaluation_dimensions":["推理行动","反馈记忆"],"source_requirements":["academic_papers"],"primary_skill":"paper_compare","secondary_skills":[],"requires_retrieval":true,"requires_multiple_sources":false,"requires_report":false,"confidence":0.94,"reason":"明确的双方法比较"}
+
+示例3
+用户请求：Agent Memory 未来趋势是什么
+输出：{"intent":"research_direction","task_level":"L2","topic":"Agent Memory","objectives":["分析未来趋势"],"evaluation_dimensions":["技术方向","应用价值"],"source_requirements":["academic_papers"],"primary_skill":"research_direction","secondary_skills":[],"requires_retrieval":true,"requires_multiple_sources":false,"requires_report":false,"confidence":0.9,"reason":"单主题方向分析"}
+
+示例4
+用户请求：调研2023年以来Agent反思机制的趋势、代表论文和研究空白
+输出：{"intent":"deep_research","task_level":"L3","topic":"Agent反思机制","objectives":["梳理2023年以来代表论文","分析2023年以来研究趋势","识别研究空白"],"evaluation_dimensions":["反思机制","记忆利用","反馈来源","可评测性"],"source_requirements":["academic_papers","multiple_sources"],"primary_skill":"literature_review","secondary_skills":["research_direction"],"requires_retrieval":true,"requires_multiple_sources":true,"requires_report":true,"confidence":0.94,"reason":"包含时间范围、趋势、代表论文和研究空白的多目标系统调研"}
+"""
+    return f"""{instruction}
+{examples}
+现在处理新请求，只输出一个 JSON 对象。
+用户请求：{query}"""
+
+
+def analyze_with_llm(query, variant: str | None = None):
+    llm = ChatOpenAI(model=settings.MODEL_NAME, api_key=settings.OPENAI_API_KEY,
+                     base_url=settings.OPENAI_BASE_URL, temperature=0,
+                     timeout=settings.LLM_TIMEOUT, max_retries=1)
+    variant = variant or settings.RESEARCH_ANALYZER_PROMPT_VARIANT
+    prompt = build_analyzer_prompt(query, variant)
+    prompt_version_name = (
+        "research_analyze_few_shot" if variant == "few_shot" else "research_analyze"
+    )
     response, usage = invoke_llm_with_usage(
         llm, prompt, "research_analyze", settings.MODEL_NAME,
-        prompt_version=get_prompt_version("research_analyze"),
+        prompt_version=get_prompt_version(prompt_version_name),
     )
     text = response.content.strip()
     # 兼容 OpenAI-compatible 模型可能返回的 thinking 标签、Markdown fenced

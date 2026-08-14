@@ -83,6 +83,8 @@ class Settings(BaseSettings):
     REASON_WITH_LLM: bool = True
     REASON_CONFIDENCE_THRESHOLD: float = 0.75
     RESEARCH_ANALYSIS_WITH_LLM: bool = True
+    RESEARCH_ANALYZER_PROMPT_VARIANT: str = "zero_shot"
+    RESEARCH_ANALYZER_PROMPT_VARIANT: str = "zero_shot"
 
     model_config = SettingsConfigDict(
         env_file=".env",

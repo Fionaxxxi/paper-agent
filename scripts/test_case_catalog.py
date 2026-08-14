@@ -264,6 +264,31 @@ TEST_CASE_CATALOG: dict[str, CaseDescription] = {
         "日常 CI 可零费用运行，在线测试必须由用户显式确认。",
         "若失败，普通测试可能意外产生模型费用。",
     ),
+    "tests/test_research_analyzer_prompt_ab.py::test_few_shot_prompt_contains_boundary_examples_and_keeps_new_query_last": _description(
+        "验证 few-shot 候选包含 L1/L2/L3 边界示例，并把待分析请求放在示例之后。",
+        "模型先读取固定示例，再只处理最后的新请求。",
+        "若失败，示例可能缺少关键边界或覆盖真实用户输入。",
+    ),
+    "tests/test_research_analyzer_prompt_ab.py::test_zero_shot_prompt_has_no_examples_and_unknown_variant_is_rejected": _description(
+        "验证 zero-shot 保持紧凑，且未知 Prompt variant 不能静默回退。",
+        "生产默认成本不变，配置错误会立即暴露。",
+        "若失败，A/B 组可能混用 Prompt，导致结果不可解释。",
+    ),
+    "tests/test_research_analyzer_prompt_ab.py::test_analyzer_prompt_ab_dataset_is_frozen_and_has_six_l3_boundaries": _description(
+        "验证 Analyzer A/B 数据集冻结为六个真正会进入 LLM 的 L3 边界案例。",
+        "测试聚焦时间、趋势、空白、多维比较和多来源约束。",
+        "若失败，A/B 可能测试生产中不会调用模型的简单路径。",
+    ),
+    "tests/test_research_analyzer_prompt_ab.py::test_analyzer_ab_grader_checks_objectives_dimensions_and_source_requirement": _description(
+        "验证 A/B 判分同时检查等级、Skill、目标约束、评价维度、多来源和报告要求。",
+        "结构化 JSON 能解析但遗漏研究约束时仍判失败。",
+        "若失败，表面格式正确的低质量分析可能被错误晋升。",
+    ),
+    "tests/test_research_analyzer_prompt_ab.py::test_ab_promotion_requires_quality_gain_and_bounded_token_cost": _description(
+        "验证 few-shot 只有质量提升至少10个百分点且 Token 增幅不超过250%时才允许晋升。",
+        "准确率收益和成本共同进入选择门槛，默认离线模式保持零调用。",
+        "若失败，高成本无收益 Prompt 可能被写入生产配置。",
+    ),
     "tests/test_benchmark.py::test_baseline_and_candidate_cover_the_same_modules": _description(
         "确认旧基线与当前候选实现使用完全相同的能力模块，保证能力对比口径一致。",
         "两组结果都覆盖意图路由、查询规划、结果合并、重试路由、LLM 用量和工具执行六个模块。",
