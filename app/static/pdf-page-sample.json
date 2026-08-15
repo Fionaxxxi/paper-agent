@@ -26,6 +26,18 @@
       "content_types": ["text", "figure"],
       "character_count": 1217,
       "text": "GraphRAG 索引流程页面的 OCR 摘要"
+    },
+    "pdf_grounding_validation": {
+      "enabled": true,
+      "status": "passed",
+      "passed": true,
+      "skill": "figure_understanding",
+      "pages": [3],
+      "vision_used": true,
+      "checks": {"page_reference": true, "evidence_mode": true, "uncertainty_disclosed": true},
+      "failure_types": [],
+      "issues": [],
+      "should_reflect": false
     }
   },
   "node_timings": {

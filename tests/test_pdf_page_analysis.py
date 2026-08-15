@@ -12,6 +12,8 @@ from nodes import generate as generate_module
 from skills.pdf_multimodal_skills import FigureUnderstandingSkill, FormulaExplanationSkill, TableAnalysisSkill
 from skills.pdf_reading_skill import PDFReadingSkill
 from skills.router import get_skill
+from validators.answer_quality_validator import verify_answer
+from validators.pdf_grounding_validator import validate_pdf_grounding
 
 
 def _make_pdf(path):
@@ -193,3 +195,43 @@ def test_pdf_subskills_keep_grounding_and_uncertainty_rules():
     assert "不得猜测或补齐" in table_prompt and "比较对象和数值" in table_prompt
     assert "不凭常见记号猜测" in formula_prompt
     assert all("<UNTRUSTED_EVIDENCE" in prompt for prompt in (figure_prompt, table_prompt, formula_prompt))
+
+
+def test_pdf_grounding_validator_passes_traceable_visual_answer():
+    result = validate_pdf_grounding({
+        "task_type": "pdf_reading", "answer": "证据范围：第 3 页；证据模式：OCR/视觉证据与提取文本。图中流程如下。",
+        "pdf_selected_pages": [3], "pdf_vision_status": "used",
+        "paper_metadata": {"skill_used": "figure_understanding", "pdf_visual_evidence": {"text": "Figure 1 flow"}},
+    })
+
+    assert result["passed"] is True
+    assert all(result["checks"].values())
+    assert result["should_reflect"] is False
+
+
+def test_pdf_grounding_validator_blocks_missing_scope_without_reflection():
+    state = {
+        "task_type": "pdf_reading", "answer": "该变量表示模型状态。",
+        "pdf_text": "公式中的符号无法识别", "pdf_selected_pages": [2],
+        "pdf_vision_status": "rendered_text_only",
+        "paper_metadata": {"skill_used": "formula_explanation", "pdf_visual_evidence": {"text": "符号无法识别"}},
+    }
+    grounding = validate_pdf_grounding(state)
+    verification = verify_answer({**state, "pdf_grounding_validation": grounding})
+
+    assert grounding["passed"] is False
+    assert set(grounding["failure_types"]) == {"page_reference", "evidence_mode", "uncertainty_disclosed"}
+    assert verification.passed is False
+    assert verification.should_reflect is False
+
+
+def test_pdf_grounding_validator_skips_generic_and_non_pdf_answers():
+    generic_pdf = validate_pdf_grounding({
+        "task_type": "pdf_reading", "paper_metadata": {"skill_used": "pdf_reading"}
+    })
+    normal_qa = validate_pdf_grounding({
+        "task_type": "qa", "paper_metadata": {"skill_used": "figure_understanding"}
+    })
+
+    assert generic_pdf["status"] == "not_applicable"
+    assert normal_qa["status"] == "not_applicable"

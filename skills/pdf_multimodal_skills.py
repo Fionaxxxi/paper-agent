@@ -2,12 +2,20 @@ from agent.state import AgentState
 from skills.pdf_reading_skill import PDFReadingSkill
 
 
+def _grounding_instruction(state: AgentState) -> str:
+    pages = state.get("pdf_selected_pages", [])
+    page_text = "、".join(f"第 {page} 页" for page in pages) or "全文"
+    vision_used = state.get("pdf_vision_status") == "used"
+    mode = "OCR/视觉证据与提取文本" if vision_used else "仅依据提取文本或图注（未使用视觉证据）"
+    return f"\n回答开头必须写明：证据范围：{page_text}；证据模式：{mode}。\n"
+
+
 class FigureUnderstandingSkill(PDFReadingSkill):
     name = "figure_understanding"
     description = "论文架构图、流程图与示意图解释 Skill"
 
     def build_prompt(self, state: AgentState) -> str:
-        return super().build_prompt(state) + """
+        return super().build_prompt(state) + _grounding_instruction(state) + """
 
 当前子任务是解释论文图像。请优先说明：
 1. 图的目标以及输入、输出；
@@ -25,7 +33,7 @@ class TableAnalysisSkill(PDFReadingSkill):
     description = "论文实验表格与数值比较 Skill"
 
     def build_prompt(self, state: AgentState) -> str:
-        return super().build_prompt(state) + """
+        return super().build_prompt(state) + _grounding_instruction(state) + """
 
 当前子任务是分析论文表格。请优先说明：
 1. 表格比较对象、数据集、指标及数值方向（越高或越低越好）；
@@ -43,7 +51,7 @@ class FormulaExplanationSkill(PDFReadingSkill):
     description = "论文公式、损失函数与符号解释 Skill"
 
     def build_prompt(self, state: AgentState) -> str:
-        return super().build_prompt(state) + """
+        return super().build_prompt(state) + _grounding_instruction(state) + """
 
 当前子任务是解释论文公式。请优先说明：
 1. 公式在方法中的作用；

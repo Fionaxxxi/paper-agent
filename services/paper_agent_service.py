@@ -163,6 +163,7 @@ class PaperAgentService:
             "research_coverage": {},
             "citation_validation": {},
             "citation_repair": {},
+            "pdf_grounding_validation": {},
             "node_timings": {},
             "paper_metadata": {
                 "conversation_id": conversation_id,
@@ -259,6 +260,7 @@ class PaperAgentService:
                 "research_coverage": result.get("research_coverage", {}),
                 "citation_validation": result.get("citation_validation", {}),
                 "citation_repair": result.get("citation_repair", {}),
+                "pdf_grounding_validation": result.get("pdf_grounding_validation", {}),
                 "pdf_path": pdf_path,
                 "pdf_page_count": result.get("pdf_page_count", pdf_page_count),
                 "pdf_error": result.get("pdf_error", pdf_error),

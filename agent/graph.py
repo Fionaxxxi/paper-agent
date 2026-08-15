@@ -22,6 +22,7 @@ from nodes.repository_enrich import repository_enrich_node
 from nodes.research_coverage import research_coverage_node
 from nodes.research_citation_validate import research_citation_validate_node
 from nodes.research_citation_repair import research_citation_repair_node
+from nodes.pdf_grounding_validate import pdf_grounding_validate_node
 
 from utils.timer import timed_node
 
@@ -108,6 +109,10 @@ def build_graph(checkpointer=None):
         "research_citation_repair",
         timed_node("research_citation_repair", research_citation_repair_node),
     )
+    workflow.add_node(
+        "pdf_grounding_validate",
+        timed_node("pdf_grounding_validate", pdf_grounding_validate_node),
+    )
 
     workflow.add_node(
         "metrics",
@@ -182,7 +187,8 @@ def build_graph(checkpointer=None):
     workflow.add_edge("reason", "generate")
     workflow.add_edge("generate", "research_citation_validate")
     workflow.add_edge("research_citation_validate", "research_citation_repair")
-    workflow.add_edge("research_citation_repair", "answer_verify")
+    workflow.add_edge("research_citation_repair", "pdf_grounding_validate")
+    workflow.add_edge("pdf_grounding_validate", "answer_verify")
     workflow.add_conditional_edges(
         "answer_verify",
         route_after_answer_verify,
@@ -191,7 +197,7 @@ def build_graph(checkpointer=None):
             "finish": "metrics",
         },
     )
-    workflow.add_edge("answer_reflect", "answer_verify")
+    workflow.add_edge("answer_reflect", "pdf_grounding_validate")
     workflow.add_edge("metrics", END)
 
     return workflow.compile(checkpointer=checkpointer)

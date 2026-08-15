@@ -1759,6 +1759,21 @@ TEST_CASE_CATALOG: dict[str, CaseDescription] = {
         "代表专项分析不会通过猜测布局、补齐数值或套用常见符号含义来制造结论。",
         "若失败，多模态回答可能越过实际页面证据并产生看似专业但无法验证的内容。",
     ),
+    "tests/test_pdf_page_analysis.py::test_pdf_grounding_validator_passes_traceable_visual_answer": _description(
+        "验证标明重点页码和OCR/视觉证据模式的专项PDF回答通过Grounding检查。",
+        "代表图表公式结论能够追溯到用户指定页面，并清楚披露使用了图片出站识别。",
+        "若失败，合规回答会被误阻断，或系统无法确认视觉证据的使用范围。",
+    ),
+    "tests/test_pdf_page_analysis.py::test_pdf_grounding_validator_blocks_missing_scope_without_reflection": _description(
+        "验证缺少页码、证据模式和识别不确定性的专项回答被阻断且不自动Reflection。",
+        "代表确定性审计能发现失去证据边界的回答，同时不会为格式缺陷增加Token。",
+        "若失败，系统可能放行无法追溯的公式解释，或进入不必要的模型修复循环。",
+    ),
+    "tests/test_pdf_page_analysis.py::test_pdf_grounding_validator_skips_generic_and_non_pdf_answers": _description(
+        "验证通用PDF阅读和普通问答不适用专项Grounding规则。",
+        "代表新增验证器只约束图表公式能力，不破坏已有快速路径和全文总结。",
+        "若失败，普通回答可能被要求提供并不存在的视觉证据说明。",
+    ),
 }
 
 

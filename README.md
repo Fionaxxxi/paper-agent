@@ -171,6 +171,10 @@ PDF_VISION_MODEL_NAME=qwen3.5-ocr
 
 PDF 阅读会按用户的明确表达进行零 LLM 子路由：公式、损失函数和符号问题进入 `FormulaExplanationSkill`；实验表格、指标和消融问题进入 `TableAnalysisSkill`；架构图、流程图和示意图问题进入 `FigureUnderstandingSkill`；其余请求继续使用 `PDFReadingSkill`。专项 Skill 不增加调用次数，只改变主模型的证据检查与回答结构；视觉未启用时仍只能依据图注和提取文本。
 
+专项 PDF 回答生成后还会经过零 LLM 的 `PDF Grounding Validator`：检查是否写明全部重点页码、是否披露使用了 OCR/视觉证据或仅提取文本，以及 OCR 存在识别不确定性时是否保留限制。结果通过 `paper_metadata.pdf_grounding_validation` 和网页执行轨迹公开；验证失败会影响最终 Answer Verification，但不会自动触发 Reflection，避免为了格式披露增加模型调用。
+
+专项 PDF 回答生成后还会经过零 LLM 的 `PDF Grounding Validator`：检查是否写明全部重点页码、是否披露使用了 OCR/视觉证据或仅提取文本，以及 OCR 存在识别不确定性时是否保留限制。结果通过 `paper_metadata.pdf_grounding_validation` 和网页执行轨迹公开；验证失败会影响最终 Answer Verification，但不会自动触发 Reflection，避免为了格式披露增加模型调用。
+
 运行一次受保护的真实 OCR 冒烟（默认只发送 GraphRAG 第 3 页）：
 
 ```powershell

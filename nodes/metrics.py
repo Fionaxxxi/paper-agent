@@ -243,6 +243,8 @@ def metrics_node(state: AgentState) -> AgentState:
         "pdf_page_count": state.get("pdf_page_count", 0),
         "pdf_selected_pages": state.get("pdf_selected_pages", []),
         "pdf_vision_status": state.get("pdf_vision_status", "not_requested"),
+        "pdf_grounding_status": state.get("pdf_grounding_validation", {}).get("status", "not_applicable"),
+        "pdf_grounding_passed": state.get("pdf_grounding_validation", {}).get("passed", True),
         "pdf_error": state.get("pdf_error", ""),
 
         # Timing

@@ -87,8 +87,18 @@ def verify_answer(state: dict[str, Any]) -> AnswerVerification:
     # Research citation failures先进入可观测基线；在独立验证前不自动增加
     # Writer Reflection调用。普通答案仍沿用现有一次Reflection策略。
     citation_failed = bool(citation_validation.get("enabled") and not citation_validation.get("passed", False))
+    pdf_grounding = state.get("pdf_grounding_validation", {})
+    pdf_grounding_failed = bool(pdf_grounding.get("enabled") and not pdf_grounding.get("passed", False))
+    if pdf_grounding_failed:
+        failures.extend(
+            failure for failure in pdf_grounding.get("failure_types", [])
+            if failure not in failures
+        )
+        issues.extend(pdf_grounding.get("issues", []))
+        score = min(score, 0.7)
     should_reflect = bool(
-        failures and has_repair_context and not state.get("error_message") and not citation_failed
+        failures and has_repair_context and not state.get("error_message")
+        and not citation_failed and not pdf_grounding_failed
     )
 
     return AnswerVerification(

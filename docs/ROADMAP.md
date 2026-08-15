@@ -1631,6 +1631,10 @@ Push / Pull Request
 
 2026-08-15 已完成 Figure/Table/Formula 三类 PDF 子 Skill 路由。路由只检查用户明确表达，不调用额外 LLM：公式、方程、损失函数和符号进入 `FormulaExplanationSkill`，实验表格、指标和消融进入 `TableAnalysisSkill`，架构图、流程图和示意图进入 `FigureUnderstandingSkill`，其余请求保持 `PDFReadingSkill`。三类 Prompt 分别约束符号定义、数值比较和视觉关系，并继承 PDF 不可信证据边界；视觉状态不是 `used` 时不得声称观察到布局。下一步补一个不调用模型的 PDF Grounding Validator，检查专项回答是否披露页码、证据模式与识别不确定性，不扩大多模态评测集。
 
+2026-08-15 已完成 PDF Grounding Validator v1。主图在生成与 Citation Repair 后、Answer Verify 前新增零 LLM 审计节点，只对 Figure/Table/Formula 专项回答启用：指定页必须全部出现，回答必须披露 OCR/视觉或仅文本证据模式，OCR 材料含无法识别、不清晰或未定义信号时必须保留不确定性。失败合并进 Answer Verification 并限制分数，但明确 `should_reflect=false`，不会为证据披露格式开启新循环。服务响应、Metrics、网页轨迹和冻结 PDF 示例均展示验证状态。下一步结束多模态 PDF v1 的连续开发，回到原计划中尚未完成且简历价值较高的 Structured Output，先为三类 PDF 专项回答定义轻量 Pydantic 结果契约，不做在线大规模评测。
+
+2026-08-15 已完成 PDF Grounding Validator v1。主图在生成与 Citation Repair 后、Answer Verify 前新增零 LLM 审计节点，只对 Figure/Table/Formula 专项回答启用：指定页必须全部出现，回答必须披露 OCR/视觉或仅文本证据模式，OCR 材料含无法识别、不清晰或未定义信号时必须保留不确定性。失败合并进 Answer Verification 并限制分数，但明确 `should_reflect=false`，不会为证据披露格式开启新循环。服务响应、Metrics、网页轨迹和冻结 PDF 示例均展示验证状态。下一步结束多模态 PDF v1 的连续开发，回到原计划中尚未完成且简历价值较高的 Structured Output，先为三类 PDF 专项回答定义轻量 Pydantic 结果契约，不做在线大规模评测。
+
 2026-08-12 子查询并行已完成 5 次确定性离线重复基准：3 个子查询、2 个 worker 时，中位延迟由 265.4ms 降至 172.3ms，加速 1.54 倍、延迟下降 35.09%，结果与规划顺序一致率 100%，达到阶段门槛并收口。
 
 随后已开始 Retrieval Replan v1：现有“低分后只扩大结果数”的普通重试升级为可审计的失败分类与受限动作。暂时工具失败保持原查询，零结果放宽字面限制，有结果但低相关时追加综述上下文；新查询覆盖旧子查询计划，仍受最多重试一次约束，全程不增加 LLM 调用或付费工具。下一步评测 Replan 相对普通重试的恢复率、无效重试率和动作分类准确率。
