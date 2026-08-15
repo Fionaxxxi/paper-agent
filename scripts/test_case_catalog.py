@@ -1394,6 +1394,11 @@ TEST_CASE_CATALOG: dict[str, CaseDescription] = {
         "无效参数不会发送给 MCP Server，远程失败也不会伪装成成功结果。",
         "若失败，不可信参数或 MCP 错误可能绕过工具执行约束进入工作流。",
     ),
+    "tests/test_mcp_adapter.py::test_mcp_adapter_understands_sdk_snake_case_error_result": _description(
+        "验证通用MCP Adapter识别新版SDK对象中的is_error和文本错误内容。",
+        "真实MCP网络或服务错误会转成统一ToolResult，而不是被误当作结构化成功结果。",
+        "若失败，外部MCP故障可能表现为误导性的Pydantic输出校验错误。",
+    ),
     "tests/test_mcp_stdio_integration.py::test_real_stdio_mcp_server_returns_local_paper_catalog": _description(
         "验证 PaperAgent 通过官方 MCP SDK 和 stdio 真正启动只读 Server、完成协议调用并返回本地论文目录。",
         "真实 MCP 调用返回 ReAct 论文，并记录 stdio 传输和 Server 身份。",
@@ -1668,6 +1673,26 @@ TEST_CASE_CATALOG: dict[str, CaseDescription] = {
         "验证Compose挂载数据与日志目录、为SQLite记忆使用Linux命名卷，并通过FastAPI健康端点探测服务。",
         "容器重建后项目数据仍保留，Windows环境下SQLite WAL也可稳定工作。",
         "若失败，重建容器可能丢失运行数据或无法识别启动故障。",
+    ),
+    "tests/test_github_mcp.py::test_github_search_uses_versioned_get_and_keeps_token_out_of_url": _description(
+        "验证GitHub仓库搜索只调用固定版本的GET端点，Token仅放在请求头。",
+        "搜索结果可标准化，且凭据不会进入URL、查询参数或工具结果。",
+        "若失败，仓库搜索可能不稳定或在日志中泄露凭据。",
+    ),
+    "tests/test_github_mcp.py::test_github_inspect_normalizes_implementation_evidence": _description(
+        "验证仓库检查统一整理README、目录、依赖、Issue、Release和Commit。",
+        "研究报告可把论文方法与真实工程实现证据进行对照。",
+        "若失败，代码侧证据可能缺失、混入Pull Request或字段格式不一致。",
+    ),
+    "tests/test_github_mcp.py::test_github_tools_are_registered_read_only_and_explicitly_routed": _description(
+        "验证搜索与检查工具均注册为只读，并通过明确能力和github来源路由。",
+        "GitHub不会自动替代论文检索，也不能绕过统一Policy和Executor。",
+        "若失败，工具可能不可调用或被错误接入普通检索路径。",
+    ),
+    "tests/test_github_mcp.py::test_github_repository_schema_rejects_path_or_url_injection": _description(
+        "验证仓库参数只接受owner/repo，不接受URL、目录穿越或额外路径。",
+        "MCP Server只能访问预定义仓库端点，不能被参数改造成任意HTTP客户端。",
+        "若失败，输入可能逃逸固定只读API边界。",
     ),
 }
 

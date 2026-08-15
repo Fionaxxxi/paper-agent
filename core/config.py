@@ -45,6 +45,11 @@ class Settings(BaseSettings):
     ZOTERO_API_KEY: str = ""
     ZOTERO_MAX_RESULTS: int = 5
 
+    # GitHub read-only MCP
+    GITHUB_API_BASE_URL: str = "https://api.github.com"
+    GITHUB_TOKEN: str = ""
+    GITHUB_MAX_RESULTS: int = 5
+
     # Tool execution
     TOOL_TIMEOUT_SECONDS: float = 45.0
 
@@ -83,7 +88,6 @@ class Settings(BaseSettings):
     REASON_WITH_LLM: bool = True
     REASON_CONFIDENCE_THRESHOLD: float = 0.75
     RESEARCH_ANALYSIS_WITH_LLM: bool = True
-    RESEARCH_ANALYZER_PROMPT_VARIANT: str = "zero_shot"
     RESEARCH_ANALYZER_PROMPT_VARIANT: str = "zero_shot"
 
     model_config = SettingsConfigDict(

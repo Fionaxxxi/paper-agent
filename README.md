@@ -198,6 +198,30 @@ ZOTERO_MAX_RESULTS=5
 
 群组库将 `ZOTERO_LIBRARY_TYPE` 改为 `group`，并填写群组 ID。PaperAgent 固定请求 Zotero Web API v3，只提供 GET 搜索；Key 仅通过 `Zotero-API-Key` 请求头传递。v1 返回文献元数据、标签、Collection Key、子笔记和 PDF 附件 Key；它只能识别 PDF 附件是否存在，尚未下载或解析附件全文。配置缺失或调用失败时返回空个人库结果和错误轨迹，不使用公共 fallback 论文掩盖失败。
 
+### GitHub 只读 MCP
+
+GitHub MCP v1 提供两个独立能力，不会自动替换论文检索：
+
+```text
+repository.search + github
+→ code.repository.search.github.mcp
+→ 按论文名、研究主题或关键词搜索候选仓库
+
+repository.inspect + github
+→ code.repository.inspect.github.mcp
+→ 读取指定 owner/repo 的 README、目录、依赖文件、开放 Issue、Release 和最近 Commit
+```
+
+公开仓库无需 Token 即可使用。建议在 `.env` 配置 Token，以提高 API 限额；只授予需要读取的最小权限：
+
+```env
+GITHUB_API_BASE_URL=https://api.github.com
+GITHUB_TOKEN=
+GITHUB_MAX_RESULTS=5
+```
+
+工具只调用固定 GitHub REST GET 端点，使用 `2022-11-28` API 版本；Token 只通过 `Authorization` 请求头传递。仓库参数必须是 `owner/repo`，不能传 URL、相对路径或额外 API 子路径。v1 采用显式调用边界：只有研究计划明确需要“论文—代码实现对照”时，后续编排层才应依次调用搜索和检查，不让普通聊天或常规论文检索承担额外网络成本。
+
 ## 测试
 
 简历展示阶段采用轻量验收：新增能力主要运行代表性冒烟测试和关键回归测试，不再默认进行研究级大规模重复评测。
@@ -281,7 +305,7 @@ LangGraph 已接入官方 `SqliteSaver`，使用 `conversation_id` 作为 `threa
 3. 使用 SQLite/检查点建立结构化记忆，并生成可阅读的 Markdown LLM Wiki；
 4. 实现 Literature Review、Paper Critique 等高价值科研 Skill 和结构化输出；
 5. 增加 L0～L3 分级任务路由，仅对 L3 深度研究启用 Research Brief、Planner / Executor / Reviewer、Evidence Coverage 和 Checkpoint；
-6. 依次接入只读 Zotero 和只读 GitHub 外部 MCP；
+6. 已接入只读 Zotero 和 GitHub 外部 MCP；GitHub 已具备仓库搜索与实现证据读取，下一阶段再按研究计划显式编排“论文—代码对照”；
 7. 实现用户指定页面的多模态 PDF 分析；
 8. 已完成 Research Agent Web 轨迹展示、零 API 冻结演示、最小 Docker 和基础 CI；后续只做可选部署与演示材料整理。
 

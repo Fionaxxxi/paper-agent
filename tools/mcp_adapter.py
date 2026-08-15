@@ -49,12 +49,16 @@ class MCPToolAdapter:
     def _unwrap(result: Any) -> Any:
         """兼容直接结构化数据和 MCP SDK 常见 structuredContent 包装。"""
         if isinstance(result, dict):
-            if result.get("isError") is True:
+            if result.get("isError") is True or result.get("is_error") is True:
                 raise RuntimeError(str(result.get("error") or result.get("content") or "MCP tool failed"))
             if "structuredContent" in result:
                 return result["structuredContent"]
             if "structured_content" in result:
                 return result["structured_content"]
+        if getattr(result, "isError", False) is True or getattr(result, "is_error", False) is True:
+            content = getattr(result, "content", None) or []
+            message = " ".join(str(getattr(item, "text", item)) for item in content)
+            raise RuntimeError(message or "MCP tool failed")
         structured = getattr(result, "structuredContent", None)
         if structured is None:
             structured = getattr(result, "structured_content", None)

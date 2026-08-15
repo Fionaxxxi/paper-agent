@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from types import SimpleNamespace
 
 from tools.contracts import ToolRiskLevel, ToolSpec
 from tools.executor import ToolExecutor
@@ -44,3 +45,26 @@ def test_mcp_adapter_preserves_validation_and_rejects_remote_errors():
     failed=executor.execute("paper.search.mcp_error",{"query":"agent"})
     assert failed.error_code == "EXECUTION_ERROR"
     assert "remote unavailable" in failed.error_message
+
+
+def test_mcp_adapter_understands_sdk_snake_case_error_result():
+    class SDKErrorClient:
+        def call_tool(self, _name, _arguments):
+            return SimpleNamespace(
+                is_error=True,
+                structured_content=None,
+                content=[SimpleNamespace(text="GitHub network unavailable")],
+            )
+
+    adapter = MCPToolAdapter(
+        SDKErrorClient(), "search_repositories",
+        ToolSpec(name="repository.search.mcp_error", version="1.0", description="error", input_model=Input, output_model=Output, provider="mcp_demo", risk_level=ToolRiskLevel.READ_ONLY),
+        MCPServerIdentity("demo"),
+    )
+    registry = ToolRegistry()
+    registry.register(adapter)
+
+    failed = ToolExecutor(registry).execute("repository.search.mcp_error", {"query": "agent"})
+
+    assert failed.error_code == "EXECUTION_ERROR"
+    assert "GitHub network unavailable" in failed.error_message
