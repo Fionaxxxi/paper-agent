@@ -38,6 +38,18 @@
       "failure_types": [],
       "issues": [],
       "should_reflect": false
+    },
+    "pdf_structured_output": {
+      "enabled": true,
+      "status": "valid",
+      "valid": true,
+      "schema": "FigureUnderstandingOutput",
+      "data": {
+        "summary": "GraphRAG 索引流程",
+        "components": ["实体关系抽取", "社区检测", "社区摘要"],
+        "relationships": ["抽取结果进入社区检测，随后生成社区摘要"],
+        "evidence_scope": {"pages": [3], "evidence_mode": "ocr_visual", "uncertainties": []}
+      }
     }
   },
   "node_timings": {

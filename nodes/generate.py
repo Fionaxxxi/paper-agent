@@ -19,6 +19,7 @@ from document_loader.pdf_visual_evidence import (
 )
 from research.writer import build_coverage_blocked_answer, build_writer_prompt
 from prompts.contracts import get_prompt_version, wrap_untrusted_evidence
+from skills.pdf_structured_output import parse_pdf_structured_output
 
 
 def get_llm(model_name: str | None = None):
@@ -246,10 +247,17 @@ def generate_node(state: AgentState) -> AgentState:
             prompt_version=prompt_version,
         )
         usage_update = build_llm_usage_update(usage_state, usage_record)
+        answer, structured_output = parse_pdf_structured_output(
+            str(response.content),
+            skill.name,
+            expected_pages=state.get("pdf_selected_pages", []) or None,
+            expected_evidence_mode=("ocr_visual" if vision_requested else "text_only")
+            if state.get("task_type") == "pdf_reading" else None,
+        )
 
         return {
             **usage_update,
-            "answer": response.content,
+            "answer": answer,
             "pdf_vision_status": "used" if vision_requested else state.get("pdf_vision_status", "not_requested"),
             "paper_metadata": {
                 **skill_state.get("paper_metadata", {}),
@@ -260,6 +268,7 @@ def generate_node(state: AgentState) -> AgentState:
                 "pdf_synthesis_model": settings.MODEL_NAME if vision_requested else "",
                 "pdf_visual_page_count": len(state.get("pdf_page_images", [])) if vision_requested else 0,
                 "pdf_visual_evidence": visual_evidence if vision_requested else {},
+                "pdf_structured_output": structured_output,
             },
         }
 

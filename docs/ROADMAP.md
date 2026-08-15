@@ -1633,6 +1633,8 @@ Push / Pull Request
 
 2026-08-15 已完成 PDF Grounding Validator v1。主图在生成与 Citation Repair 后、Answer Verify 前新增零 LLM 审计节点，只对 Figure/Table/Formula 专项回答启用：指定页必须全部出现，回答必须披露 OCR/视觉或仅文本证据模式，OCR 材料含无法识别、不清晰或未定义信号时必须保留不确定性。失败合并进 Answer Verification 并限制分数，但明确 `should_reflect=false`，不会为证据披露格式开启新循环。服务响应、Metrics、网页轨迹和冻结 PDF 示例均展示验证状态。下一步结束多模态 PDF v1 的连续开发，回到原计划中尚未完成且简历价值较高的 Structured Output，先为三类 PDF 专项回答定义轻量 Pydantic 结果契约，不做在线大规模评测。
 
+2026-08-15 已完成 PDF Structured Output v1。Figure、Table、Formula 分别使用严格 Pydantic 契约描述组件关系、指标比较和符号定义，并共享最多 3 页的 Evidence Scope、`text_only / ocr_visual` 证据模式与不确定性列表。专项 Prompt 在中文答案末尾附机器 JSON；解析器移除该块后返回可读答案，校验成功的数据进入 `pdf_structured_output`，页码或模式与真实 State 不一致、额外字段、非法枚举及缺失 JSON 均记录为 `invalid`。当前主模型不支持原生结构化输出，因此失败保持中文回答并继续流程，不触发额外调用。下一步只做一条 Fake LLM 端到端图路径验证和一条受保护在线冒烟，再决定是否晋升为简历演示默认能力。
+
 2026-08-15 已完成 PDF Grounding Validator v1。主图在生成与 Citation Repair 后、Answer Verify 前新增零 LLM 审计节点，只对 Figure/Table/Formula 专项回答启用：指定页必须全部出现，回答必须披露 OCR/视觉或仅文本证据模式，OCR 材料含无法识别、不清晰或未定义信号时必须保留不确定性。失败合并进 Answer Verification 并限制分数，但明确 `should_reflect=false`，不会为证据披露格式开启新循环。服务响应、Metrics、网页轨迹和冻结 PDF 示例均展示验证状态。下一步结束多模态 PDF v1 的连续开发，回到原计划中尚未完成且简历价值较高的 Structured Output，先为三类 PDF 专项回答定义轻量 Pydantic 结果契约，不做在线大规模评测。
 
 2026-08-12 子查询并行已完成 5 次确定性离线重复基准：3 个子查询、2 个 worker 时，中位延迟由 265.4ms 降至 172.3ms，加速 1.54 倍、延迟下降 35.09%，结果与规划顺序一致率 100%，达到阶段门槛并收口。

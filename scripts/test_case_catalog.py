@@ -1774,6 +1774,26 @@ TEST_CASE_CATALOG: dict[str, CaseDescription] = {
         "代表新增验证器只约束图表公式能力，不破坏已有快速路径和全文总结。",
         "若失败，普通回答可能被要求提供并不存在的视觉证据说明。",
     ),
+    "tests/test_pdf_page_analysis.py::test_pdf_structured_contracts_reject_missing_scope_and_invalid_metric_direction": _description(
+        "验证PDF结构化契约拒绝缺少证据范围和非法指标方向的结果。",
+        "代表图表公式的机器可读结果必须包含可追溯页码，并使用受控枚举表达指标含义。",
+        "若失败，不完整或含任意字段值的JSON可能被误当成可靠结构化结果。",
+    ),
+    "tests/test_pdf_page_analysis.py::test_pdf_structured_parser_returns_clean_answer_and_validated_data": _description(
+        "验证合法JSON块经过Pydantic校验后写入元数据，并从用户可读答案中移除。",
+        "代表同一次模型调用可以同时提供中文回答和稳定机器接口，而不会把实现JSON展示给用户。",
+        "若失败，结构数据可能无法供下游使用，或网页答案混入冗长机器内容。",
+    ),
+    "tests/test_pdf_page_analysis.py::test_pdf_structured_parser_falls_back_without_losing_readable_answer": _description(
+        "验证模型漏写JSON时记录invalid但保留正常中文回答，通用PDF阅读保持不适用。",
+        "代表当前不支持原生结构化输出的主模型偶发格式失败不会中断用户任务。",
+        "若失败，一次格式错误可能导致完整回答丢失，或普通PDF请求被错误标记失败。",
+    ),
+    "tests/test_pdf_page_analysis.py::test_pdf_structured_output_runs_through_generate_node": _description(
+        "验证表格专项请求从OCR、主模型双通道输出到Pydantic校验完整贯通。",
+        "代表生产Generate节点能够返回干净中文答案，同时保留可供前端和后续节点使用的指标结构。",
+        "若失败，独立Schema与解析器即使通过，也可能没有真正接入LangGraph生成路径。",
+    ),
 }
 
 

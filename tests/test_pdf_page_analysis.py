@@ -7,11 +7,13 @@ from pydantic import ValidationError
 from app.schemas import ChatRequest
 from document_loader.pdf_loader import load_pdf_pages
 from document_loader.pdf_visual_evidence import build_visual_evidence, normalize_ocr_text
+from document_loader.pdf_output_contracts import FigureUnderstandingOutput, TableAnalysisOutput
 from eval_harness import pdf_vision_smoke
 from nodes import generate as generate_module
 from skills.pdf_multimodal_skills import FigureUnderstandingSkill, FormulaExplanationSkill, TableAnalysisSkill
 from skills.pdf_reading_skill import PDFReadingSkill
 from skills.router import get_skill
+from skills.pdf_structured_output import parse_pdf_structured_output
 from validators.answer_quality_validator import verify_answer
 from validators.pdf_grounding_validator import validate_pdf_grounding
 
@@ -178,8 +180,11 @@ def test_pdf_visual_evidence_normalizes_json_and_hides_absolute_path():
     ],
 )
 def test_pdf_subskill_router_uses_explicit_intent_without_llm(query, expected_skill):
-    skill = get_skill({"task_type": "pdf_reading", "query": query})
+    skill = get_skill({"task_type": "pdf_reading", "query": query, "pdf_selected_pages": [3]})
     assert isinstance(skill, expected_skill)
+
+    if expected_skill is not PDFReadingSkill:
+        assert isinstance(get_skill({"task_type": "pdf_reading", "query": query}), PDFReadingSkill)
 
 
 def test_pdf_subskills_keep_grounding_and_uncertainty_rules():
@@ -235,3 +240,86 @@ def test_pdf_grounding_validator_skips_generic_and_non_pdf_answers():
 
     assert generic_pdf["status"] == "not_applicable"
     assert normal_qa["status"] == "not_applicable"
+
+
+def test_pdf_structured_contracts_reject_missing_scope_and_invalid_metric_direction():
+    with pytest.raises(ValidationError):
+        FigureUnderstandingOutput(summary="流程", components=["Retriever"], relationships=[])
+    with pytest.raises(ValidationError):
+        TableAnalysisOutput.model_validate({
+            "table_purpose": "比较结果",
+            "metrics": [{"name": "Accuracy", "direction": "bigger_is_better"}],
+            "evidence_scope": {"pages": [3], "evidence_mode": "ocr_visual"},
+        })
+    with pytest.raises(ValidationError):
+        FigureUnderstandingOutput.model_validate({
+            "summary": "流程", "components": ["Retriever"],
+            "evidence_scope": {"pages": [3], "evidence_mode": "ocr_visual"},
+            "local_path": r"D:\\private\\paper.pdf",
+        })
+
+
+def test_pdf_structured_parser_returns_clean_answer_and_validated_data():
+    answer = "证据范围：第 3 页；证据模式：OCR/视觉证据与提取文本。\n\n图展示检索到生成的流程。\n```json\n" \
+        '{"summary":"检索增强流程","components":["Retriever","Generator"],"relationships":["Retriever向Generator提供证据"],' \
+        '"evidence_scope":{"pages":[3],"evidence_mode":"ocr_visual","uncertainties":[]}}\n```'
+
+    readable, result = parse_pdf_structured_output(
+        answer, "figure_understanding", expected_pages=[3], expected_evidence_mode="ocr_visual"
+    )
+
+    assert "```json" not in readable
+    assert "图展示检索到生成的流程" in readable
+    assert result["valid"] is True
+    assert result["data"]["evidence_scope"]["pages"] == [3]
+
+    _, mismatch = parse_pdf_structured_output(answer, "figure_understanding", expected_pages=[2])
+    assert mismatch["error"] == "evidence_pages_mismatch"
+
+
+def test_pdf_structured_parser_falls_back_without_losing_readable_answer():
+    readable, result = parse_pdf_structured_output("正常中文解释，没有JSON。", "formula_explanation")
+    generic, generic_result = parse_pdf_structured_output("普通回答", "pdf_reading")
+
+    assert readable == "正常中文解释，没有JSON。"
+    assert result["status"] == "invalid" and result["error"] == "missing_json_block"
+    assert generic == "普通回答"
+    assert generic_result["status"] == "not_applicable"
+
+
+def test_pdf_structured_output_runs_through_generate_node(monkeypatch, tmp_path):
+    image_path = tmp_path / "page_3.png"
+    image_path.write_bytes(b"representative-png-bytes")
+    responses = iter([
+        SimpleNamespace(content='{"answer":[{"text":"Table 1 Accuracy 90"}]}', usage_metadata={}),
+        SimpleNamespace(
+            content=(
+                "证据范围：第 3 页；证据模式：OCR/视觉证据与提取文本。\n\nAccuracy 为 90。\n"
+                "```json\n"
+                '{"table_purpose":"比较准确率","metrics":[{"name":"Accuracy","direction":"higher_better"}],'
+                '"comparisons":["Accuracy 为 90"],"conclusions":["该结果仅限第 3 页"],'
+                '"evidence_scope":{"pages":[3],"evidence_mode":"ocr_visual","uncertainties":[]}}\n'
+                "```"
+            ),
+            usage_metadata={},
+        ),
+    ])
+
+    class FakeLLM:
+        def invoke(self, prompt):
+            return next(responses)
+
+    monkeypatch.setattr(generate_module.settings, "PDF_VISION_ENABLED", True)
+    monkeypatch.setattr(generate_module, "get_llm", lambda model_name=None: FakeLLM())
+    result = generate_module.generate_node({
+        "query": "分析第3页实验表格", "task_type": "pdf_reading", "pdf_path": "paper.pdf",
+        "pdf_text": "=== PDF 第 3 页 ===\nTable 1", "pdf_page_count": 3,
+        "pdf_selected_pages": [3], "pdf_page_images": [str(image_path)],
+        "pdf_vision_status": "ready", "paper_metadata": {},
+    })
+
+    assert result["paper_metadata"]["skill_used"] == "table_analysis"
+    assert result["paper_metadata"]["pdf_structured_output"]["valid"] is True
+    assert result["paper_metadata"]["pdf_structured_output"]["data"]["metrics"][0]["name"] == "Accuracy"
+    assert "```json" not in result["answer"]
+    assert "Accuracy 为 90" in result["answer"]

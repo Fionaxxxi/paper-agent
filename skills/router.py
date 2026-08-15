@@ -51,7 +51,9 @@ def get_skill(state: AgentState) -> BaseSkill:
         return RESEARCH_SKILLS[primary_skill]()
 
     if task_type == "pdf_reading":
-        return get_pdf_skill(state.get("query", ""))
+        if state.get("pdf_selected_pages"):
+            return get_pdf_skill(state.get("query", ""))
+        return PDFReadingSkill()
 
     if task_type == "summarize":
         return PaperSummarySkill()

@@ -78,4 +78,5 @@ def test_demo_page_explains_selected_pdf_pages_without_exposing_local_paths():
     assert sample["pdf_vision_status"] == "used"
     assert sample["paper_metadata"]["pdf_vision_model"] == "qwen3.5-ocr"
     assert sample["paper_metadata"]["pdf_grounding_validation"]["passed"] is True
+    assert sample["paper_metadata"]["pdf_structured_output"]["valid"] is True
     assert "D:\\" not in sample_response.text

@@ -173,6 +173,8 @@ PDF 阅读会按用户的明确表达进行零 LLM 子路由：公式、损失�
 
 专项 PDF 回答生成后还会经过零 LLM 的 `PDF Grounding Validator`：检查是否写明全部重点页码、是否披露使用了 OCR/视觉证据或仅提取文本，以及 OCR 存在识别不确定性时是否保留限制。结果通过 `paper_metadata.pdf_grounding_validation` 和网页执行轨迹公开；验证失败会影响最终 Answer Verification，但不会自动触发 Reflection，避免为了格式披露增加模型调用。
 
+Figure、Table、Formula 还具有独立 Pydantic Structured Output 契约。模型在正常中文答案末尾生成机器 JSON，系统验证字段、枚举、页码和证据模式后移除 JSON，只把中文答案展示给用户；合法结构写入 `paper_metadata.pdf_structured_output.data`。Schema 禁止额外字段，不能夹带本地路径。由于当前主模型没有原生结构化输出能力，JSON 缺失或校验失败时只记录 `status=invalid`，保留中文回答并继续 Grounding 检查，不因格式错误中断任务。
+
 专项 PDF 回答生成后还会经过零 LLM 的 `PDF Grounding Validator`：检查是否写明全部重点页码、是否披露使用了 OCR/视觉证据或仅提取文本，以及 OCR 存在识别不确定性时是否保留限制。结果通过 `paper_metadata.pdf_grounding_validation` 和网页执行轨迹公开；验证失败会影响最终 Answer Verification，但不会自动触发 Reflection，避免为了格式披露增加模型调用。
 
 运行一次受保护的真实 OCR 冒烟（默认只发送 GraphRAG 第 3 页）：
