@@ -241,6 +241,8 @@ def metrics_node(state: AgentState) -> AgentState:
         # PDF
         "pdf_path": state.get("pdf_path", ""),
         "pdf_page_count": state.get("pdf_page_count", 0),
+        "pdf_selected_pages": state.get("pdf_selected_pages", []),
+        "pdf_vision_status": state.get("pdf_vision_status", "not_requested"),
         "pdf_error": state.get("pdf_error", ""),
 
         # Timing

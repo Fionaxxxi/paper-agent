@@ -61,6 +61,7 @@ def chat(request: ChatRequest):
             query=query,
             conversation_id=request.conversation_id,
             pdf_path=request.pdf_path,
+            pdf_pages=request.pdf_pages,
         )
         trace_id = data.get("trace_id", api_trace_id)
 

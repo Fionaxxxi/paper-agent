@@ -64,7 +64,7 @@ class TrackedLLMError(Exception):
 
 def invoke_llm_with_usage(
     llm: Any,
-    prompt: str,
+    prompt: Any,
     node_name: str,
     model_name: str,
     prompt_version: str = "",

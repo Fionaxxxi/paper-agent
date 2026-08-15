@@ -1,3 +1,7 @@
+import base64
+from pathlib import Path
+
+from langchain_core.messages import HumanMessage
 from langchain_openai import ChatOpenAI
 
 from agent.state import AgentState
@@ -13,9 +17,9 @@ from research.writer import build_coverage_blocked_answer, build_writer_prompt
 from prompts.contracts import get_prompt_version
 
 
-def get_llm():
+def get_llm(model_name: str | None = None):
     return ChatOpenAI(
-        model=settings.MODEL_NAME,
+        model=model_name or settings.MODEL_NAME,
         api_key=settings.OPENAI_API_KEY,
         base_url=settings.OPENAI_BASE_URL,
         temperature=0,
@@ -32,6 +36,18 @@ def truncate_text(text: str, max_length: int = settings.DOC_CONTENT_LIMIT) -> st
         return text
 
     return text[:max_length] + "...[内容已截断]"
+
+
+def build_pdf_multimodal_input(prompt: str, image_paths: list[str]):
+    """把本地渲染页转换成兼容 OpenAI Chat 的受限多模态消息。"""
+    content: list[dict] = [{"type": "text", "text": prompt}]
+    for image_path in image_paths[: settings.PDF_MAX_SELECTED_PAGES]:
+        path = Path(image_path)
+        if not path.is_file() or path.suffix.lower() != ".png":
+            continue
+        encoded = base64.b64encode(path.read_bytes()).decode("ascii")
+        content.append({"type": "image_url", "image_url": {"url": f"data:image/png;base64,{encoded}"}})
+    return [HumanMessage(content=content)] if len(content) > 1 else prompt
 
 
 
@@ -148,7 +164,13 @@ def generate_node(state: AgentState) -> AgentState:
         }
 
 
-    skill_state = attach_skill_context(state)
+    vision_requested = (
+        state.get("task_type") == "pdf_reading"
+        and settings.PDF_VISION_ENABLED
+        and bool(state.get("pdf_page_images"))
+    )
+    prompt_state = {**state, "pdf_vision_status": "used"} if vision_requested else state
+    skill_state = attach_skill_context(prompt_state)
     skill = get_skill(skill_state)
 
     if not skill.need_llm:
@@ -165,12 +187,14 @@ def generate_node(state: AgentState) -> AgentState:
     )
 
     try:
-        llm = get_llm()
+        model_name = settings.PDF_VISION_MODEL_NAME if vision_requested else settings.MODEL_NAME
+        llm_input = build_pdf_multimodal_input(prompt, state.get("pdf_page_images", [])) if vision_requested else prompt
+        llm = get_llm(model_name) if vision_requested else get_llm()
         response, usage_record = invoke_llm_with_usage(
             llm=llm,
-            prompt=prompt,
+            prompt=llm_input,
             node_name="generate",
-            model_name=settings.MODEL_NAME,
+            model_name=model_name,
             prompt_version=prompt_version,
         )
         usage_update = build_llm_usage_update(state, usage_record)
@@ -178,10 +202,13 @@ def generate_node(state: AgentState) -> AgentState:
         return {
             **usage_update,
             "answer": response.content,
+            "pdf_vision_status": "used" if vision_requested else state.get("pdf_vision_status", "not_requested"),
             "paper_metadata": {
                 **skill_state.get("paper_metadata", {}),
                 "skill_used": skill.name,
                 "prompt_version": prompt_version,
+                "pdf_vision_model": model_name if vision_requested else "",
+                "pdf_visual_page_count": len(state.get("pdf_page_images", [])) if vision_requested else 0,
             },
         }
 

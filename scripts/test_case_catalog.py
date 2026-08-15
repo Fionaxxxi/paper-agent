@@ -1714,6 +1714,21 @@ TEST_CASE_CATALOG: dict[str, CaseDescription] = {
         "简历演示可以解释是否发生数据出站、选择了哪个仓库以及证据适用边界。",
         "若失败，前端可能隐藏关键授权决策或把仓库信息误展示为论文证据。",
     ),
+    "tests/test_pdf_page_analysis.py::test_selected_pdf_pages_extract_only_requested_text_and_render_png": _description(
+        "验证只提取用户指定的PDF页文本，并在项目缓存目录渲染对应PNG。",
+        "指定页模式不会扫描或发送整篇PDF，页面图像可供后续视觉模型使用。",
+        "若失败，系统可能分析错误页面、扩大上下文或无法生成视觉输入。",
+    ),
+    "tests/test_pdf_page_analysis.py::test_selected_pdf_pages_reject_invalid_range_and_page_budget": _description(
+        "验证超出文档范围的页码和超过3页的请求在模型调用前被拒绝。",
+        "页面范围与成本预算得到确定性约束。",
+        "若失败，无效页码可能造成运行错误，过多页面会放大图像Token和延迟。",
+    ),
+    "tests/test_pdf_page_analysis.py::test_pdf_vision_uses_separate_model_only_after_explicit_enable": _description(
+        "验证显式开启视觉模式后使用独立视觉模型，并以多模态消息发送指定页PNG。",
+        "文本模型与视觉模型职责分离，视觉状态、页数和Token轨迹均可审计。",
+        "若失败，系统可能把图片发给不支持视觉的模型或误报已完成图表理解。",
+    ),
 }
 
 

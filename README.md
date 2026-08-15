@@ -151,13 +151,23 @@ Invoke-RestMethod -Method Post -Uri http://127.0.0.1:8000/chat -ContentType "app
 
 ```powershell
 $body = @{
-  query = "总结这篇论文的研究问题、方法和局限"
-  pdf_path = "D:\langgraphproject\data\papers\2005.11401_rag.pdf"
+  query = "分析第 1 页的摘要与图表信息"
+  pdf_path = "D:\langgraphproject\data\papers\2404.16130_graph_rag.pdf"
+  pdf_pages = @(1)
 } | ConvertTo-Json
 Invoke-RestMethod -Method Post -Uri http://127.0.0.1:8000/chat -ContentType "application/json" -Body $body
 ```
 
-展示重点：PDF 任务绕过在线检索，直接进入论文阅读 Skill。
+展示重点：PDF 任务绕过在线检索，直接进入论文阅读 Skill。`pdf_pages` 使用从 1 开始的页码，一次最多 3 页；系统只提取指定页文本，并用 PyMuPDF 将这些页面渲染到 `data/cache/pdf_pages/`，不会扫描整篇图像。
+
+默认 `PDF_VISION_ENABLED=false`，此时模型只依据指定页文本回答，`pdf_vision_status` 会标记为 `rendered_text_only`。确认视觉模型可用后，可在 `.env` 开启：
+
+```env
+PDF_VISION_ENABLED=true
+PDF_VISION_MODEL_NAME=qwen-vl-max
+```
+
+开启后，只有用户通过 `pdf_pages` 明确指定的页面 PNG 会发送给视觉模型；状态变为 `used` 后，回答才允许声称观察了图像、布局或图表。页码越多会增加视觉 Token 和延迟，因此仍保留最多 3 页的硬限制。
 
 ### 4. 多轮会话
 
@@ -323,7 +333,7 @@ LangGraph 已接入官方 `SqliteSaver`，使用 `conversation_id` 作为 `threa
 4. 实现 Literature Review、Paper Critique 等高价值科研 Skill 和结构化输出；
 5. 增加 L0～L3 分级任务路由，仅对 L3 深度研究启用 Research Brief、Planner / Executor / Reviewer、Evidence Coverage 和 Checkpoint；
 6. 已接入只读 Zotero 和 GitHub 外部 MCP，并完成带双重授权的“论文—代码对照”编排；
-7. 实现用户指定页面的多模态 PDF 分析；
+7. 已实现用户指定页面的轻量多模态 PDF 分析：指定页文本与PNG渲染已完成，视觉模型采用显式开关并限制最多3页；
 8. 已完成 Research Agent Web 轨迹展示、零 API 冻结演示、最小 Docker 和基础 CI；后续只做可选部署与演示材料整理。
 
 自动 Reflexion/自进化、在线适应、八角色分层 Agent、Best-of-N、Redis、完整 GraphRAG 选型矩阵和整篇 PDF 全自动多模态解析暂缓。GraphRAG 仅在固定的跨论文全局任务证明 Hybrid RAG 不足后做小型 PoC；测试按风险分级，Excel 在里程碑统一更新。

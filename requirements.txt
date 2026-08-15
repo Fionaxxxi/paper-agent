@@ -21,6 +21,8 @@ pydantic-settings>=2.0.0
 tiktoken>=0.9.0
 
 pypdf>=5.0.0
+pymupdf>=1.26,<2
+pymupdf>=1.26,<2
 
 # Optional local Dense RAG candidate (ONNX, no PyTorch)
 fastembed>=0.7,<0.8

@@ -66,6 +66,10 @@ class Settings(BaseSettings):
 
     # PDF
     PDF_MAX_CHARS: int = 12000
+    PDF_MAX_SELECTED_PAGES: int = 3
+    PDF_PAGE_IMAGE_CACHE_DIR: str = "data/cache/pdf_pages"
+    PDF_VISION_ENABLED: bool = False
+    PDF_VISION_MODEL_NAME: str = "qwen-vl-max"
 
     # Cache
     CACHE_DIR: str = "data/cache"

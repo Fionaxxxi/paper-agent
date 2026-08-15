@@ -1,6 +1,6 @@
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 class ChatRequest(BaseModel):
@@ -13,6 +13,19 @@ class ChatRequest(BaseModel):
         default=None,
         description="本地 PDF 文件路径，用于 PDF 论文阅读分析",
     )
+    pdf_pages: List[int] = Field(
+        default_factory=list,
+        description="需要重点分析的 PDF 页码，按 1 开始，最多 3 页",
+        max_length=3,
+    )
+
+    @model_validator(mode="after")
+    def validate_pdf_page_selection(self):
+        if self.pdf_pages and not self.pdf_path:
+            raise ValueError("指定 pdf_pages 时必须同时提供 pdf_path")
+        if any(isinstance(page, bool) or page < 1 for page in self.pdf_pages):
+            raise ValueError("pdf_pages 必须是从 1 开始的正整数")
+        return self
 
 
 class PaperInfo(BaseModel):
@@ -41,6 +54,8 @@ class ChatData(BaseModel):
     conversation_id: str
     pdf_path: Optional[str] = None
     pdf_page_count: Optional[int] = None
+    pdf_selected_pages: List[int] = Field(default_factory=list)
+    pdf_vision_status: Optional[str] = None
 
 
 class ChatResponse(BaseModel):

@@ -69,6 +69,9 @@ class AgentState(TypedDict, total=False):
     pdf_text: str
     pdf_page_count: int
     pdf_error: str
+    pdf_selected_pages: List[int]
+    pdf_page_images: List[str]
+    pdf_vision_status: str
 
     sub_queries: list[str]
     query_plan_enabled: bool

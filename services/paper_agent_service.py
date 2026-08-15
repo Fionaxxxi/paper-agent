@@ -13,7 +13,7 @@ from memory.conversation_memory import (
 )
 from memory.llm_wiki import publish_agent_result
 from memory.graph_checkpointer import get_default_graph_checkpointer
-from document_loader.pdf_loader import load_pdf_text
+from document_loader.pdf_loader import load_pdf_pages, load_pdf_text
 from core.config import settings
 
 
@@ -41,6 +41,7 @@ class PaperAgentService:
             query: str,
             conversation_id: str | None = None,
             pdf_path: str | None = None,
+            pdf_pages: list[int] | None = None,
     ) -> Dict[str, Any]:
         trace_id = generate_trace_id()
         start_time = time.perf_counter()
@@ -67,15 +68,33 @@ class PaperAgentService:
         pdf_text = ""
         pdf_page_count = 0
         pdf_error = ""
+        pdf_selected_pages = list(pdf_pages or [])
+        pdf_page_images: list[str] = []
+        pdf_vision_status = "not_requested"
 
         if pdf_path:
-            pdf_result = load_pdf_text(
-                pdf_path=pdf_path,
-                max_chars=settings.PDF_MAX_CHARS,
+            pdf_result = (
+                load_pdf_pages(
+                    pdf_path=pdf_path,
+                    pages=pdf_selected_pages,
+                    max_chars=settings.PDF_MAX_CHARS,
+                    max_pages=settings.PDF_MAX_SELECTED_PAGES,
+                    image_cache_dir=settings.PDF_PAGE_IMAGE_CACHE_DIR,
+                )
+                if pdf_selected_pages
+                else load_pdf_text(pdf_path=pdf_path, max_chars=settings.PDF_MAX_CHARS)
             )
             pdf_text = pdf_result.get("text", "")
             pdf_page_count = pdf_result.get("page_count", 0)
             pdf_error = pdf_result.get("error", "")
+            pdf_selected_pages = pdf_result.get("selected_pages", pdf_selected_pages)
+            pdf_page_images = pdf_result.get("image_paths", [])
+            if pdf_selected_pages:
+                pdf_vision_status = (
+                    "ready" if pdf_page_images and settings.PDF_VISION_ENABLED
+                    else "rendered_text_only" if pdf_page_images
+                    else "renderer_unavailable_text_only"
+                )
 
         initial_state = {
             "trace_id": trace_id,
@@ -94,6 +113,9 @@ class PaperAgentService:
             "pdf_text": pdf_text,
             "pdf_page_count": pdf_page_count,
             "pdf_error": pdf_error,
+            "pdf_selected_pages": pdf_selected_pages,
+            "pdf_page_images": pdf_page_images,
+            "pdf_vision_status": pdf_vision_status,
 
             "retry_count": 0,
             "retry_query": "",
@@ -154,6 +176,8 @@ class PaperAgentService:
                 "pdf_path": pdf_path,
                 "pdf_page_count": pdf_page_count,
                 "pdf_error": pdf_error,
+                "pdf_selected_pages": pdf_selected_pages,
+                "pdf_vision_status": pdf_vision_status,
             },
         }
 
@@ -238,6 +262,8 @@ class PaperAgentService:
                 "pdf_path": pdf_path,
                 "pdf_page_count": result.get("pdf_page_count", pdf_page_count),
                 "pdf_error": result.get("pdf_error", pdf_error),
+                "pdf_selected_pages": result.get("pdf_selected_pages", pdf_selected_pages),
+                "pdf_vision_status": result.get("pdf_vision_status", pdf_vision_status),
                 "llm_call_count": result.get("llm_call_count", 0),
                 "llm_failed_call_count": result.get("llm_failed_call_count", 0),
                 "input_token_usage": result.get("input_token_usage", 0),
@@ -249,6 +275,8 @@ class PaperAgentService:
             "conversation_id": conversation_id,
             "pdf_path": pdf_path,
             "pdf_page_count": result.get("pdf_page_count", pdf_page_count),
+            "pdf_selected_pages": result.get("pdf_selected_pages", pdf_selected_pages),
+            "pdf_vision_status": result.get("pdf_vision_status", pdf_vision_status),
         }
 
     def format_papers(self, papers: List[Dict[str, Any]]) -> List[Dict[str, Any]]:

@@ -54,6 +54,7 @@ jobs:
           tests/test_zotero_mcp.py
           tests/test_github_mcp.py
           tests/test_repository_enrichment.py
+          tests/test_pdf_page_analysis.py
           tests/test_prompt_contracts.py
           tests/test_prompt_security_eval.py
           tests/test_research_analyzer_prompt_ab.py

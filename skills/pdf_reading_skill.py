@@ -13,6 +13,8 @@ class PDFReadingSkill(BaseSkill):
         pdf_text = state.get("pdf_text", "")
         pdf_path = state.get("pdf_path", "")
         pdf_page_count = state.get("pdf_page_count", 0)
+        selected_pages = state.get("pdf_selected_pages", [])
+        vision_status = state.get("pdf_vision_status", "not_requested")
         history_text = state.get("history_text", "无历史对话。")
 
         secured_pdf_text = wrap_untrusted_evidence(pdf_text, "PDF 提取文本")
@@ -30,6 +32,12 @@ PDF 文件路径：
 
 PDF 页数：
 {pdf_page_count}
+
+重点分析页码：
+{selected_pages or "未指定，使用全文文本"}
+
+页面视觉状态：
+{vision_status}
 
 PDF 提取文本：
 {secured_pdf_text}
@@ -69,4 +77,5 @@ PDF 提取文本：
 3. 如果 PDF 文本不足或提取失败，需要明确说明
 4. 回答要结构化
 5. 如果用户问的是具体问题，则优先回答用户问题，不必机械套用全部结构
+6. 只有页面视觉状态为 used 时，才能声称观察到了图像、布局或图表视觉内容；其他状态只能依据提取文本
 """

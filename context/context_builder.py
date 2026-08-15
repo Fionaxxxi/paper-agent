@@ -34,6 +34,8 @@ def build_metadata_context(state: Dict[str, Any]) -> Dict[str, Any]:
         "tools_used": get_state_value(state, "tools_used", []),
         "pdf_path": get_state_value(state, "pdf_path", ""),
         "pdf_page_count": get_state_value(state, "pdf_page_count", 0),
+        "pdf_selected_pages": get_state_value(state, "pdf_selected_pages", []),
+        "pdf_vision_status": get_state_value(state, "pdf_vision_status", "not_requested"),
         "paper_metadata": get_state_value(state, "paper_metadata", {}),
     }
 
