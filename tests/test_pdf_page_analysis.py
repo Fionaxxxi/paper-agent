@@ -6,6 +6,7 @@ from pydantic import ValidationError
 
 from app.schemas import ChatRequest
 from document_loader.pdf_loader import load_pdf_pages
+from eval_harness import pdf_vision_smoke
 from nodes import generate as generate_module
 
 
@@ -54,19 +55,25 @@ def test_selected_pdf_pages_reject_invalid_range_and_page_budget(tmp_path):
 def test_pdf_vision_uses_separate_model_only_after_explicit_enable(monkeypatch, tmp_path):
     image_path = tmp_path / "page_1.png"
     image_path.write_bytes(b"representative-png-bytes")
-    captured = {}
+    captured = {"models": [], "prompts": []}
 
     class FakeLLM:
+        def __init__(self, content, input_tokens, output_tokens):
+            self.content = content
+            self.input_tokens = input_tokens
+            self.output_tokens = output_tokens
+
         def invoke(self, prompt):
-            captured["prompt"] = prompt
-            return SimpleNamespace(content="页面视觉分析", usage_metadata={"input_tokens": 20, "output_tokens": 5})
+            captured["prompts"].append(prompt)
+            return SimpleNamespace(content=self.content, usage_metadata={"input_tokens": self.input_tokens, "output_tokens": self.output_tokens})
 
     def fake_get_llm(model_name=None):
-        captured["model_name"] = model_name
-        return FakeLLM()
+        captured["models"].append(model_name)
+        return FakeLLM('{"answer":[{"text":"OCR页面文字"}]}', 20, 5) if model_name else FakeLLM("页面综合分析", 30, 10)
 
     monkeypatch.setattr(generate_module.settings, "PDF_VISION_ENABLED", True)
-    monkeypatch.setattr(generate_module.settings, "PDF_VISION_MODEL_NAME", "qwen3-vl-flash")
+    monkeypatch.setattr(generate_module.settings, "PDF_VISION_MODEL_NAME", "qwen3.5-ocr")
+    monkeypatch.setattr(generate_module.settings, "MODEL_NAME", "qwen3.7-max-2026-05-17")
     monkeypatch.setattr(generate_module, "get_llm", fake_get_llm)
 
     result = generate_module.generate_node({
@@ -76,8 +83,62 @@ def test_pdf_vision_uses_separate_model_only_after_explicit_enable(monkeypatch, 
         "pdf_vision_status": "ready", "paper_metadata": {},
     })
 
-    assert captured["model_name"] == "qwen3-vl-flash"
-    assert captured["prompt"][0].content[1]["type"] == "image_url"
+    assert captured["models"] == ["qwen3.5-ocr", None]
+    assert captured["prompts"][0][0].content[1]["type"] == "image_url"
+    assert "PDF 页面 OCR 结果" in captured["prompts"][1]
+    assert result["answer"] == "页面综合分析"
     assert result["pdf_vision_status"] == "used"
     assert result["paper_metadata"]["pdf_visual_page_count"] == 1
+    assert result["paper_metadata"]["pdf_ocr_model"] == "qwen3.5-ocr"
+    assert result["paper_metadata"]["pdf_synthesis_model"] == "qwen3.7-max-2026-05-17"
+    assert result["llm_call_count"] == 2
+    assert result["token_usage"] == 65
+
+
+def test_pdf_vision_preserves_ocr_when_main_synthesis_fails(monkeypatch, tmp_path):
+    image_path = tmp_path / "page_1.png"
+    image_path.write_bytes(b"representative-png-bytes")
+    calls = []
+
+    class FakeLLM:
+        def __init__(self, model_name):
+            self.model_name = model_name
+
+        def invoke(self, prompt):
+            calls.append(self.model_name)
+            if self.model_name == "qwen3.5-ocr":
+                return SimpleNamespace(
+                    content='{"answer":[{"text":"OCR保留内容"}]}',
+                    usage_metadata={"input_tokens": 20, "output_tokens": 5},
+                )
+            raise RuntimeError("synthesis unavailable")
+
+    monkeypatch.setattr(generate_module.settings, "PDF_VISION_ENABLED", True)
+    monkeypatch.setattr(generate_module.settings, "PDF_VISION_MODEL_NAME", "qwen3.5-ocr")
+    monkeypatch.setattr(generate_module.settings, "MODEL_NAME", "qwen3.7-max-2026-05-17")
+    monkeypatch.setattr(generate_module, "get_llm", lambda model_name=None: FakeLLM(model_name or "qwen3.7-max-2026-05-17"))
+
+    result = generate_module.generate_node({
+        "query": "分析第 1 页", "task_type": "pdf_reading", "pdf_path": "paper.pdf",
+        "pdf_text": "=== PDF 第 1 页 ===\n正文", "pdf_page_count": 1,
+        "pdf_selected_pages": [1], "pdf_page_images": [str(image_path)],
+        "pdf_vision_status": "ready", "paper_metadata": {},
+    })
+
+    assert calls == ["qwen3.5-ocr", "qwen3.7-max-2026-05-17"]
+    assert result["pdf_vision_status"] == "ocr_only_degraded"
+    assert "OCR保留内容" in result["answer"]
+    assert "研究综合暂不可用" in result["answer"]
+    assert result["paper_metadata"]["pdf_ocr_model"] == "qwen3.5-ocr"
+    assert result["paper_metadata"]["pdf_synthesis_model"] == "qwen3.7-max-2026-05-17"
+    assert result["llm_call_count"] == 2
     assert result["token_usage"] == 25
+
+
+def test_pdf_vision_smoke_requires_explicit_online_confirmation(monkeypatch):
+    monkeypatch.setattr("sys.argv", ["pdf_vision_smoke"])
+
+    with pytest.raises(SystemExit) as error:
+        pdf_vision_smoke.main()
+
+    assert error.value.code == 2

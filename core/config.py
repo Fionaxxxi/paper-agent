@@ -5,7 +5,7 @@ class Settings(BaseSettings):
     # LLM
     OPENAI_BASE_URL: str = "https://dashscope.aliyuncs.com/compatible-mode/v1"
     OPENAI_API_KEY: str = ""
-    MODEL_NAME: str = "qwen-max"
+    MODEL_NAME: str = "qwen3.7-max-2026-05-17"
     MODEL_INPUT_COST_PER_1M_TOKENS: float = 0.0
     MODEL_OUTPUT_COST_PER_1M_TOKENS: float = 0.0
 
@@ -50,7 +50,6 @@ class Settings(BaseSettings):
     GITHUB_TOKEN: str = ""
     GITHUB_MAX_RESULTS: int = 5
     GITHUB_ENRICHMENT_ENABLED: bool = False
-    GITHUB_ENRICHMENT_ENABLED: bool = False
 
     # Tool execution
     TOOL_TIMEOUT_SECONDS: float = 45.0
@@ -69,7 +68,7 @@ class Settings(BaseSettings):
     PDF_MAX_SELECTED_PAGES: int = 3
     PDF_PAGE_IMAGE_CACHE_DIR: str = "data/cache/pdf_pages"
     PDF_VISION_ENABLED: bool = False
-    PDF_VISION_MODEL_NAME: str = "qwen3-vl-flash"
+    PDF_VISION_MODEL_NAME: str = "qwen3.5-ocr"
 
     # Cache
     CACHE_DIR: str = "data/cache"

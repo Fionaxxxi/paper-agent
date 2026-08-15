@@ -74,7 +74,7 @@ Copy-Item .env.example .env
 ```env
 OPENAI_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
 OPENAI_API_KEY=你的百炼_API_Key
-MODEL_NAME=qwen-max
+MODEL_NAME=qwen3.7-max-2026-05-17
 RETRIEVAL_MODE=arxiv
 ```
 
@@ -164,10 +164,18 @@ Invoke-RestMethod -Method Post -Uri http://127.0.0.1:8000/chat -ContentType "app
 
 ```env
 PDF_VISION_ENABLED=true
-PDF_VISION_MODEL_NAME=qwen3-vl-flash
+PDF_VISION_MODEL_NAME=qwen3.5-ocr
 ```
 
-默认选择 `qwen3-vl-flash`：它适合低延迟的页面、图表和布局理解，百炼华北2（北京）的新人免费额度为100万Token，有效期及剩余额度以账户控制台为准。开启后，只有用户通过 `pdf_pages` 明确指定的页面 PNG 会发送给视觉模型；状态变为 `used` 后，回答才允许声称观察了图像、布局或图表。页码越多会增加视觉 Token 和延迟，因此仍保留最多 3 页的硬限制。
+默认选择 `qwen3.5-ocr`：它面向文档解析、文字识别、文字定位与关键信息提取，输入为图像、输出为文本；它不是任意场景的通用视觉推理模型。开启后，只有用户通过 `pdf_pages` 明确指定的页面 PNG 会发送给 OCR 模型；OCR 结果按不可信外部证据处理，再由主模型结合 pypdf 文本生成最终研究回答。因此页面 OCR 模式会产生两次模型调用。状态变为 `used` 后，回答才能使用页面 OCR/布局信息。页码越多会增加图像 Token 和延迟，因此仍保留最多 3 页的硬限制。具体价格、地域与免费额度以百炼控制台为准。
+
+运行一次受保护的真实 OCR 冒烟（默认只发送 GraphRAG 第 3 页）：
+
+```powershell
+D:\miniconda3\envs\paper_agent\python.exe -m eval_harness.pdf_vision_smoke --confirm-online
+```
+
+报告写入 `outputs/pdf_vision_smoke/latest.json`，仅记录页码、模型、状态、Token、延迟和答案短摘要，不保存 Key、Base64 图片或本地绝对路径。未带 `--confirm-online` 时脚本会在调用前退出。
 
 ### 4. 多轮会话
 
@@ -333,7 +341,7 @@ LangGraph 已接入官方 `SqliteSaver`，使用 `conversation_id` 作为 `threa
 4. 实现 Literature Review、Paper Critique 等高价值科研 Skill 和结构化输出；
 5. 增加 L0～L3 分级任务路由，仅对 L3 深度研究启用 Research Brief、Planner / Executor / Reviewer、Evidence Coverage 和 Checkpoint；
 6. 已接入只读 Zotero 和 GitHub 外部 MCP，并完成带双重授权的“论文—代码对照”编排；
-7. 已实现用户指定页面的轻量多模态 PDF 分析：指定页文本与PNG渲染已完成，视觉模型采用显式开关并限制最多3页；
+7. 已实现用户指定页面的轻量多模态 PDF 分析：指定页文本与PNG渲染已完成，页面OCR模型采用显式开关并限制最多3页；
 8. 已完成 Research Agent Web 轨迹展示、零 API 冻结演示、最小 Docker 和基础 CI；后续只做可选部署与演示材料整理。
 
 自动 Reflexion/自进化、在线适应、八角色分层 Agent、Best-of-N、Redis、完整 GraphRAG 选型矩阵和整篇 PDF 全自动多模态解析暂缓。GraphRAG 仅在固定的跨论文全局任务证明 Hybrid RAG 不足后做小型 PoC；测试按风险分级，Excel 在里程碑统一更新。

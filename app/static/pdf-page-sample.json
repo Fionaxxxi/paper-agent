@@ -1,5 +1,5 @@
 {
-  "answer": "## 指定页面分析示例\n\n第 3 页展示了 GraphRAG 从实体与关系抽取、社区检测到社区摘要生成的索引流程。视觉模型同时检查了流程图布局，因此本结论使用了页面文本与图像。",
+  "answer": "## 指定页面分析示例\n\n第 3 页展示了 GraphRAG 从实体与关系抽取、社区检测到社区摘要生成的索引流程。OCR 模型补充提取了页面文字与布局信息，本结论仍以页面可识别内容为边界。",
   "task_type": "pdf_reading",
   "retrieval_score": 0.0,
   "tools_used": [],
@@ -15,7 +15,7 @@
     "pdf_page_count": 26,
     "pdf_selected_pages": [3],
     "pdf_vision_status": "used",
-    "pdf_vision_model": "qwen3-vl-flash",
+    "pdf_vision_model": "qwen3.5-ocr",
     "pdf_visual_page_count": 1
   },
   "node_timings": {

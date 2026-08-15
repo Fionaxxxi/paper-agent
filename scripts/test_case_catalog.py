@@ -1725,14 +1725,24 @@ TEST_CASE_CATALOG: dict[str, CaseDescription] = {
         "若失败，无效页码可能造成运行错误，过多页面会放大图像Token和延迟。",
     ),
     "tests/test_pdf_page_analysis.py::test_pdf_vision_uses_separate_model_only_after_explicit_enable": _description(
-        "验证显式开启视觉模式后使用独立视觉模型，并以多模态消息发送指定页PNG。",
-        "文本模型与视觉模型职责分离，视觉状态、页数和Token轨迹均可审计。",
-        "若失败，系统可能把图片发给不支持视觉的模型或误报已完成图表理解。",
+        "验证显式开启页面OCR后先调用qwen3.5-ocr，再由主模型综合OCR与PDF文本。",
+        "OCR提取与研究回答职责分离，两次调用、模型、页数和Token轨迹均可审计。",
+        "若失败，结构化OCR原文可能直接作为最终回答，或图片被发送给错误模型。",
+    ),
+    "tests/test_pdf_page_analysis.py::test_pdf_vision_preserves_ocr_when_main_synthesis_fails": _description(
+        "验证页面OCR成功但主模型综合失败时，系统保留已提取内容并进入可识别的降级状态。",
+        "代表两阶段链路不会因第二阶段故障丢失第一阶段成果，模型与Token轨迹仍可审计。",
+        "若失败，短暂的主模型故障会让已成功提取的论文页面内容一并丢失。",
     ),
     "tests/test_demo_page.py::test_demo_page_explains_selected_pdf_pages_without_exposing_local_paths": _description(
         "验证PDF冻结示例展示指定页码、图片出站状态和视觉模型，但不返回本地绝对路径。",
         "简历演示能解释文本与视觉模式的真实边界，同时保护本地文件系统信息。",
         "若失败，前端可能误报视觉能力、隐藏出站状态或暴露用户本地路径。",
+    ),
+    "tests/test_pdf_page_analysis.py::test_pdf_vision_smoke_requires_explicit_online_confirmation": _description(
+        "验证PDF OCR在线冒烟没有confirm-online参数时在任何模型调用前退出。",
+        "代表性在线测试不会在日常测试或误操作中产生图片出站与Token费用。",
+        "若失败，离线回归可能意外调用百炼并发送PDF页面。",
     ),
 }
 

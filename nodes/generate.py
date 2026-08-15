@@ -14,7 +14,7 @@ from core.llm_usage import (
 from skills.router import get_skill
 from context.context_builder import attach_skill_context
 from research.writer import build_coverage_blocked_answer, build_writer_prompt
-from prompts.contracts import get_prompt_version
+from prompts.contracts import get_prompt_version, wrap_untrusted_evidence
 
 
 def get_llm(model_name: str | None = None):
@@ -48,6 +48,24 @@ def build_pdf_multimodal_input(prompt: str, image_paths: list[str]):
         encoded = base64.b64encode(path.read_bytes()).decode("ascii")
         content.append({"type": "image_url", "image_url": {"url": f"data:image/png;base64,{encoded}"}})
     return [HumanMessage(content=content)] if len(content) > 1 else prompt
+
+
+PDF_OCR_PROMPT = """请解析这些论文页面：提取标题、分节、正文、表格、公式、图注和可识别的布局关系。保持原文事实，不做研究结论扩写；无法识别处明确标记。"""
+
+
+def build_pdf_ocr_degraded_answer(ocr_text: str, error_message: str) -> str:
+    return f"""## PDF 页面 OCR 已完成，研究综合暂不可用
+
+页面图像已经由 OCR 模型解析，但主语言模型调用失败，因此下面仅返回 OCR 提取材料，不把它扩写成研究结论。
+
+### OCR 提取结果
+
+{truncate_text(ocr_text, 2500)}
+
+### 综合阶段错误
+
+{error_message}
+"""
 
 
 
@@ -186,10 +204,26 @@ def generate_node(state: AgentState) -> AgentState:
         "research_writer" if is_research_writer else skill.name
     )
 
+    usage_state = state
+    ocr_text = ""
     try:
-        model_name = settings.PDF_VISION_MODEL_NAME if vision_requested else settings.MODEL_NAME
-        llm_input = build_pdf_multimodal_input(prompt, state.get("pdf_page_images", [])) if vision_requested else prompt
-        llm = get_llm(model_name) if vision_requested else get_llm()
+        if vision_requested:
+            ocr_input = build_pdf_multimodal_input(PDF_OCR_PROMPT, state.get("pdf_page_images", []))
+            ocr_llm = get_llm(settings.PDF_VISION_MODEL_NAME)
+            ocr_response, ocr_usage = invoke_llm_with_usage(
+                llm=ocr_llm, prompt=ocr_input, node_name="pdf_ocr",
+                model_name=settings.PDF_VISION_MODEL_NAME, prompt_version="pdf_ocr_v1",
+            )
+            usage_state = {**state, **build_llm_usage_update(state, ocr_usage)}
+            ocr_text = str(ocr_response.content)
+            ocr_evidence = wrap_untrusted_evidence(ocr_text, "PDF 页面 OCR 结果")
+            llm_input = f"{prompt}\n\n【页面 OCR 补充证据】\n{ocr_evidence}"
+            model_name = settings.MODEL_NAME
+            llm = get_llm()
+        else:
+            llm_input = prompt
+            model_name = settings.MODEL_NAME
+            llm = get_llm()
         response, usage_record = invoke_llm_with_usage(
             llm=llm,
             prompt=llm_input,
@@ -197,7 +231,7 @@ def generate_node(state: AgentState) -> AgentState:
             model_name=model_name,
             prompt_version=prompt_version,
         )
-        usage_update = build_llm_usage_update(state, usage_record)
+        usage_update = build_llm_usage_update(usage_state, usage_record)
 
         return {
             **usage_update,
@@ -207,14 +241,16 @@ def generate_node(state: AgentState) -> AgentState:
                 **skill_state.get("paper_metadata", {}),
                 "skill_used": skill.name,
                 "prompt_version": prompt_version,
-                "pdf_vision_model": model_name if vision_requested else "",
+                "pdf_vision_model": settings.PDF_VISION_MODEL_NAME if vision_requested else "",
+                "pdf_ocr_model": settings.PDF_VISION_MODEL_NAME if vision_requested else "",
+                "pdf_synthesis_model": settings.MODEL_NAME if vision_requested else "",
                 "pdf_visual_page_count": len(state.get("pdf_page_images", [])) if vision_requested else 0,
             },
         }
 
     except TrackedLLMError as error:
         usage_update = build_llm_usage_update(
-            state,
+            usage_state,
             error.usage_record,
         )
         e = error.original_error
@@ -222,13 +258,18 @@ def generate_node(state: AgentState) -> AgentState:
 
         return {
             **usage_update,
-            "answer": build_fallback_answer(state, error_message),
+            "answer": build_pdf_ocr_degraded_answer(ocr_text, error_message) if vision_requested and ocr_text else build_fallback_answer(state, error_message),
             "error_message": error_message,
+            "pdf_vision_status": "ocr_only_degraded" if vision_requested and ocr_text else state.get("pdf_vision_status", "failed"),
             "paper_metadata": {
                 **skill_state.get("paper_metadata", {}),
                 "generate_error": error_message,
                 "skill_used": skill.name,
                 "prompt_version": prompt_version,
+                "pdf_vision_model": settings.PDF_VISION_MODEL_NAME if vision_requested else "",
+                "pdf_ocr_model": settings.PDF_VISION_MODEL_NAME if vision_requested else "",
+                "pdf_synthesis_model": settings.MODEL_NAME if vision_requested else "",
+                "pdf_visual_page_count": len(state.get("pdf_page_images", [])) if vision_requested and ocr_text else 0,
             },
         }
 
