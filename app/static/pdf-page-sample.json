@@ -10,13 +10,23 @@
   "paper_metadata": {
     "task_level": "L1",
     "skill_used": "pdf_reading",
-    "llm_call_count": 1,
+    "llm_call_count": 2,
     "token_usage": 1680,
     "pdf_page_count": 26,
     "pdf_selected_pages": [3],
     "pdf_vision_status": "used",
     "pdf_vision_model": "qwen3.5-ocr",
-    "pdf_visual_page_count": 1
+    "pdf_ocr_model": "qwen3.5-ocr",
+    "pdf_synthesis_model": "qwen3.7-max-2026-05-17",
+    "pdf_visual_page_count": 1,
+    "pdf_visual_evidence": {
+      "source_file": "2404.16130_graph_rag.pdf",
+      "pages": [3],
+      "model": "qwen3.5-ocr",
+      "content_types": ["text", "figure"],
+      "character_count": 1217,
+      "text": "GraphRAG 索引流程页面的 OCR 摘要"
+    }
   },
   "node_timings": {
     "intent_router": 0.001,

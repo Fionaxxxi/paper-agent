@@ -13,6 +13,10 @@ from core.llm_usage import (
 )
 from skills.router import get_skill
 from context.context_builder import attach_skill_context
+from document_loader.pdf_visual_evidence import (
+    build_visual_evidence,
+    format_visual_evidence_for_prompt,
+)
 from research.writer import build_coverage_blocked_answer, build_writer_prompt
 from prompts.contracts import get_prompt_version, wrap_untrusted_evidence
 
@@ -206,6 +210,7 @@ def generate_node(state: AgentState) -> AgentState:
 
     usage_state = state
     ocr_text = ""
+    visual_evidence = {}
     try:
         if vision_requested:
             ocr_input = build_pdf_multimodal_input(PDF_OCR_PROMPT, state.get("pdf_page_images", []))
@@ -215,8 +220,17 @@ def generate_node(state: AgentState) -> AgentState:
                 model_name=settings.PDF_VISION_MODEL_NAME, prompt_version="pdf_ocr_v1",
             )
             usage_state = {**state, **build_llm_usage_update(state, ocr_usage)}
-            ocr_text = str(ocr_response.content)
-            ocr_evidence = wrap_untrusted_evidence(ocr_text, "PDF 页面 OCR 结果")
+            visual_evidence = build_visual_evidence(
+                str(ocr_response.content),
+                pdf_path=state.get("pdf_path", ""),
+                selected_pages=state.get("pdf_selected_pages", []),
+                model_name=settings.PDF_VISION_MODEL_NAME,
+            )
+            ocr_text = visual_evidence["text"]
+            ocr_evidence = wrap_untrusted_evidence(
+                format_visual_evidence_for_prompt(visual_evidence),
+                "PDF 页面 OCR 结果",
+            )
             llm_input = f"{prompt}\n\n【页面 OCR 补充证据】\n{ocr_evidence}"
             model_name = settings.MODEL_NAME
             llm = get_llm()
@@ -245,6 +259,7 @@ def generate_node(state: AgentState) -> AgentState:
                 "pdf_ocr_model": settings.PDF_VISION_MODEL_NAME if vision_requested else "",
                 "pdf_synthesis_model": settings.MODEL_NAME if vision_requested else "",
                 "pdf_visual_page_count": len(state.get("pdf_page_images", [])) if vision_requested else 0,
+                "pdf_visual_evidence": visual_evidence if vision_requested else {},
             },
         }
 
@@ -270,6 +285,7 @@ def generate_node(state: AgentState) -> AgentState:
                 "pdf_ocr_model": settings.PDF_VISION_MODEL_NAME if vision_requested else "",
                 "pdf_synthesis_model": settings.MODEL_NAME if vision_requested else "",
                 "pdf_visual_page_count": len(state.get("pdf_page_images", [])) if vision_requested and ocr_text else 0,
+                "pdf_visual_evidence": visual_evidence if vision_requested and ocr_text else {},
             },
         }
 

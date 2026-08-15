@@ -1744,6 +1744,11 @@ TEST_CASE_CATALOG: dict[str, CaseDescription] = {
         "代表性在线测试不会在日常测试或误操作中产生图片出站与Token费用。",
         "若失败，离线回归可能意外调用百炼并发送PDF页面。",
     ),
+    "tests/test_pdf_page_analysis.py::test_pdf_visual_evidence_normalizes_json_and_hides_absolute_path": _description(
+        "验证OCR的JSON结果会转成统一文本，并记录来源页码、文件名和图表公式内容类型。",
+        "代表多模态证据具有稳定的下游接口，同时不会把本地绝对路径暴露给模型或前端。",
+        "若失败，主模型可能收到难以使用的原始JSON，或响应元数据泄露本地目录结构。",
+    ),
 }
 
 

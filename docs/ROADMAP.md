@@ -1627,6 +1627,8 @@ Push / Pull Request
 
 2026-08-14 已完成最小 Docker 与基础 GitHub Actions CI。运行镜像基于 Python 3.10 slim、使用非 root 用户、Uvicorn 监听 8000，并通过标准库请求 `/health`；`.dockerignore` 排除 `.env`、PDF、Dense 模型/索引、SQLite、Wiki、日志和评测产物，Compose 只在运行时挂载 `data/` 与 `logs/`。CI 在 master push/PR 上执行 Node 前端语法检查、显式关闭 LLM/Checkpoint 的确定性 Research Agent 核心测试和 Docker build，不配置模型 Secret、不运行在线检索、不下载 Dense 模型。README 增加状态徽章、Compose 启停和数据持久化说明。下一步只需验证本机实际镜像构建与容器健康状态，再整理提交；如本机 Docker Desktop/网络不可用，以 Dockerfile 静态检查和 GitHub CI 首次运行结果为准。
 
+2026-08-15 已完成指定页 PDF OCR 两阶段管线与结构化视觉证据 v1。页面 PNG 只在显式开启后发送给 `qwen3.5-ocr`，OCR 的 JSON/纯文本输出统一归一化，并以文件名、页码、内容类型、字符数和模型形成不含本地绝对路径的证据记录；主模型 `qwen3.7-max-2026-05-17` 再结合页面文本综合回答。OCR 成功而综合失败时保留提取结果并进入 `ocr_only_degraded`，不会丢弃第一阶段成果。当前内容类型是可审计的轻量标记识别，不等同于精确版面区域检测；下一步只增加 Figure/Table/Formula 三类受限 Skill 路由，不做整篇 PDF 自动扫描。
+
 2026-08-12 子查询并行已完成 5 次确定性离线重复基准：3 个子查询、2 个 worker 时，中位延迟由 265.4ms 降至 172.3ms，加速 1.54 倍、延迟下降 35.09%，结果与规划顺序一致率 100%，达到阶段门槛并收口。
 
 随后已开始 Retrieval Replan v1：现有“低分后只扩大结果数”的普通重试升级为可审计的失败分类与受限动作。暂时工具失败保持原查询，零结果放宽字面限制，有结果但低相关时追加综述上下文；新查询覆盖旧子查询计划，仍受最多重试一次约束，全程不增加 LLM 调用或付费工具。下一步评测 Replan 相对普通重试的恢复率、无效重试率和动作分类准确率。

@@ -6,6 +6,7 @@ from pydantic import ValidationError
 
 from app.schemas import ChatRequest
 from document_loader.pdf_loader import load_pdf_pages
+from document_loader.pdf_visual_evidence import build_visual_evidence, normalize_ocr_text
 from eval_harness import pdf_vision_smoke
 from nodes import generate as generate_module
 
@@ -91,6 +92,10 @@ def test_pdf_vision_uses_separate_model_only_after_explicit_enable(monkeypatch, 
     assert result["paper_metadata"]["pdf_visual_page_count"] == 1
     assert result["paper_metadata"]["pdf_ocr_model"] == "qwen3.5-ocr"
     assert result["paper_metadata"]["pdf_synthesis_model"] == "qwen3.7-max-2026-05-17"
+    assert result["paper_metadata"]["pdf_visual_evidence"] == {
+        "source_file": "paper.pdf", "pages": [1], "model": "qwen3.5-ocr",
+        "content_types": ["text"], "character_count": 7, "text": "OCR页面文字",
+    }
     assert result["llm_call_count"] == 2
     assert result["token_usage"] == 65
 
@@ -142,3 +147,17 @@ def test_pdf_vision_smoke_requires_explicit_online_confirmation(monkeypatch):
         pdf_vision_smoke.main()
 
     assert error.value.code == 2
+
+
+def test_pdf_visual_evidence_normalizes_json_and_hides_absolute_path():
+    raw = '{"answer":[{"text":"Figure 1 agent flow"},{"text":"Table 2 results"},{"formula":"L = x + y"}]}'
+
+    evidence = build_visual_evidence(
+        raw, pdf_path=r"D:\\private\\papers\\agent.pdf", selected_pages=[3], model_name="qwen3.5-ocr"
+    )
+
+    assert normalize_ocr_text(raw) == "Figure 1 agent flow\nTable 2 results\nL = x + y"
+    assert evidence["source_file"] == "agent.pdf"
+    assert evidence["pages"] == [3]
+    assert set(evidence["content_types"]) == {"figure", "table", "formula"}
+    assert "D:\\private" not in str(evidence)
