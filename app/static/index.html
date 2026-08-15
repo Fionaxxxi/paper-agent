@@ -36,6 +36,7 @@
       <div class="actions">
         <button id="submit" class="primary">运行 Agent <span>→</span></button>
         <button id="sample">加载示例轨迹（零 API）</button>
+        <button id="pdfSample">加载PDF页示例（零 API）</button>
         <span id="requestStatus">准备就绪</span>
       </div>
     </section>
@@ -45,6 +46,10 @@
       <section class="panel workflow-card">
         <div class="section-title"><span>Research Agent 工作流</span><b id="taskLevel"></b></div>
         <div id="workflow" class="workflow"></div>
+      </section>
+      <section id="pdfTrace" class="panel pdf-trace hidden">
+        <div class="section-title"><span>指定 PDF 页面分析</span><b id="pdfVisionStatus"></b></div>
+        <div id="pdfTraceContent" class="pdf-trace-grid"></div>
       </section>
       <section id="researchTrace" class="research-trace hidden">
         <div class="research-grid">

@@ -60,3 +60,21 @@ def test_demo_trace_distinguishes_repository_evidence_and_consent_state():
     assert sample["paper_metadata"]["repository_enrichment"]["status"] == "collected"
     evidence_types = {item["evidence_type"] for item in sample["paper_metadata"]["evidence_store"]["evidence"]}
     assert evidence_types == {"paper", "repository"}
+
+
+def test_demo_page_explains_selected_pdf_pages_without_exposing_local_paths():
+    """作用：PDF冻结示例展示页码、视觉出站状态和模型，但不包含本地路径。"""
+    client = TestClient(app)
+    page = client.get("/").text
+    script = client.get("/static/app.js").text
+    sample_response = client.get("/static/pdf-page-sample.json")
+
+    assert "加载PDF页示例（零 API）" in page
+    assert "指定 PDF 页面分析" in page
+    assert "图片出站" in script
+    assert sample_response.status_code == 200
+    sample = sample_response.json()
+    assert sample["pdf_selected_pages"] == [3]
+    assert sample["pdf_vision_status"] == "used"
+    assert sample["paper_metadata"]["pdf_vision_model"] == "qwen3-vl-flash"
+    assert "D:\\" not in sample_response.text

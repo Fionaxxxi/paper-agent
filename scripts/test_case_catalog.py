@@ -1729,6 +1729,11 @@ TEST_CASE_CATALOG: dict[str, CaseDescription] = {
         "文本模型与视觉模型职责分离，视觉状态、页数和Token轨迹均可审计。",
         "若失败，系统可能把图片发给不支持视觉的模型或误报已完成图表理解。",
     ),
+    "tests/test_demo_page.py::test_demo_page_explains_selected_pdf_pages_without_exposing_local_paths": _description(
+        "验证PDF冻结示例展示指定页码、图片出站状态和视觉模型，但不返回本地绝对路径。",
+        "简历演示能解释文本与视觉模式的真实边界，同时保护本地文件系统信息。",
+        "若失败，前端可能误报视觉能力、隐藏出站状态或暴露用户本地路径。",
+    ),
 }
 
 

@@ -1,0 +1,35 @@
+{
+  "answer": "## 指定页面分析示例\n\n第 3 页展示了 GraphRAG 从实体与关系抽取、社区检测到社区摘要生成的索引流程。视觉模型同时检查了流程图布局，因此本结论使用了页面文本与图像。",
+  "task_type": "pdf_reading",
+  "retrieval_score": 0.0,
+  "tools_used": [],
+  "papers": [],
+  "pdf_page_count": 26,
+  "pdf_selected_pages": [3],
+  "pdf_vision_status": "used",
+  "paper_metadata": {
+    "task_level": "L1",
+    "skill_used": "pdf_reading",
+    "llm_call_count": 1,
+    "token_usage": 1680,
+    "pdf_page_count": 26,
+    "pdf_selected_pages": [3],
+    "pdf_vision_status": "used",
+    "pdf_vision_model": "qwen3-vl-flash",
+    "pdf_visual_page_count": 1
+  },
+  "node_timings": {
+    "intent_router": 0.001,
+    "clarification": 0.001,
+    "research_analyze": 0.002,
+    "query_rewrite": 0.001,
+    "reason": 0.001,
+    "generate": 2.42,
+    "research_citation_validate": 0.001,
+    "research_citation_repair": 0.001,
+    "answer_verify": 0.001,
+    "metrics": 0.001
+  },
+  "trace_id": "demo-pdf-page-trace",
+  "conversation_id": "resume-pdf-demo"
+}
