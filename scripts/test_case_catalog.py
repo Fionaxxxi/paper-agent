@@ -1749,6 +1749,16 @@ TEST_CASE_CATALOG: dict[str, CaseDescription] = {
         "代表多模态证据具有稳定的下游接口，同时不会把本地绝对路径暴露给模型或前端。",
         "若失败，主模型可能收到难以使用的原始JSON，或响应元数据泄露本地目录结构。",
     ),
+    "tests/test_pdf_page_analysis.py::test_pdf_subskill_router_uses_explicit_intent_without_llm": _description(
+        "验证PDF问题根据明确的图、表、公式关键词路由到对应子Skill，普通总结保持通用阅读。",
+        "代表系统无需额外LLM调用即可选择更有针对性的分析规则，并保留低成本快速路径。",
+        "若失败，公式、表格或架构图问题可能使用通用Prompt，或者普通请求被不必要地复杂化。",
+    ),
+    "tests/test_pdf_page_analysis.py::test_pdf_subskills_keep_grounding_and_uncertainty_rules": _description(
+        "验证图、表、公式三个子Skill都保留PDF证据边界和各自的不确定性披露规则。",
+        "代表专项分析不会通过猜测布局、补齐数值或套用常见符号含义来制造结论。",
+        "若失败，多模态回答可能越过实际页面证据并产生看似专业但无法验证的内容。",
+    ),
 }
 
 

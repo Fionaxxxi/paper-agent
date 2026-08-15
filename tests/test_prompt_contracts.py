@@ -69,6 +69,7 @@ def test_prompt_versions_cover_all_current_llm_prompt_families():
         "reason", "evaluate", "research_analyze", "qa", "paper_summary",
         "paper_compare", "research_direction", "literature_review",
         "paper_critique", "pdf_reading", "research_writer", "answer_reflect",
+        "figure_understanding", "table_analysis", "formula_explanation",
     }
 
     assert required <= PROMPT_VERSIONS.keys()

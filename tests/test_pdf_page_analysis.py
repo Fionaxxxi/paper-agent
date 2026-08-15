@@ -9,6 +9,9 @@ from document_loader.pdf_loader import load_pdf_pages
 from document_loader.pdf_visual_evidence import build_visual_evidence, normalize_ocr_text
 from eval_harness import pdf_vision_smoke
 from nodes import generate as generate_module
+from skills.pdf_multimodal_skills import FigureUnderstandingSkill, FormulaExplanationSkill, TableAnalysisSkill
+from skills.pdf_reading_skill import PDFReadingSkill
+from skills.router import get_skill
 
 
 def _make_pdf(path):
@@ -161,3 +164,32 @@ def test_pdf_visual_evidence_normalizes_json_and_hides_absolute_path():
     assert evidence["pages"] == [3]
     assert set(evidence["content_types"]) == {"figure", "table", "formula"}
     assert "D:\\private" not in str(evidence)
+
+
+@pytest.mark.parametrize(
+    ("query", "expected_skill"),
+    [
+        ("解释第3页的模型架构图", FigureUnderstandingSkill),
+        ("比较表格中的实验结果和消融指标", TableAnalysisSkill),
+        ("解释这个损失函数中每个符号", FormulaExplanationSkill),
+        ("总结这一页的主要内容", PDFReadingSkill),
+    ],
+)
+def test_pdf_subskill_router_uses_explicit_intent_without_llm(query, expected_skill):
+    skill = get_skill({"task_type": "pdf_reading", "query": query})
+    assert isinstance(skill, expected_skill)
+
+
+def test_pdf_subskills_keep_grounding_and_uncertainty_rules():
+    state = {
+        "query": "分析指定内容", "pdf_text": "论文页面材料", "pdf_path": "paper.pdf",
+        "pdf_selected_pages": [3], "pdf_vision_status": "rendered_text_only",
+    }
+    figure_prompt = FigureUnderstandingSkill().build_prompt(state)
+    table_prompt = TableAnalysisSkill().build_prompt(state)
+    formula_prompt = FormulaExplanationSkill().build_prompt(state)
+
+    assert "只依据图注和提取文本" in figure_prompt
+    assert "不得猜测或补齐" in table_prompt and "比较对象和数值" in table_prompt
+    assert "不凭常见记号猜测" in formula_prompt
+    assert all("<UNTRUSTED_EVIDENCE" in prompt for prompt in (figure_prompt, table_prompt, formula_prompt))

@@ -9,7 +9,7 @@
   "pdf_vision_status": "used",
   "paper_metadata": {
     "task_level": "L1",
-    "skill_used": "pdf_reading",
+    "skill_used": "figure_understanding",
     "llm_call_count": 2,
     "token_usage": 1680,
     "pdf_page_count": 26,

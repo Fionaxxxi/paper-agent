@@ -15,6 +15,9 @@ PROMPT_VERSIONS = {
     "literature_review": "literature_review_v2_security",
     "paper_critique": "paper_critique_v2_security",
     "pdf_reading": "pdf_reading_v2_security",
+    "figure_understanding": "figure_understanding_v1_security",
+    "table_analysis": "table_analysis_v1_security",
+    "formula_explanation": "formula_explanation_v1_security",
     "research_writer": "research_writer_v2_security",
     "answer_reflect": "answer_reflection_v2_security",
 }
