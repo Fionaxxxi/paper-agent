@@ -1709,6 +1709,11 @@ TEST_CASE_CATALOG: dict[str, CaseDescription] = {
         "论文和工程证据可进入同一Evidence Store，同时保持类型边界与完整工具轨迹。",
         "若失败，研究报告无法可靠进行论文—代码对照或会混淆两类证据。",
     ),
+    "tests/test_demo_page.py::test_demo_trace_distinguishes_repository_evidence_and_consent_state": _description(
+        "验证网页展示GitHub双重授权状态，并用类型标签区分论文与代码仓库证据。",
+        "简历演示可以解释是否发生数据出站、选择了哪个仓库以及证据适用边界。",
+        "若失败，前端可能隐藏关键授权决策或把仓库信息误展示为论文证据。",
+    ),
 }
 
 

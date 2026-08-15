@@ -45,3 +45,18 @@ def test_demo_page_offers_zero_api_frozen_research_trace():
     assert payload["paper_metadata"]["task_level"] == "L3"
     assert payload["paper_metadata"]["research_coverage"]["status"] == "passed"
     assert payload["paper_metadata"]["citation_validation"]["passed"] is True
+
+
+def test_demo_trace_distinguishes_repository_evidence_and_consent_state():
+    """作用：网页明确展示GitHub双重授权状态，并区分论文与代码仓库证据。"""
+    client = TestClient(app)
+    page = client.get("/").text
+    script = client.get("/static/app.js").text
+    sample = client.get("/static/research-sample.json").json()
+
+    assert "GitHub 代码证据" in page
+    assert "repository_enrichment" in script
+    assert "没有向 GitHub 发送查询" in script
+    assert sample["paper_metadata"]["repository_enrichment"]["status"] == "collected"
+    evidence_types = {item["evidence_type"] for item in sample["paper_metadata"]["evidence_store"]["evidence"]}
+    assert evidence_types == {"paper", "repository"}

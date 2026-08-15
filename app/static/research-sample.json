@@ -1,8 +1,8 @@
 {
-  "answer": "## 研究结论示例\n\nReAct 将推理轨迹与行动交替执行 [E-react0000001]；Reflexion 使用语言反馈和情景记忆支持后续尝试 [E-reflexion001]。\n\n综合判断：两者分别代表即时推理—行动循环与跨轮反思—记忆循环 [E-react0000001] [E-reflexion001]。\n\n## 证据索引\n- [E-react0000001] ReAct\n- [E-reflexion001] Reflexion",
+  "answer": "## 研究结论示例\n\nReAct 将推理轨迹与行动交替执行 [E-react0000001]；Reflexion 使用语言反馈和情景记忆支持后续尝试 [E-reflexion001]。\n\n工程实现方面，ReAct 的公开 GitHub 仓库提供了可检查的代码结构与依赖信息 [E-reactrepo001]。该仓库证据只能说明实现状态，不能替代论文实验结论。\n\n综合判断：两者分别代表即时推理—行动循环与跨轮反思—记忆循环 [E-react0000001] [E-reflexion001]。\n\n## 证据索引\n- [E-react0000001] ReAct（论文）\n- [E-reflexion001] Reflexion（论文）\n- [E-reactrepo001] ysymyth/ReAct（代码仓库）",
   "task_type": "recommend",
   "retrieval_score": 0.91,
-  "tools_used": ["arxiv.search", "openalex.search"],
+  "tools_used": ["arxiv.search", "openalex.search", "code.repository.search.github.mcp", "code.repository.inspect.github.mcp"],
   "papers": [
     {"title":"ReAct","source":"arxiv","year":2022,"content":"ReAct interleaves reasoning traces and actions.","pdf_url":"https://arxiv.org/abs/2210.03629","retrieval_score":0.94},
     {"title":"Reflexion","source":"openalex","year":2023,"content":"Reflexion uses linguistic feedback and episodic memory.","pdf_url":"https://arxiv.org/abs/2303.11366","retrieval_score":0.91}
@@ -20,14 +20,16 @@
       {"wave":1,"tasks":[{"task_id":"T1","task_kind":"retrieval"},{"task_id":"T2","task_kind":"retrieval"}]},
       {"wave":2,"tasks":[{"task_id":"T3","task_kind":"synthesis"}]}
     ]},
-    "evidence_store":{"enabled":true,"evidence_count":2,"evidence":[
-      {"evidence_id":"E-react0000001","title":"ReAct","source":"arxiv","locator":"https://arxiv.org/abs/2210.03629"},
-      {"evidence_id":"E-reflexion001","title":"Reflexion","source":"openalex","locator":"https://arxiv.org/abs/2303.11366"}
+    "repository_enrichment":{"enabled":true,"status":"collected","reason":"config_and_query_authorized","candidate_count":3,"selected_repository":"ysymyth/ReAct"},
+    "evidence_store":{"enabled":true,"evidence_count":3,"evidence":[
+      {"evidence_id":"E-react0000001","title":"ReAct","source":"arxiv","evidence_type":"paper","locator":"https://arxiv.org/abs/2210.03629"},
+      {"evidence_id":"E-reflexion001","title":"Reflexion","source":"openalex","evidence_type":"paper","locator":"https://arxiv.org/abs/2303.11366"},
+      {"evidence_id":"E-reactrepo001","title":"代码仓库：ysymyth/ReAct","source":"github","evidence_type":"repository","locator":"https://github.com/ysymyth/ReAct"}
     ]},
     "research_coverage":{"enabled":true,"status":"passed","coverage_pct":100},
     "citation_validation":{"enabled":true,"status":"passed","passed":true,"failure_types":[]},
     "citation_repair":{"status":"repaired","repaired_line_count":1}
   },
-  "node_timings":{"intent_router":0.001,"clarification":0.002,"research_analyze":1.24,"query_rewrite":0.003,"query_plan":0.004,"research_schedule":0.001,"retrieve":2.18,"evidence_store":0.002,"research_coverage":0.001,"reason":0.001,"generate":3.42,"research_citation_validate":0.001,"research_citation_repair":0.001,"answer_verify":0.001,"metrics":0.001},
+  "node_timings":{"intent_router":0.001,"clarification":0.002,"research_analyze":1.24,"query_rewrite":0.003,"query_plan":0.004,"research_schedule":0.001,"retrieve":2.18,"repository_enrich":1.36,"evidence_store":0.002,"research_coverage":0.001,"reason":0.001,"generate":3.42,"research_citation_validate":0.001,"research_citation_repair":0.001,"answer_verify":0.001,"metrics":0.001},
   "trace_id":"demo-research-trace","conversation_id":"resume-demo"
 }
