@@ -50,6 +50,7 @@ def metrics_node(state: AgentState) -> AgentState:
     research_coverage = state.get("research_coverage", {})
     citation_validation = state.get("citation_validation", {})
     citation_repair = state.get("citation_repair", {})
+    repository_enrichment = state.get("repository_enrichment", {})
 
     total_time = round(sum(node_timings.values()), 2)
     input_token_usage = state.get("input_token_usage", 0)
@@ -116,6 +117,8 @@ def metrics_node(state: AgentState) -> AgentState:
         "research_schedule_max_parallel": research_schedule.get("max_parallel_tasks", 0),
         "evidence_store_enabled": evidence_store.get("enabled", False),
         "evidence_count": evidence_store.get("evidence_count", 0),
+        "repository_enrichment_status": repository_enrichment.get("status", "not_applicable"),
+        "repository_evidence_count": len(state.get("repository_evidence", [])),
         "claim_evidence_input_count": len(evidence_store.get("claim_evidence_inputs", [])),
         "claim_evidence_ready_count": sum(
             item.get("coverage_ready", False)

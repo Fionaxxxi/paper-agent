@@ -13,7 +13,7 @@ def _locator(document: dict[str, Any]) -> str:
         return f"chunk:{document['chunk_id']}{page}"
     if document.get("doi"):
         return f"doi:{document['doi']}"
-    return str(document.get("pdf_url") or document.get("entry_id") or "unlocated")
+    return str(document.get("pdf_url") or document.get("url") or document.get("entry_id") or "unlocated")
 
 
 def _evidence_id(document: dict[str, Any]) -> str:
@@ -50,6 +50,7 @@ def build_evidence_store(
             "evidence_id": evidence_id,
             "title": str(document.get("title") or "未命名论文"),
             "source": str(document.get("source") or "unknown"),
+            "evidence_type": str(document.get("evidence_type") or "paper"),
             "locator": _locator(document),
             "year": document.get("year"),
             "snippet": str(document.get("content") or "")[:600],

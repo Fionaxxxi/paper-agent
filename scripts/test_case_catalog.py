@@ -1694,6 +1694,21 @@ TEST_CASE_CATALOG: dict[str, CaseDescription] = {
         "MCP Server只能访问预定义仓库端点，不能被参数改造成任意HTTP客户端。",
         "若失败，输入可能逃逸固定只读API边界。",
     ),
+    "tests/test_repository_enrichment.py::test_generic_code_intent_suggests_github_without_external_call": _description(
+        "验证只说代码、实现或复现时仅建议GitHub增强，不向外部服务发送内容。",
+        "模糊的代码意图不会被当成用户已授权GitHub数据出站。",
+        "若失败，系统可能静默把用户问题或论文信息交给第三方。",
+    ),
+    "tests/test_repository_enrichment.py::test_explicit_github_intent_stays_disabled_without_operator_opt_in": _description(
+        "验证用户明确提到GitHub但管理员开关关闭时仍不调用外部工具。",
+        "GitHub增强需要查询意图与部署配置双重授权。",
+        "若失败，部署者无法统一关闭外部仓库增强。",
+    ),
+    "tests/test_repository_enrichment.py::test_double_opt_in_collects_repository_as_typed_evidence": _description(
+        "验证双重授权后只搜索一次、检查一个仓库，并写入带GitHub定位符的repository证据。",
+        "论文和工程证据可进入同一Evidence Store，同时保持类型边界与完整工具轨迹。",
+        "若失败，研究报告无法可靠进行论文—代码对照或会混淆两类证据。",
+    ),
 }
 
 

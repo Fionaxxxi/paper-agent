@@ -15,6 +15,7 @@ def build_writer_prompt(base_prompt: str, state: dict[str, Any]) -> str:
             "evidence_id": item.get("evidence_id"),
             "title": item.get("title"),
             "source": item.get("source"),
+            "evidence_type": item.get("evidence_type", "paper"),
             "locator": item.get("locator"),
             "snippet": item.get("snippet"),
             "task_ids": item.get("task_ids", []),
@@ -35,7 +36,8 @@ def build_writer_prompt(base_prompt: str, state: dict[str, Any]) -> str:
 - 重要事实必须使用 `[E-xxxxxxxxxxxx]` 标注对应 evidence_id；
 - 只能使用上方清单中真实存在的 evidence_id，不得创造引用；
 - 对未覆盖声明必须写“证据不足”，不得补写确定性结论；
-- 报告末尾增加“证据索引”，列出 evidence_id、论文标题和 locator；
+- 报告末尾增加“证据索引”，列出 evidence_id、证据标题、类型和 locator；
+- `repository` 证据只能支持工程实现、依赖和活跃度判断，不能替代论文对方法与实验结论的证明；
 - 综合判断要明确标记为“综合判断”，不能伪装成单篇论文原结论。
 """
 

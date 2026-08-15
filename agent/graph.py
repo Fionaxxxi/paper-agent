@@ -18,6 +18,7 @@ from nodes.research_analyze import research_analyze_node
 from nodes.clarification import clarification_node
 from nodes.research_schedule import research_schedule_node
 from nodes.evidence_store import evidence_store_node
+from nodes.repository_enrich import repository_enrich_node
 from nodes.research_coverage import research_coverage_node
 from nodes.research_citation_validate import research_citation_validate_node
 from nodes.research_citation_repair import research_citation_repair_node
@@ -131,6 +132,10 @@ def build_graph(checkpointer=None):
         timed_node("evidence_store", evidence_store_node),
     )
     workflow.add_node(
+        "repository_enrich",
+        timed_node("repository_enrich", repository_enrich_node),
+    )
+    workflow.add_node(
         "research_coverage",
         timed_node("research_coverage", research_coverage_node),
     )
@@ -159,7 +164,8 @@ def build_graph(checkpointer=None):
 
     workflow.add_edge("query_plan", "research_schedule")
     workflow.add_edge("research_schedule", "retrieve")
-    workflow.add_edge("retrieve", "evidence_store")
+    workflow.add_edge("retrieve", "repository_enrich")
+    workflow.add_edge("repository_enrich", "evidence_store")
     workflow.add_edge("evidence_store", "research_coverage")
     workflow.add_edge("research_coverage", "evaluate")
 

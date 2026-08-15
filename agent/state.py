@@ -89,6 +89,8 @@ class AgentState(TypedDict, total=False):
     pending_clarification: Dict[str, Any]
     research_schedule: Dict[str, Any]
     evidence_store: Dict[str, Any]
+    repository_evidence: List[Dict[str, Any]]
+    repository_enrichment: Dict[str, Any]
     research_coverage: Dict[str, Any]
     citation_validation: Dict[str, Any]
     citation_repair: Dict[str, Any]

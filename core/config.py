@@ -49,6 +49,8 @@ class Settings(BaseSettings):
     GITHUB_API_BASE_URL: str = "https://api.github.com"
     GITHUB_TOKEN: str = ""
     GITHUB_MAX_RESULTS: int = 5
+    GITHUB_ENRICHMENT_ENABLED: bool = False
+    GITHUB_ENRICHMENT_ENABLED: bool = False
 
     # Tool execution
     TOOL_TIMEOUT_SECONDS: float = 45.0

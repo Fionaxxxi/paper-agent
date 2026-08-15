@@ -7,7 +7,8 @@ def evidence_store_node(state: AgentState) -> AgentState:
     if not schedule.get("enabled"):
         return {"evidence_store": {"enabled": False, "evidence": [],
                                    "status": "not_applicable"}}
-    store = build_evidence_store(schedule, state.get("documents", []))
+    documents = [*state.get("documents", []), *state.get("repository_evidence", [])]
+    store = build_evidence_store(schedule, documents)
     return {
         "evidence_store": store,
         "paper_metadata": {
