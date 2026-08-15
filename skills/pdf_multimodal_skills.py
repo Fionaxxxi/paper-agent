@@ -18,6 +18,10 @@ JSON 只供程序校验，中文回答仍必须完整可读。
 """
 
 
+def _schema_pages(state: AgentState) -> str:
+    return str(state.get("pdf_selected_pages", [])).replace(" ", "")
+
+
 class FigureUnderstandingSkill(PDFReadingSkill):
     name = "figure_understanding"
     description = "论文架构图、流程图与示意图解释 Skill"
@@ -34,8 +38,9 @@ class FigureUnderstandingSkill(PDFReadingSkill):
 
 只有页面视觉状态为 used 时才能描述视觉位置、连线或布局；否则必须明确说明只依据图注和提取文本。
 """ + _structured_instruction(
-            '{"summary":"...","components":["..."],"relationships":["..."],'
-            '"evidence_scope":{"pages":[3],"evidence_mode":"text_only或ocr_visual","uncertainties":[]}}'
+            '{"target_found":true,"summary":"...","components":["..."],"relationships":["..."],'
+            f'"evidence_scope":{{"pages":{_schema_pages(state)},"evidence_mode":"text_only或ocr_visual","uncertainties":[]}}}}'
+            '；若页面没有目标图，使用 target_found=false、components=[]，并在 uncertainties 说明限制'
         )
 
 
@@ -57,7 +62,7 @@ class TableAnalysisSkill(PDFReadingSkill):
 """ + _structured_instruction(
             '{"table_purpose":"...","metrics":[{"name":"...","direction":"higher_better或lower_better或unknown"}],'
             '"comparisons":["..."],"conclusions":["..."],'
-            '"evidence_scope":{"pages":[3],"evidence_mode":"text_only或ocr_visual","uncertainties":[]}}'
+            f'"evidence_scope":{{"pages":{_schema_pages(state)},"evidence_mode":"text_only或ocr_visual","uncertainties":[]}}}}'
         )
 
 
@@ -79,5 +84,5 @@ class FormulaExplanationSkill(PDFReadingSkill):
 """ + _structured_instruction(
             '{"formula":"...","purpose":"...","symbols":[{"symbol":"...","meaning":"..."}],'
             '"computation":["..."],'
-            '"evidence_scope":{"pages":[3],"evidence_mode":"text_only或ocr_visual","uncertainties":[]}}'
+            f'"evidence_scope":{{"pages":{_schema_pages(state)},"evidence_mode":"text_only或ocr_visual","uncertainties":[]}}}}'
         )

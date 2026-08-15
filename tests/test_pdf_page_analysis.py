@@ -257,11 +257,21 @@ def test_pdf_structured_contracts_reject_missing_scope_and_invalid_metric_direct
             "evidence_scope": {"pages": [3], "evidence_mode": "ocr_visual"},
             "local_path": r"D:\\private\\paper.pdf",
         })
+    no_figure = FigureUnderstandingOutput.model_validate({
+        "target_found": False, "summary": "页面没有架构图", "components": [],
+        "evidence_scope": {"pages": [3], "evidence_mode": "ocr_visual", "uncertainties": ["未发现目标图"]},
+    })
+    assert no_figure.target_found is False
+    with pytest.raises(ValidationError):
+        FigureUnderstandingOutput.model_validate({
+            "target_found": True, "summary": "流程", "components": [],
+            "evidence_scope": {"pages": [3], "evidence_mode": "ocr_visual"},
+        })
 
 
 def test_pdf_structured_parser_returns_clean_answer_and_validated_data():
     answer = "证据范围：第 3 页；证据模式：OCR/视觉证据与提取文本。\n\n图展示检索到生成的流程。\n```json\n" \
-        '{"summary":"检索增强流程","components":["Retriever","Generator"],"relationships":["Retriever向Generator提供证据"],' \
+        '{"target_found":true,"summary":"检索增强流程","components":["Retriever","Generator"],"relationships":["Retriever向Generator提供证据"],' \
         '"evidence_scope":{"pages":[3],"evidence_mode":"ocr_visual","uncertainties":[]}}\n```'
 
     readable, result = parse_pdf_structured_output(

@@ -177,7 +177,7 @@ Figure、Table、Formula 还具有独立 Pydantic Structured Output 契约。模
 
 专项 PDF 回答生成后还会经过零 LLM 的 `PDF Grounding Validator`：检查是否写明全部重点页码、是否披露使用了 OCR/视觉证据或仅提取文本，以及 OCR 存在识别不确定性时是否保留限制。结果通过 `paper_metadata.pdf_grounding_validation` 和网页执行轨迹公开；验证失败会影响最终 Answer Verification，但不会自动触发 Reflection，避免为了格式披露增加模型调用。
 
-运行一次受保护的真实 OCR 冒烟（默认只发送 GraphRAG 第 3 页）：
+运行一次受保护的真实 OCR + Structured Output 冒烟（默认只发送包含 Figure 1 GraphRAG Pipeline 的 PDF 第 4 页）：
 
 ```powershell
 D:\miniconda3\envs\paper_agent\python.exe -m eval_harness.pdf_vision_smoke --confirm-online
