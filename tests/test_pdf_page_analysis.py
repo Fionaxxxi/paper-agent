@@ -66,7 +66,7 @@ def test_pdf_vision_uses_separate_model_only_after_explicit_enable(monkeypatch, 
         return FakeLLM()
 
     monkeypatch.setattr(generate_module.settings, "PDF_VISION_ENABLED", True)
-    monkeypatch.setattr(generate_module.settings, "PDF_VISION_MODEL_NAME", "qwen-vl-max")
+    monkeypatch.setattr(generate_module.settings, "PDF_VISION_MODEL_NAME", "qwen3-vl-flash")
     monkeypatch.setattr(generate_module, "get_llm", fake_get_llm)
 
     result = generate_module.generate_node({
@@ -76,7 +76,7 @@ def test_pdf_vision_uses_separate_model_only_after_explicit_enable(monkeypatch, 
         "pdf_vision_status": "ready", "paper_metadata": {},
     })
 
-    assert captured["model_name"] == "qwen-vl-max"
+    assert captured["model_name"] == "qwen3-vl-flash"
     assert captured["prompt"][0].content[1]["type"] == "image_url"
     assert result["pdf_vision_status"] == "used"
     assert result["paper_metadata"]["pdf_visual_page_count"] == 1

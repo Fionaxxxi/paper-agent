@@ -164,10 +164,10 @@ Invoke-RestMethod -Method Post -Uri http://127.0.0.1:8000/chat -ContentType "app
 
 ```env
 PDF_VISION_ENABLED=true
-PDF_VISION_MODEL_NAME=qwen-vl-max
+PDF_VISION_MODEL_NAME=qwen3-vl-flash
 ```
 
-开启后，只有用户通过 `pdf_pages` 明确指定的页面 PNG 会发送给视觉模型；状态变为 `used` 后，回答才允许声称观察了图像、布局或图表。页码越多会增加视觉 Token 和延迟，因此仍保留最多 3 页的硬限制。
+默认选择 `qwen3-vl-flash`：它适合低延迟的页面、图表和布局理解，百炼华北2（北京）的新人免费额度为100万Token，有效期及剩余额度以账户控制台为准。开启后，只有用户通过 `pdf_pages` 明确指定的页面 PNG 会发送给视觉模型；状态变为 `used` 后，回答才允许声称观察了图像、布局或图表。页码越多会增加视觉 Token 和延迟，因此仍保留最多 3 页的硬限制。
 
 ### 4. 多轮会话
 
