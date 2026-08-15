@@ -227,6 +227,9 @@ def metrics_node(state: AgentState) -> AgentState:
         "answer_reflection_status": state.get("answer_reflection", {}).get("status", "not_triggered"),
         "answer_reflection_restored": state.get("answer_reflection_restored", False),
         "answer_stop_reason": state.get("answer_stop_reason", ""),
+        "multi_agent_status": state.get("multi_agent_trace", {}).get("status", "not_applicable"),
+        "multi_agent_handoff_count": len(state.get("multi_agent_trace", {}).get("handoffs", [])),
+        "multi_agent_additional_llm_calls": state.get("multi_agent_trace", {}).get("additional_llm_calls", 0),
 
         # Memory
         "conversation_id": state.get("conversation_id", ""),

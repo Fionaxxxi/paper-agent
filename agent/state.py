@@ -73,6 +73,7 @@ class AgentState(TypedDict, total=False):
     pdf_page_images: List[str]
     pdf_vision_status: str
     pdf_grounding_validation: Dict[str, Any]
+    multi_agent_trace: Dict[str, Any]
 
     sub_queries: list[str]
     query_plan_enabled: bool

@@ -23,6 +23,7 @@ from nodes.research_coverage import research_coverage_node
 from nodes.research_citation_validate import research_citation_validate_node
 from nodes.research_citation_repair import research_citation_repair_node
 from nodes.pdf_grounding_validate import pdf_grounding_validate_node
+from nodes.multi_agent_finalize import multi_agent_finalize_node
 
 from utils.timer import timed_node
 
@@ -113,6 +114,10 @@ def build_graph(checkpointer=None):
         "pdf_grounding_validate",
         timed_node("pdf_grounding_validate", pdf_grounding_validate_node),
     )
+    workflow.add_node(
+        "multi_agent_finalize",
+        timed_node("multi_agent_finalize", multi_agent_finalize_node),
+    )
 
     workflow.add_node(
         "metrics",
@@ -194,10 +199,11 @@ def build_graph(checkpointer=None):
         route_after_answer_verify,
         {
             "reflect": "answer_reflect",
-            "finish": "metrics",
+            "finish": "multi_agent_finalize",
         },
     )
     workflow.add_edge("answer_reflect", "pdf_grounding_validate")
+    workflow.add_edge("multi_agent_finalize", "metrics")
     workflow.add_edge("metrics", END)
 
     return workflow.compile(checkpointer=checkpointer)

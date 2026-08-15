@@ -1794,6 +1794,21 @@ TEST_CASE_CATALOG: dict[str, CaseDescription] = {
         "代表生产Generate节点能够返回干净中文答案，同时保留可供前端和后续节点使用的指标结构。",
         "若失败，独立Schema与解析器即使通过，也可能没有真正接入LangGraph生成路径。",
     ),
+    "tests/test_multi_agent_orchestrator.py::test_bounded_multi_agent_trace_composes_existing_l3_roles_without_extra_llm": _description(
+        "验证L3研究任务形成Planner、Executor、Reviewer三段有序交接且不增加模型调用。",
+        "代表轻量Multi-Agent复用现有研究节点，通过结构化角色轨迹展示协作而不重复生成。",
+        "若失败，复杂任务可能缺少角色边界，或为了形式上的多Agent产生额外Token。",
+    ),
+    "tests/test_multi_agent_orchestrator.py::test_multi_agent_trace_preserves_blocked_evidence_and_review_failures": _description(
+        "验证证据覆盖阻断和Reviewer失败会原样进入Multi-Agent最终状态。",
+        "代表Orchestrator不会掩盖Executor或Verifier失败，也不会把降级报告标成完整成功。",
+        "若失败，前端轨迹可能展示虚假的多Agent成功结论。",
+    ),
+    "tests/test_multi_agent_orchestrator.py::test_multi_agent_stays_off_for_fast_path_and_contract_caps_review_loop": _description(
+        "验证L1快速路径不启用Multi-Agent，结构契约将Reviewer循环上限锁定为一次。",
+        "代表普通问答保持低成本，复杂任务也不能演变为无限审查循环。",
+        "若失败，简单请求可能承担多角色开销，或Reviewer预算约束可被绕过。",
+    ),
 }
 
 

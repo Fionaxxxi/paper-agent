@@ -45,6 +45,8 @@ def test_demo_page_offers_zero_api_frozen_research_trace():
     assert payload["paper_metadata"]["task_level"] == "L3"
     assert payload["paper_metadata"]["research_coverage"]["status"] == "passed"
     assert payload["paper_metadata"]["citation_validation"]["passed"] is True
+    assert [item["role"] for item in payload["paper_metadata"]["multi_agent_trace"]["handoffs"]] == ["planner", "executor", "reviewer"]
+    assert payload["paper_metadata"]["multi_agent_trace"]["additional_llm_calls"] == 0
 
 
 def test_demo_trace_distinguishes_repository_evidence_and_consent_state():

@@ -16,6 +16,7 @@ PaperAgent 是一个面向科研论文场景的 Agent 项目。它不只是调�
 - **本地全文 RAG**：支持 PDF 解析、Chunk、BM25、Dense Retrieval、向量缓存和置信度门控 Hybrid。
 - **可审计检索路由**：本地 RAG 会记录 Dense Top-1、分数间隔，以及最终选择 Dense 或 Hybrid 的原因。
 - **多 Skill 回答**：根据任务选择问答、总结、比较、引用、研究方向或 PDF 阅读 Skill。
+- **有界轻量 Multi-Agent**：仅 L3 将现有研究节点组织为 Planner、Executor、Reviewer 三段交接，额外 LLM 调用为 0，审查循环上限为 1。
 - **记忆与可观测性**：按 `conversation_id` 将最近会话保存在本地文件，并返回节点耗时、工具记录与 Token 用量。
 
 ## 当前架构
@@ -42,6 +43,10 @@ PaperAgent 是一个面向科研论文场景的 Agent 项目。它不只是调�
    → Reason：识别问答、总结、比较等任务
    → Skill Router
    → Generate
+   → L3 Multi-Agent Finalize
+      → Planner：Research Brief / Plan / Schedule
+      → Executor：Tool / Retrieval / Evidence / Coverage
+      → Reviewer：Citation / Grounding / Answer Verify
    → Metrics
 → 返回答案、论文、检索路由、工具记录、Token 与节点耗时
 ```
@@ -332,6 +337,8 @@ Prompt 当前以 zero-shot 结构约束为主。所有论文、Zotero 笔记、P
 项目后续的核心定位是“证据驱动的轻量 Research Agent”，不是继续堆叠普通论文问答功能。目标是把复杂研究意图转换成 Research Brief 和受限计划，通过 Tool / MCP / RAG 收集可追溯证据，经 Coverage、Claim/Citation Verifier 和有限 Reflection 后输出中文研究报告；简单搜索与问答仍保留快速路径。
 
 Research Analyzer 已接入检索前流程：L1 简单请求使用规则快速路径，L2 比较/方向请求使用结构化规则，L3 前景、趋势、代表论文和研究空白等复杂请求可调用一次 LLM 输出受 Pydantic 约束的 `ResearchAnalysis`。Policy Gate 禁止 LLM 降级高置信度 L3、选择未注册 Skill 或关闭必要检索；随后生成最多 5 个任务、并行预算 2 的 Research Brief/Plan，并检查重复、未知来源、未知依赖和循环依赖。有效 Plan 会编译为依赖执行波次，检索结果进入请求级 Evidence Store 和 Coverage Gate；Research Writer 输出再经过 Citation Validator 与零 LLM Citation Repair。
+
+轻量 Multi-Agent v1 不复制三套模型链路，而是把已经验证的研究节点映射为三个受限角色：Planner 交接计划与执行波次，Executor 交接证据数量和 Coverage，Reviewer 交接 Citation、Repair 与 Answer Verification。三段结果使用 Pydantic 契约写入 `multi_agent_trace`；L1/L2 返回 `not_applicable`，Reviewer 最多接受现有一次 Answer Reflection，Orchestrator 本身不增加 LLM 调用或新循环。这是角色化协作轨迹，不应描述为多个自治模型并行辩论。
 
 最终答案现在经过确定性 Verifier：检查空答案、完整度、任务结构和论文证据引用信号。只有发现可修复缺陷且已有论文/PDF 证据时，才调用一次 LLM 执行 Answer Reflection；修复后再次验证，无改善则恢复初始答案。`ANSWER_REFLECTION_ENABLED=false` 可以关闭修复调用，但仍保留答案验证。该能力只处理当前任务，不属于跨任务 Reflexion，也不会自动写入长期记忆。
 

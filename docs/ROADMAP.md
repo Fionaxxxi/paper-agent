@@ -1637,6 +1637,8 @@ Push / Pull Request
 
 2026-08-15 已完成 PDF Structured Output 首次在线审计。沙箱内首轮为 0 Token 的 `APIConnectionError`，允许网络后 `qwen3.5-ocr → qwen3.7-max-2026-05-17` 两次调用均成功，共 8,215 Token、约 16.63 秒，Figure Skill 与 PDF Grounding 通过。Structured Output 唯一失败是第 3 页实际没有架构图，模型诚实返回空组件，而初版 Schema 强制至少一个组件；这属于契约误阻断，不计模型格式失败。契约现增加 `target_found`：发现目标图时必须有组件，未发现时允许空组件但必须写入 uncertainties；Prompt 示例页码也由固定 3 改为当前 State 页码。通过本地文本定位确认 Figure 1 GraphRAG Pipeline 位于 PDF 第 4 页，受保护冒烟默认页已纠正；按轻量评测原则本轮不重复付费调用。下一步结束多模态连续开发，回到整体路线中更有展示价值的阶段能力。
 
+2026-08-15 已完成轻量 Multi-Agent v1 的结构化角色编排。没有新增三套重复模型调用，而是将现有 L3 Research Graph 映射为 Planner（Analysis/Brief/Plan/Schedule）、Executor（Tool/Retrieval/Evidence/Coverage）和 Reviewer（Citation/Repair/Grounding/Answer Verify）；三段使用严格 Pydantic Handoff 与总 Trace 契约，按顺序记录 completed/partial/blocked、输入引用、输出摘要和失败原因。只有 L3 启用，L1/L2 为 `not_applicable`；Review 上限 1，实际复用已有 Answer Reflection 次数，Orchestrator 额外 LLM 调用为 0。主图在 Answer Verify 最终停止后生成交接轨迹，服务、Metrics 和 Web 冻结示例均可展示。当前是同一 Research Graph 内的角色化协作，不是多个自治模型并行辩论。下一步只补一个代表性 L3 主图集成用例和简历能力说明，不进入分层八角色 Multi-Agent。
+
 2026-08-15 已完成 PDF Grounding Validator v1。主图在生成与 Citation Repair 后、Answer Verify 前新增零 LLM 审计节点，只对 Figure/Table/Formula 专项回答启用：指定页必须全部出现，回答必须披露 OCR/视觉或仅文本证据模式，OCR 材料含无法识别、不清晰或未定义信号时必须保留不确定性。失败合并进 Answer Verification 并限制分数，但明确 `should_reflect=false`，不会为证据披露格式开启新循环。服务响应、Metrics、网页轨迹和冻结 PDF 示例均展示验证状态。下一步结束多模态 PDF v1 的连续开发，回到原计划中尚未完成且简历价值较高的 Structured Output，先为三类 PDF 专项回答定义轻量 Pydantic 结果契约，不做在线大规模评测。
 
 2026-08-12 子查询并行已完成 5 次确定性离线重复基准：3 个子查询、2 个 worker 时，中位延迟由 265.4ms 降至 172.3ms，加速 1.54 倍、延迟下降 35.09%，结果与规划顺序一致率 100%，达到阶段门槛并收口。

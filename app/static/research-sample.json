@@ -28,8 +28,13 @@
     ]},
     "research_coverage":{"enabled":true,"status":"passed","coverage_pct":100},
     "citation_validation":{"enabled":true,"status":"passed","passed":true,"failure_types":[]},
-    "citation_repair":{"status":"repaired","repaired_line_count":1}
+    "citation_repair":{"status":"repaired","repaired_line_count":1},
+    "multi_agent_trace":{"enabled":true,"status":"completed","orchestration_mode":"bounded_role_pipeline","max_review_loops":1,"actual_review_loops":0,"additional_llm_calls":0,"handoffs":[
+      {"role":"planner","status":"completed","input_refs":["research_analysis","research_brief"],"output_summary":{"task_count":3,"wave_count":2,"max_parallel_tasks":2},"failure_reason":""},
+      {"role":"executor","status":"completed","input_refs":["research_schedule","tool_executions"],"output_summary":{"evidence_count":3,"coverage_status":"passed","coverage_pct":100},"failure_reason":""},
+      {"role":"reviewer","status":"completed","input_refs":["answer","evidence_store","citation_validation"],"output_summary":{"answer_passed":true,"citation_passed":true,"citation_repair_status":"repaired","failure_types":[]},"failure_reason":""}
+    ]}
   },
-  "node_timings":{"intent_router":0.001,"clarification":0.002,"research_analyze":1.24,"query_rewrite":0.003,"query_plan":0.004,"research_schedule":0.001,"retrieve":2.18,"repository_enrich":1.36,"evidence_store":0.002,"research_coverage":0.001,"reason":0.001,"generate":3.42,"research_citation_validate":0.001,"research_citation_repair":0.001,"answer_verify":0.001,"metrics":0.001},
+  "node_timings":{"intent_router":0.001,"clarification":0.002,"research_analyze":1.24,"query_rewrite":0.003,"query_plan":0.004,"research_schedule":0.001,"retrieve":2.18,"repository_enrich":1.36,"evidence_store":0.002,"research_coverage":0.001,"reason":0.001,"generate":3.42,"research_citation_validate":0.001,"research_citation_repair":0.001,"answer_verify":0.001,"multi_agent_finalize":0.001,"metrics":0.001},
   "trace_id":"demo-research-trace","conversation_id":"resume-demo"
 }

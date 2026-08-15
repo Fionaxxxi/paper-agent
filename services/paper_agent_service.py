@@ -164,6 +164,7 @@ class PaperAgentService:
             "citation_validation": {},
             "citation_repair": {},
             "pdf_grounding_validation": {},
+            "multi_agent_trace": {},
             "node_timings": {},
             "paper_metadata": {
                 "conversation_id": conversation_id,
@@ -261,6 +262,7 @@ class PaperAgentService:
                 "citation_validation": result.get("citation_validation", {}),
                 "citation_repair": result.get("citation_repair", {}),
                 "pdf_grounding_validation": result.get("pdf_grounding_validation", {}),
+                "multi_agent_trace": result.get("multi_agent_trace", {}),
                 "pdf_path": pdf_path,
                 "pdf_page_count": result.get("pdf_page_count", pdf_page_count),
                 "pdf_error": result.get("pdf_error", pdf_error),
