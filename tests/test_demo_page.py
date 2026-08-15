@@ -9,6 +9,8 @@ def test_demo_page_is_served_from_fastapi_root():
     assert response.status_code == 200
     assert "PaperAgent" in response.text
     assert "/static/app.js" in response.text
+    assert "/static/modern.css" in response.text
+    assert "从一个研究问题，到一份可验证的答案" in response.text
 
 
 def test_paper_formatter_keeps_local_rag_evidence_fields():
@@ -22,7 +24,7 @@ def test_paper_formatter_keeps_local_rag_evidence_fields():
 def test_demo_page_exposes_research_agent_trace_panels():
     """作用：演示首页包含研究计划、执行波次、Evidence和质量闸门区域。"""
     response=TestClient(app).get("/")
-    for marker in ("Research Agent 工作流", "researchPlan", "schedule", "evidenceStore", "qualityGates"):
+    for marker in ("Research Agent 工作流", "researchPlan", "schedule", "evidenceStore", "qualityGates", "Planner → Executor → Reviewer"):
         assert marker in response.text
     assert "/static/research.css" in response.text
 
@@ -38,7 +40,7 @@ def test_demo_script_consumes_existing_research_metadata_contract():
 def test_demo_page_offers_zero_api_frozen_research_trace():
     """作用：网络或模型不可用时仍可加载冻结L3轨迹完成简历演示。"""
     client=TestClient(app)
-    assert "加载示例轨迹（零 API）" in client.get("/").text
+    assert "查看研究示例" in client.get("/").text
     sample=client.get("/static/research-sample.json")
     assert sample.status_code == 200
     payload=sample.json()
@@ -71,7 +73,7 @@ def test_demo_page_explains_selected_pdf_pages_without_exposing_local_paths():
     script = client.get("/static/app.js").text
     sample_response = client.get("/static/pdf-page-sample.json")
 
-    assert "加载PDF页示例（零 API）" in page
+    assert "查看 PDF 示例" in page
     assert "指定 PDF 页面分析" in page
     assert "图片出站" in script
     assert sample_response.status_code == 200

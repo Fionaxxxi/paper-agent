@@ -7,13 +7,15 @@
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="/static/styles.css">
   <link rel="stylesheet" href="/static/research.css">
+  <link rel="stylesheet" href="/static/modern.css">
 </head>
 <body>
   <header class="hero">
     <div>
-      <p class="eyebrow">LANGGRAPH · RESEARCH AGENT · EVIDENCE HARNESS</p>
+      <p class="eyebrow">EVIDENCE-DRIVEN RESEARCH AGENT</p>
       <h1>PaperAgent</h1>
-      <p class="subtitle">科研论文智能体演示台</p>
+      <p class="subtitle">从一个研究问题，到一份可验证的答案。</p>
+      <div class="capability-strip"><span>研究规划</span><span>多源检索</span><span>证据追踪</span><span>质量验证</span></div>
     </div>
     <div class="status"><span></span><b>API 已连接</b><small id="mode">读取运行模式中…</small></div>
   </header>
@@ -26,7 +28,8 @@
         <button data-query="比较 GraphRAG 和 LightRAG 的核心设计">论文方法比较</button>
         <button data-query="Agent 的规划、记忆和工具使用分别有什么作用？">Agent 架构</button>
       </div>
-      <label for="query">论文问题</label>
+      <div class="composer-title"><small>START A RESEARCH RUN</small><h2>今天想研究什么？</h2><p>简单问题走快速路径，复杂问题自动进入有界 Research Graph。</p></div>
+      <label for="query">研究问题</label>
       <textarea id="query" rows="4" placeholder="输入检索、总结、比较或研究方向问题…">ReAct 如何结合推理与行动？</textarea>
       <div class="fields">
         <label>会话 ID<input id="conversation" value="resume-demo"></label>
@@ -34,14 +37,15 @@
         <label>重点页码（可选，最多 3 页）<input id="pdfPages" placeholder="例如：3, 5"></label>
       </div>
       <div class="actions">
-        <button id="submit" class="primary">运行 Agent <span>→</span></button>
-        <button id="sample">加载示例轨迹（零 API）</button>
-        <button id="pdfSample">加载PDF页示例（零 API）</button>
+        <button id="submit" class="primary">开始研究 <span>→</span></button>
+        <button id="sample">查看研究示例</button>
+        <button id="pdfSample">查看 PDF 示例</button>
         <span id="requestStatus">准备就绪</span>
       </div>
     </section>
 
     <section id="results" class="results hidden">
+      <div class="results-heading"><small>RESEARCH OUTPUT</small><h2>研究结果</h2><p>先看结论，再检查 Agent 的证据与决策过程。</p></div>
       <div class="metrics" id="metrics"></div>
       <section class="panel workflow-card">
         <div class="section-title"><span>Research Agent 工作流</span><b id="taskLevel"></b></div>
@@ -67,7 +71,7 @@
           <div id="repositoryTrace" class="repository-trace"></div>
         </article>
         <article class="panel research-card">
-          <div class="section-title"><span>轻量 Multi-Agent 交接</span><b id="multiAgentStatus"></b></div>
+          <div class="section-title"><span>Planner → Executor → Reviewer</span><b id="multiAgentStatus"></b></div>
           <div id="multiAgentTrace" class="task-tree"></div>
         </article>
         <div class="research-grid">
@@ -82,7 +86,7 @@
         </div>
       </section>
       <article class="panel answer-card">
-        <div class="section-title"><span>最终回答</span><button id="copy">复制</button></div>
+        <div class="section-title"><span>最终研究结论</span><button id="copy">复制结论</button></div>
         <div id="answer" class="answer"></div>
       </article>
       <div class="two-column">
