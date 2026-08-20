@@ -6,6 +6,22 @@ PaperAgent 是一个面向科研论文场景的 Agent 项目。它不只是调�
 
 完整的当前能力、系统架构、演示流程、测试数据和简历讲解建议见 [项目交付与演示手册](docs/PROJECT_DELIVERY.md)。
 
+## 界面预览
+
+### 研究入口与个人论文库
+
+![PaperAgent 研究入口](docs/screenshots/01-home.png)
+
+### Research Agent 研究结果
+
+![PaperAgent Research Agent 研究结果](docs/screenshots/02-research-run.png)
+
+### PDF 图表与页面视觉理解
+
+![PaperAgent PDF 视觉理解](docs/screenshots/03-pdf-vision.png)
+
+面试演示顺序、三分钟讲解稿和简历描述见 [面试与演示指南](docs/INTERVIEW_GUIDE.md)，最终发布核验结果见 [发布核验清单](docs/RELEASE_CHECKLIST.md)。
+
 项目同时支持在线论文发现和本地论文全文 RAG，适合作为 Agent Engineering、Graph Engineering、RAG 和工具系统设计的综合实践项目。
 
 ## 项目特色
