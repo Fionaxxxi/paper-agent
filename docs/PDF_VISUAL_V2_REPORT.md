@@ -27,7 +27,7 @@
 |---|---:|---:|---|
 | PDF v2 专项 + 前端 + Prompt | 35/35 通过 | 0 | 自动选页、四类 Skill、Schema、Grounding、展示与版本契约 |
 | 项目完整离线回归 | 422/422 通过 | 0 | LangGraph、Tool/MCP、RAG、记忆、认证、报告、Docker/CI 等全部回归 |
-| 真实在线视觉冒烟 | 未完成 | 0 Token | 沙箱网络失败；外网重试要求用户明确授权指定 PDF 第 4 页出站 |
+| 真实在线视觉冒烟 | 1/1 通过 | 7,549 Token | GraphRAG 第4页；OCR视觉解析、主模型综合、Figure Schema 与 Grounding 全部通过 |
 
 完整测试表：`outputs/test_reports/full_pdf_visual_v2/latest_test_details.csv`。
 
@@ -38,12 +38,22 @@
 - 尚未实现跨页图表拼接、跨论文曲线对齐和 Visual Evidence 向量检索。
 - 这些能力只有在真实案例证明必要时再增加，当前版本已经足够展示“研究型 Agent 会读关键论文图表”的主线。
 
-## 真实在线复测
+## 真实在线验证结果
 
-明确同意将代表性 GraphRAG 论文第 4 页发送给百炼后运行：
+用户明确授权将代表性 GraphRAG 论文第 4 页发送给百炼后，已运行：
 
 ```powershell
 D:\miniconda3\envs\paper_agent\python.exe -m eval_harness.pdf_vision_smoke --confirm-online
 ```
 
 结果写入 `outputs/pdf_vision_smoke/latest.json`，不保存 API Key、Base64 图片或本地绝对路径。
+
+- 视觉模型：`qwen3.5-ocr`
+- 综合模型：`qwen3.7-max-2026-05-17`
+- 页面：第 4 页，1 张页面图像
+- Skill：`figure_understanding`
+- 结构化输出：`FigureUnderstandingOutput`，校验有效
+- Grounding：通过
+- 调用：2 次
+- Token：输入 4,240，输出 3,309，总计 7,549
+- 耗时：81.668 秒
