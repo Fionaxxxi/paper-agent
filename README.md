@@ -4,6 +4,8 @@
 
 PaperAgent 是一个面向科研论文场景的 Agent 项目。它不只是调用一次大模型，而是使用 LangGraph 编排意图识别、查询规划、多源检索、质量判断、受控重试、Skill 选择、答案生成和运行指标记录。
 
+完整的当前能力、系统架构、演示流程、测试数据和简历讲解建议见 [项目交付与演示手册](docs/PROJECT_DELIVERY.md)。
+
 项目同时支持在线论文发现和本地论文全文 RAG，适合作为 Agent Engineering、Graph Engineering、RAG 和工具系统设计的综合实践项目。
 
 ## 项目特色
