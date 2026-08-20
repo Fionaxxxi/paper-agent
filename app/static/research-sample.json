@@ -8,7 +8,7 @@
     {"title":"Reflexion","source":"openalex","year":2023,"content":"Reflexion uses linguistic feedback and episodic memory.","pdf_url":"https://arxiv.org/abs/2303.11366","retrieval_score":0.91}
   ],
   "paper_metadata": {
-    "task_level":"L3","skill_used":"literature_review","retrieval_source":"multi_source","llm_call_count":2,"token_usage":4280,
+    "task_level":"L3","skill_used":"literature_review","retrieval_source":"multi_source","retrieval_strategy":{"mode":"online","sources":["arxiv","openalex"],"reason":"structured_research_plan","fallback":"local_for_comparison_gap"},"llm_call_count":2,"token_usage":4280,
     "research_analysis":{"task_level":"L3","topic":"Agent推理行动与反思学习","primary_skill":"literature_review","reason":"需要比较多种Agent Loop并形成带引用研究报告。","objectives":["梳理核心机制","比较反馈与记忆","识别研究空白"]},
     "research_plan_validation":{"valid":true,"errors":[]},
     "research_plan":{"tasks":[
@@ -27,7 +27,9 @@
       {"evidence_id":"E-reactrepo001","title":"代码仓库：ysymyth/ReAct","source":"github","evidence_type":"repository","locator":"https://github.com/ysymyth/ReAct"}
     ]},
     "research_coverage":{"enabled":true,"status":"passed","coverage_pct":100},
+    "retrieval_strategy":{"mode":"hybrid","sources":["local_rag","arxiv"],"reason":"private_public_combination","fallback":"online"},
     "citation_validation":{"enabled":true,"status":"passed","passed":true,"failure_types":[]},
+    "claim_evidence_validation":{"enabled":true,"status":"passed","passed":true,"claim_count":4,"supported_count":4,"partial_count":0,"contradicted_count":0,"insufficient_count":0,"support_rate_pct":100,"failure_types":[]},
     "citation_repair":{"status":"repaired","repaired_line_count":1},
     "multi_agent_trace":{"enabled":true,"status":"completed","orchestration_mode":"bounded_role_pipeline","max_review_loops":1,"actual_review_loops":0,"additional_llm_calls":0,"handoffs":[
       {"role":"planner","status":"completed","input_refs":["research_analysis","research_brief"],"output_summary":{"task_count":3,"wave_count":2,"max_parallel_tasks":2},"failure_reason":""},
@@ -35,6 +37,6 @@
       {"role":"reviewer","status":"completed","input_refs":["answer","evidence_store","citation_validation"],"output_summary":{"answer_passed":true,"citation_passed":true,"citation_repair_status":"repaired","failure_types":[]},"failure_reason":""}
     ]}
   },
-  "node_timings":{"intent_router":0.001,"clarification":0.002,"research_analyze":1.24,"query_rewrite":0.003,"query_plan":0.004,"research_schedule":0.001,"retrieve":2.18,"repository_enrich":1.36,"evidence_store":0.002,"research_coverage":0.001,"reason":0.001,"generate":3.42,"research_citation_validate":0.001,"research_citation_repair":0.001,"answer_verify":0.001,"multi_agent_finalize":0.001,"metrics":0.001},
+  "node_timings":{"intent_router":0.001,"clarification":0.002,"research_analyze":1.24,"query_rewrite":0.003,"query_plan":0.004,"research_schedule":0.001,"retrieval_route":0.001,"retrieve":2.18,"repository_enrich":1.36,"evidence_store":0.002,"research_coverage":0.001,"reason":0.001,"generate":3.42,"research_citation_validate":0.001,"research_citation_repair":0.001,"claim_evidence_validate":0.001,"answer_verify":0.001,"multi_agent_finalize":0.001,"metrics":0.001},
   "trace_id":"demo-research-trace","conversation_id":"resume-demo"
 }

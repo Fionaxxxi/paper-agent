@@ -1,4 +1,5 @@
-from nodes.clarification import clarification_node
+import nodes.clarification as clarification_module
+from nodes.clarification import clarification_node, validate_candidate
 
 
 def state(query, papers=None, topics=None, pending=None):
@@ -50,3 +51,52 @@ def test_followup_candidate_restores_pending_query():
     assert result["query"] == "Reflexion有什么局限？"
     assert result["pending_clarification"] == {}
     assert result["clarification_required"] is False
+
+
+def test_ordinal_reference_resolves_in_range_without_llm(monkeypatch):
+    monkeypatch.setattr(
+        clarification_module, "resolve_semantic_candidate",
+        lambda *args: (_ for _ in ()).throw(AssertionError("ordinal must stay deterministic")),
+    )
+    result = clarification_node(state(
+        "第二篇论文有什么局限？", papers=["ReAct", "Reflexion"]
+    ))
+
+    assert result["query"] == "Reflexion有什么局限？"
+    assert result["paper_metadata"]["clarification_resolution_source"] == "ordinal_rule"
+    assert result.get("llm_call_count", 0) == 0
+
+
+def test_out_of_range_ordinal_requests_clarification_without_guessing():
+    result = clarification_node(state(
+        "第10086篇论文有什么局限？", papers=["ReAct", "Reflexion"]
+    ))
+
+    assert result["clarification_required"] is True
+    assert result["paper_metadata"]["clarification_reason"] == "ordinal_out_of_range"
+    assert result["paper_metadata"]["requested_ordinal"] == 10086
+
+
+def test_descriptive_reference_uses_validated_semantic_candidate(monkeypatch):
+    usage = {"node_name": "clarification", "success": True, "input_tokens": 8,
+             "output_tokens": 4, "total_tokens": 12, "latency_seconds": 0.01}
+    monkeypatch.setattr(
+        clarification_module, "resolve_semantic_candidate",
+        lambda query, candidates: ("Reflexion", usage),
+    )
+    result = clarification_node(state(
+        "那个通过语言反馈改进 Agent 的方法有什么限制？",
+        papers=["ReAct", "Reflexion"],
+    ))
+
+    assert result["resolved_referent"] == "Reflexion"
+    assert result["paper_metadata"]["clarification_resolution_source"] == "semantic_llm"
+    assert result["llm_call_count"] == 1
+    assert result["token_usage"] == 12
+
+
+def test_semantic_candidate_policy_rejects_unknown_or_low_confidence():
+    candidates = ["ReAct", "Reflexion"]
+    assert validate_candidate("Invented", 0.99, candidates) == ""
+    assert validate_candidate("Reflexion", 0.5, candidates) == ""
+    assert validate_candidate("Reflexion", 0.9, candidates) == "Reflexion"

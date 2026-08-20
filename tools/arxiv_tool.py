@@ -17,6 +17,11 @@ def _serialize_arxiv_result(result) -> Dict[str, Any]:
     }
 
 
+def _is_withdrawn(result) -> bool:
+    text = f"{getattr(result, 'title', '')} {getattr(result, 'summary', '')}".casefold()
+    return "this paper has been withdrawn" in text or "withdrawn by the authors" in text
+
+
 def search_arxiv_papers(query: str, max_results: int = 5) -> List[Dict[str, Any]]:
     """
     Search papers from arXiv.
@@ -26,14 +31,14 @@ def search_arxiv_papers(query: str, max_results: int = 5) -> List[Dict[str, Any]
     """
     try:
         client = arxiv.Client(
-            page_size=max_results,
+            page_size=max_results * 2,
             delay_seconds=3,
             num_retries=2,
         )
 
         search = arxiv.Search(
             query=query,
-            max_results=max_results,
+            max_results=max_results * 2,
             sort_by=arxiv.SortCriterion.Relevance,
             sort_order=arxiv.SortOrder.Descending,
         )
@@ -41,6 +46,8 @@ def search_arxiv_papers(query: str, max_results: int = 5) -> List[Dict[str, Any]
         papers = []
 
         for result in client.results(search):
+            if _is_withdrawn(result):
+                continue
             papers.append(_serialize_arxiv_result(result))
 
             if len(papers) >= max_results:

@@ -2,7 +2,7 @@
 
 本文档是项目后续能力升级计划的唯一正式来源。开发应按照下方依赖顺序推进，后续阶段不得绕过前置阶段建立的接口、评测门槛或安全控制。
 
-## 当前执行版路线（V3，优先级高于下方历史规划）
+## 当前执行版路线（V4，优先级高于下方历史规划）
 
 > 下方原整体扩展计划继续作为技术储备和设计参考；从本节发布起，只有本节列入“当前交付主线”的能力才默认进入实施。这样做不是削弱 Agent，而是把特色集中在能够完成、演示和解释的闭环上。
 
@@ -53,7 +53,10 @@ LangGraph Graph Engineering（显式状态、条件路由、恢复边和有限�
 | 5 | 轻量深度研究模式（Citation Validator v1 已完成） | 已增加 L0～L3 分级、Research Analyzer、Plan Validator、有界调度、Evidence Store、覆盖门控、受约束报告生成和逐引用确定性校验；下一步复测真实Writer并决定受限修复策略 | 把前述能力组合成可交付带引用研究报告的差异化闭环 |
 | 6 | 外部 MCP | 先接只读 Zotero，再接只读 GitHub；分别服务个人文献库和论文代码仓库 | 证明 MCP 的跨应用复用价值 |
 | 7 | 单页多模态 PDF | 用户指定代表性页面，渲染后交给视觉模型分析图、表或公式，并保留页码依据 | 以可控成本展示真正的多模态能力 |
-| 8 | 工程化交付 | 完善 Web 轨迹展示、Docker、基础 CI、中文使用说明和一组端到端演示案例 | 让项目可运行、可展示、可复现 |
+| 8 | 工程化交付 | 完善 Web 轨迹展示、Docker、基础 CI、中文使用说明和一组端到端演示案例；最终结论已按 Markdown 语义渲染为普通 AI 阅读样式 | 让项目可运行、可展示、可复现 |
+| 9 | 研究报告导出（后续） | 基于同一份已验证答案、Evidence Store 与引用索引生成 `.docx` 和 `.pdf`；提供网页下载入口、中文排版、来源页和生成时间，不再次调用 LLM | 把聊天结论升级为可提交、可分享的正式研究产物 |
+
+研究报告导出必须复用最终通过验证的内容，不允许另起一次自由生成导致网页结论与下载文件不一致。第一版优先实现 Word 模板化导出，再由同一报告数据模型生成 PDF；导出失败不得影响网页答案，生成文件保存在项目输出目录并通过受控下载接口返回，不暴露任意本地路径。
 
 阶段 3～5 共同组成 Research Agent MVP，不应被理解为三个互不相关的功能阶段：
 
@@ -68,6 +71,284 @@ Research Agent MVP 完成后，项目的首要演示案例固定为：
 > 调研近年具有研究价值的 Agent 架构方向，检索代表论文，按照成熟度、创新空间、工程价值、可评测性与未来潜力比较，并输出带证据和引用的中文研究报告。
 
 这个案例必须展示任务分级、研究目标提取、计划、工具调用、证据覆盖、一次定向 Replan、报告验证、停止原因、Token/延迟和最终引用，而不只展示最终文本。
+
+### 近期检索误阻断修复：GraphRAG 与 LightRAG 比较
+
+当前“比较 GraphRAG 和 LightRAG 的核心设计”可能返回证据不足。这不是语料完全缺失：本地代表语料已经包含两篇原始论文；实际问题是默认 `arxiv` 模式不读取本地全文、规则改写先命中通用 `rag` 分支而丢失两个方法实体，以及默认规则评分难以准确判断中英文比较证据。该案例列为下一轮检索可靠性修复的首要代表任务。
+
+实施保持轻量，按以下顺序完成：
+
+1. 修复实体保留式 Query Rewrite：专名匹配优先于通用 `RAG`，比较任务必须保留 GraphRAG、LightRAG 及“核心设计/比较”约束；
+2. 增加任务感知的来源选择：已知论文比较优先组合在线论文元数据与本地全文，单一来源不足时执行一次受控来源回退，不要求用户手动切换全局模式；
+3. 把通用关键词命中分替换为比较任务证据检查：至少同时命中两个目标方法，并覆盖各自机制或架构证据，避免“有相关论文却被判低分”；
+4. 保留安全停止，但区分 `source_coverage_missing`、`entity_lost_in_rewrite`、`quality_score_mismatch` 等失败原因，让前端能解释为什么不足；
+5. 只增加一组小型回归：GraphRAG/LightRAG 正常比较、缺少一方证据时安全停止、在线来源失败后本地全文恢复。记录检索结果、门控决定和是否调用 LLM，不扩建大型评测集。
+
+完成标准：该代表问题能引用两篇原论文分别说明 GraphRAG 的实体图—社区摘要—全局回答链路，以及 LightRAG 的图结构与向量/键值检索、双层检索和增量更新设计；若缺少任一方证据则继续明确降级，不允许模型凭参数知识补齐。
+
+## V4 问题驱动升级备忘（2026-08-20）
+
+本节合并本轮 Upgrade Memo，并区分“已有 v1”“本轮细化”“远期产品化”。下一阶段不以继续堆叠 Agent、工具或研究型实验为目标，而聚焦三个真实问题：复杂科研意图与规划仍不稳定、答案与证据的语义支持关系仍不够精细、经过验证的研究知识不能按需长期积累和复用。
+
+目标定位：
+
+> 从能完成论文问答的 Agent，升级为能够理解科研任务复杂度、制定受限计划、组合私有与公开证据、验证研究结论并沉淀可复用知识的 Research Agent。
+
+### 能力状态总览
+
+| 能力 | 当前基础 | V4 新增或细化 | 状态 |
+|---|---|---|---|
+| Clarification Resolver | 已有规则指代、候选与多轮恢复 | 增加序号边界检查、低置信度语义解析和代码候选验证 | v1 已有，待升级 |
+| Complexity Router | 已有 L0～L3 与结构化 Research Analysis | 改为规则特征 + 结构化 LLM 建议 + Policy 阈值 | v1 已有，待校准 |
+| Planner / Scheduler | 已有 L3 Brief、受限 Plan、验证和有界波次 | L2 Planner Lite 共用 Planner Core，并保持最多两路并行 | L2/L3 v1 已完成 |
+| Retrieval / Evidence | 已有在线、本地 RAG、Zotero、Evidence Store、一次 Replan | 统一 Personal / Online / Memory / Hybrid 路由与多维质量评分 | 部分已有，待统一 |
+| Answer Grounding | 已有 Coverage、Citation、Repair、Answer/PDF Verifier | 增加逐 Claim 语义支持状态与分层 Verifier | 规则层已有，语义层待实现 |
+| Long-Term Research Memory | 已有 SQLite 会话记忆、Checkpoint 与门控 Wiki | 增加生成同调用 Metadata、Write Gate、Memory RAG 和生命周期维护 | 设计已细化，未完整实现 |
+| Personal Paper Library | 当前 Local RAG 是项目级代表语料或临时 PDF | 增加账号、文档归属、Collection 与用户级索引 | 产品化远期 |
+| Multimodal PDF | 已有指定页 Figure/Table/Formula OCR 与 Grounding | 后续扩展 Page Analyzer 和更稳定的结构化证据 | v1 已有，按需增强 |
+| Benchmark | 已有路由、RAG、报告与在线小型评测 | 用轻量分层回归证明新增能力，不扩大成研究型平台 | 持续维护 |
+
+### Phase A：Research Intent 与 Planning 增强
+
+#### A1. Clarification Resolver v2
+
+流程：
+
+```text
+User Query
+→ Reference Detector（确定性规则）
+→ Candidate Resolver（唯一候选直接解析；模糊语义可请求现有主模型）
+→ Candidate Validator（候选存在性、上下文一致性、置信度和序号边界）
+→ Continue / Ask Clarification
+```
+
+- “第二篇、第三个方法、这篇论文”等明确表达优先使用 active papers、conversation context 和 entity list 解析；
+- “第 10086 篇”超出当前候选范围时直接澄清，不允许模型猜测；
+- “那个通过语言反馈改进 Agent 的方法”一类模糊指代，仅在规则无法唯一判断时由现有主模型返回 `candidate` 与 `confidence`，不新增独立模型；
+- 最终决定权属于代码 Policy：候选不存在、上下文不匹配或低于阈值时必须询问用户。
+
+#### A2. Complexity Router v2
+
+复杂度不再只依赖“综述、趋势、future work”等词，而抽取 `research_scope`、`comparison_degree`、`multi_objective`、`temporal_analysis`、`synthesis_required` 与 `multi_source_need`。最终等级由确定性特征、已有 Research Analyzer 的结构化 LLM 输出和 Policy 阈值共同决定；模型只能提供建议，不能绕过 L3 预算、来源和循环上限。
+
+#### A3. Planner Core 分层
+
+```text
+Planner Core
+├─ Planner Lite（L2）
+│  → Compare / Literature QA / Multi-paper Analysis
+│  → 少量独立分析任务 + 一个综合任务
+│  → 不启用通用 DAG、多角色自由对话或多轮深度研究
+└─ Research Planner（L3，已有 v1）
+   → Literature Review / Research Direction / Trend Analysis
+   → Research Brief + 最多 5 个任务 + 依赖验证 + 有界执行
+```
+
+Scheduler 继续零 LLM，使用拓扑排序、ready queue 和最多 2 个并行任务；只有 `dependencies ⊆ completed` 的任务才能进入当前 wave。
+
+### Phase B：统一 Retrieval 与 Evidence
+
+#### B1. Retrieval Router
+
+```text
+Query + User Scope + Task Plan
+→ Retrieval Router
+├─ Personal Library：仅检索用户拥有或被授权的论文
+├─ Online Research：arXiv / OpenAlex；Semantic Scholar / Crossref 仅作为经评测候选原生来源
+├─ Memory RAG：仅检索通过 Write Gate 的派生研究知识
+└─ Hybrid Research：Personal Library + Online Search → 统一 Evidence Store
+```
+
+Router 必须显式记录选择依据、范围、数据源、失败回退和权限过滤。Local RAG、Online Retrieval 与 Memory Retrieval 共用稳定接口，但论文原文证据和 Agent 派生记忆必须保留不同 `evidence_type`，不能互相冒充。
+
+#### B2. Retrieval Evaluator v2
+
+单一分数升级为可解释分量，初始权重只作为待验证默认值：
+
+```text
+Retrieval Quality
+= 0.4 relevance
++ 0.3 task coverage
++ 0.2 source quality
++ 0.1 evidence diversity
+```
+
+- relevance：查询、计划任务与证据的相关性；
+- coverage：是否覆盖当前 Research Task 或比较双方；
+- source quality：原论文、权威元数据、个人笔记和派生记忆分级；
+- diversity：避免所有结论只依赖同一论文或同一来源。
+
+权重不得直接写死为永久策略；先用 GraphRAG/LightRAG 比较等少量代表任务确认是否减少误阻断。失败分类至少包括 empty result、low relevance、missing entity/source coverage、timeout、entity lost in rewrite 和 score mismatch。Replan 仍最多一次：空结果放宽查询，低相关增加 survey/review/related work，超时按工具策略重试，缺少比较一方时切换一次来源。
+
+### Phase C：Claim–Evidence Verification v2
+
+Citation ID 存在不代表证据真正支持声明。新验证链路为：
+
+```text
+Verified Draft
+→ Claim Extraction
+→ Evidence Matching
+→ supported / partial / contradicted / insufficient
+→ Claim Evidence Support Rate
+→ Pass / Repair Once / Safe Degrade
+```
+
+Verifier 分层执行：规则层检查 Evidence ID、Coverage 和必需章节；语义相似层筛选明显不匹配；只有涉及逻辑推断、过度总结或矛盾且前两层无法确定时才允许主模型 Judge。Judge 不是默认每题调用，且不能创造新证据。关键指标为 Claim Evidence Support Rate、Citation Precision/Recall 和过度推断数。
+
+### Phase D：Long-Term Research Memory v1
+
+长期记忆与现有会话历史、LangGraph Checkpoint、论文库和 LLM Wiki 分工如下：
+
+```text
+Paper Library = 原始 Source Knowledge
+Long-Term Research Memory = Agent 基于来源形成并通过验证的 Derived Knowledge
+Checkpoint = 工作流恢复状态
+Conversation Memory = 当前交互上下文
+LLM Wiki = 人可读的已验证成果视图
+```
+
+#### D1. Memory Metadata：与正常回答同一次生成
+
+主生成模型在输出正常回答时同时给出仅供系统内部使用的结构化建议，不为“是否值得保存”额外调用一次 LLM：
+
+```json
+{
+  "worth_storing": true,
+  "memory_type": "research_finding",
+  "value_score": 0.86,
+  "stability": "stable",
+  "time_sensitive": false
+}
+```
+
+模型只提供语义建议；Metadata 缺失或不合法不得影响正常答案，也不得自动补开一次调用。当前主模型不支持原生 Structured Output，因此复用现有“中文答案 + 尾部 JSON + Pydantic 解析 + 失败保留可读答案”模式。
+
+#### D2. Memory Write Gate
+
+```text
+Generate：Answer + Memory Metadata
+→ Citation / Claim / Answer Verification
+→ Memory Write Gate
+   ├─ Verification 是否通过
+   ├─ value_score 是否达到版本化阈值
+   ├─ stability 是否允许长期保存
+   ├─ time_sensitive 是否必须保存为 Snapshot 并设置有效期
+   ├─ Dedup Check
+   └─ Conflict Check
+→ Write / Merge / Update / Skip
+```
+
+核心 Policy：
+
+- Verification 未通过或 Evidence 不充分，一律不得写入；
+- “最新、当前、今年、最近”等信息优先标记 `time_sensitive=true`，以 snapshot 保存来源时间、检索时间和 TTL；
+- 适合保存 Research Finding、已验证综合结论、用户长期研究主题和后续任务可复用的研究上下文；
+- Smalltalk、一次性改写/缩短、可随时重查的简单公开事实、未验证结论默认跳过；
+- 写入前必须进行去重和冲突检查；冲突内容不能静默覆盖，需保留版本、来源和状态。
+
+#### D3. Memory Retrieval Gate 与 Memory RAG
+
+```text
+Query
+→ Memory Need Detection
+├─ No → Normal Workflow
+└─ Yes
+   → Memory RAG
+   → Top-K Relevant Memory（置信度、时效、权限与 Token 预算过滤）
+   → Research Context
+```
+
+触发信号包括显式历史表达（“继续之前分析、基于上次结论”）、与长期研究主题高度相关、以及确实需要历史成果的 L3 任务。不是所有请求都注入 Memory；Smalltalk、独立公开事实查询和无历史依赖任务默认关闭。第一版 Need Detection 采用规则与向量相关度，只有歧义样本证明必要时才使用现有主模型判断。
+
+#### D4. 分阶段落地
+
+1. Write Gate + Memory Store：先解决“什么值得记”（已完成 v1）；
+2. Need Detection + Top-K Memory RAG：再解决“什么时候想起来”（已完成 v1）；
+3. Dedup / Conflict / Update / Snapshot Expiry / Forgetting：最后解决长期维护（实用版已完成；复杂自动遗忘取消）；
+4. Episodic Memory 只保存经过验证的任务轨迹与失败恢复，Procedural Memory 只保存人工批准、可回滚的策略，不允许 Agent 自动修改生产 Policy。
+
+2026-08-20 已完成 D1 + D2 写入端：L2/L3 主生成在同一次调用输出内部 Metadata，解析失败只关闭写入、不影响可读答案；Metadata 绑定生成答案哈希，Reflection 改写后旧建议自动失效。最终 Answer/Citation/Claim Verification 之后执行代码 Write Gate，达到阈值且有可追溯证据才写入 SQLite。Store 支持 `Write / Merge / Update / Skip`，含精确去重、相关版本、保守极性冲突阻断和 time-sensitive Snapshot TTL。状态已进入服务响应和 Metrics；阶段验收 6 条，全部离线，不新增 LLM 调用。
+
+2026-08-20 已完成 D3 召回端 v1：Memory Need Detection 仅在显式历史表达或 L3 研究任务触发；Store 按 conversation owner 强制隔离，过滤过期 Snapshot，再按词项相关度、价值与更新时间选取 Top-K。召回内容受上下文字符预算限制，以不可信证据边界注入统一 Skill Context，不修改原始会话历史；L1 独立问题不加载。显式历史研究现在采用 `Memory Context + Online Retrieval`，旧结论作为派生上下文、公开论文作为当前证据，失败不再误报 Memory RAG 未实现。召回状态、数量、原因、上下文长度和额外 LLM 调用数进入 API 与 Metrics；本阶段新增 4 条说明化验收，0 LLM、0 Token。下一步进入 D4 生命周期维护收口，随后转向账号与 Personal Paper Library 产品化主线。
+
+2026-08-20 已完成 D4 生命周期实用收口：被阻断的极性冲突写入独立 `long_term_memory_conflicts` 审计表；到期 Snapshot 由维护动作标记为 `expired`，停止召回但保留审计；提供 Active/Superseded/Expired/Open Conflict 统计。FastAPI 新增 `GET /memory/{conversation_id}`、`GET /memory/{conversation_id}/conflicts`、`DELETE /memory/{conversation_id}/{memory_id}`、`DELETE /memory/{conversation_id}` 和 `POST /memory/maintenance/expire`。单条删除强制匹配 Owner；会话级删除联动清除 Conversation Memory、Long-Term Memory、Conflict 与当前进程 SqliteSaver Checkpoint。当前 `conversation_id` 仅是产品化前的临时 Owner，接口只适合本地展示；Phase E 上线后必须从认证上下文取得 `user_id`，禁止信任客户端路径参数。复杂自动遗忘、模型自治修改记忆 Policy 不做，避免项目研究化失控。下一阶段进入 Authentication + Personal Paper Library MVP。
+
+### Phase E：账号与 Personal Paper Library（MVP 已完成）
+
+目标是把项目级或临时 PDF Local RAG 升级为每个用户的长期科研论文库：
+
+```text
+Register / Login
+→ User Account
+→ Personal Paper Library
+   ├─ Upload PDF
+   ├─ 收藏在线论文
+   ├─ 导入 Zotero
+   └─ 管理 Collection
+→ PDF Parsing → Chunk → Embedding + BM25 Index → User-scoped Local RAG
+```
+
+核心数据实体至少包含 User、Library、Collection、Document、DocumentOwnership 与 IndexNamespace；每个文档绑定 `user_id`、`library_id`、`collection_id`、`document_id`。任何检索都必须先得到服务端授权范围，再执行向量、BM25 或元数据过滤，不能只在返回结果后过滤。
+
+三种产品检索模式：
+
+1. Personal Library：只基于用户收藏、上传或获授权论文回答；
+2. Online Research：发现最新公开论文，不读取个人库；
+3. Hybrid Research：个人库与在线来源并行进入 Evidence Store，形成 `Private Knowledge + Public Knowledge` 的研究报告。
+
+现有 Planner、Retrieval Task、Evidence Store、Coverage 和 Writer 无需推翻，主要新增 Authentication、用户/论文库数据模型、Document Ownership、用户级索引命名空间、Retrieval Scope 和权限审计。
+
+产品化顺序为个人库 → 可选团队知识库 → 组织知识库。RBAC、Team/Organization、Shared Collection 和 Private/Shared Paper 只作为个人库成熟后的远期扩展，不进入当前简历项目 MVP；开始该阶段前必须先定义密码哈希、Session/Token、上传类型与大小限制、恶意 PDF 隔离、删除级联和隐私生命周期。
+
+2026-08-20 已完成 Phase E MVP：新增 SQLite User、Auth Session、Library、Document 与 Chunk 模型；密码使用 PBKDF2-HMAC-SHA256 加独立随机盐，不保存明文，登录签发只在数据库保存哈希的不透明 Bearer Token，默认 24 小时有效。注册时创建默认论文库；`POST /library/documents` 接收原始 PDF 请求体，执行 PDF 魔数、大小、Library Ownership、SHA-256 去重、用户目录保存、分页解析和固定窗口 Chunk。个人库第一版采用无需模型下载的 Owner-scoped BM25，已接入统一 Retrieval Router 和主 Retrieve 节点；匿名“我的论文”请求仍安全停止。新增注册、登录、当前用户、上传、列表和删除 API；记忆管理接口改为必须登录并验证路径 Owner。Authenticated Chat 的 MVP 默认以 `user_id` 作为会话与长期记忆 Owner，保证隐私删除闭环。当前不做多设备刷新 Token、邮件验证、Collection UI、Dense 用户索引和团队 RBAC；下一轮优先做 Personal + Online Hybrid 真实执行及前端登录/论文库界面。
+
+2026-08-20 已完成 Phase E 产品界面与 Hybrid 收口：Chat Contract 新增 `auto / online / personal / hybrid` 显式范围；Personal 与 Hybrid 必须先通过 Bearer Authentication。Hybrid 为有界双分支执行：Personal Library 使用 Owner-scoped BM25，Online 使用 arXiv 工具链，最大并发 2，任一私人分支失败时保留在线结果，成功结果统一去重并进入 Evidence Store，审计来源为 `hybrid_personal_online`。演示网页新增注册、登录、退出、本地 Token 会话、PDF 上传、论文列表与删除，以及研究范围选择；匿名 Online 与冻结示例保持可用。至此单用户 Personal Research Workspace MVP 完成。下一阶段不继续堆认证功能，优先完成一次手动在线 Hybrid 冒烟、前端体验修整与当前大批改动的整理提交。
+
+2026-08-20 已完成首次真实 Hybrid 冒烟：ReAct 原论文成功进入隔离个人库，两个规划查询均同时命中 Personal Library 与 arXiv，最终合并 8 条证据；检索 2.65 秒，总流程 31.71 秒，Generate + 一次有效 Reflection 共 2 次 LLM、5717 Token，最终 Answer Verification 通过。测试暴露的 withdrawn arXiv 候选已用零 LLM 规则在排序前过滤。完整结果见 `docs/HYBRID_SMOKE_REPORT.md`，可用受保护脚本一键复跑。下一步是整理并提交当前阶段，而不是继续扩大测试矩阵。
+
+### Phase F：多模态与轻量 Benchmark
+
+现有指定页多模态 v1 已覆盖 Text、OCR、Figure、Table、Formula 和 Structured Evidence。后续只有真实案例证明必要时才扩展 Page Analyzer，不默认扫描整篇 PDF。
+
+Benchmark 按能力风险分层维护，而不是一次性建设大型研究平台：
+
+- 任务覆盖 L1/L2/L3，以及 QA、Summary、Compare、Literature Review、Research Direction、Citation、PDF/Figure/Table；
+- 检索记录 Recall@K、MRR、nDCG 和来源覆盖；Grounding 记录 Citation Precision/Recall 与 Claim Evidence Support Rate；Agent 记录 Intent、Clarification、Complexity、Plan Validity；工程指标记录延迟、Token、LLM/Tool 调用；
+- Baseline 只在阶段里程碑选少量代表案例比较 LLM Only、Naive RAG、当前检索和 PaperAgent，不默认重复运行全组合 Ablation；
+- 每个新增节点立即增加一条正常路径、一条关键失败路径和必要集成回归，真实模型只做一次受保护冒烟。
+
+### V4 实施优先级
+
+```text
+P0：先修真实用户可见失败
+→ GraphRAG / LightRAG 实体保留、来源组合与比较证据门控
+→ Claim–Evidence Verification v2 的最小规则/语义层
+
+P1：提升复杂研究体验
+→ Clarification Resolver v2
+→ Complexity Router v2
+→ L2 Planner Lite + 统一 Retrieval Router
+
+P2：形成可积累的个人 Research Agent
+→ Memory Metadata + Write Gate + Store
+→ Memory Need Detection + Memory RAG
+→ 个人账号与 Personal Paper Library
+
+P3：有真实产品需求后再做
+→ Team / Organization / RBAC
+→ Procedural Memory / 受控 Agent Learning
+→ 更完整的多模态 Page Analyzer 与扩大评测
+```
+
+V4 下一项仍保持明确：先完成 GraphRAG/LightRAG 比较误阻断修复。Memory 与个人知识库已经成为正式后续模块，但不得越过当前检索可靠性问题直接开工。
+
+2026-08-20 已完成 GraphRAG/LightRAG 比较误阻断修复 v1：Query Rewrite 将专名比较置于通用 RAG 规则之前并保留核心设计约束；比较质量门控要求双方实体证据同时存在，单边证据固定为不通过并记录缺失实体；默认在线模式缺边时只针对缺失方法补查本地全文，并优先保留双方各一条证据；补充后仍缺失则唯一一次 Replan 定向查询缺失方法原论文，不再盲目追加通用综述词。失败元数据新增 `source_coverage_missing`、双方覆盖率和本地回退状态，Metrics 可直接审计。4 条新增关键用例及相邻检索、主图、Checkpoint、网页和测试报告回归共 34 项通过，0 网络、0 LLM、0 Token。下一步进入 P0 的 Claim–Evidence Verification v2 最小版本，只增加逐声明支持状态与安全降级，不扩建大型评测。
+
+2026-08-20 已完成 Claim–Evidence Verification v2 最小版本。L3 Research Writer 经过 Citation Repair 后进入零 LLM 声明验证节点：只抽取证据索引之前带稳定 Evidence ID 的实质声明，以声明与 Evidence title/snippet 的可审计词项对应区分 `supported / partial / contradicted / insufficient`；部分引用匹配形成 warning，明确无关或冲突证据阻断 Answer Verification，且不触发没有新证据的 Reflection。结果进入 State、服务响应、Metrics 和 Web 的 Claim Support 闸门，公开声明数量、四态计数与完全支持率。当前是低成本最低支持检查，不宣称等同于 LLM/NLI 语义事实核验；只有真实误判证明必要时才增加语义层。下一步进入 P1 Clarification Resolver v2 与 Complexity Router v2 的合并升级，继续复用现有主模型和 Policy，不增加独立判断模型。
+
+2026-08-20 已合并完成 Clarification Resolver v2 与 Complexity Router v2。Clarification 现在支持任意正整数和中文数字序号：范围内直接映射 active papers，越界时以 `ordinal_out_of_range` 短路，不允许猜测；“那个通过语言反馈改进 Agent 的方法”等描述性指代只在多个候选且规则无法唯一判断时复用主模型一次，模型输出仍须通过候选存在性和默认 0.8 置信度 Policy，未知或低置信度结果继续询问用户。Complexity Router 从少量关键词升级为 `research_scope / comparison_degree / multi_objective / temporal_analysis / synthesis_required / multi_source_need` 六维确定性特征和版本化权重；L1/L2/L3 最终仍由代码 Policy 决定，L3 原有结构化 LLM 分析只提供目标与维度建议，不能降级必要流程或选择未知 Skill。特征、总分、决策依据和澄清来源进入 Research Analysis、Metadata 与 Metrics。新增 5 条边界用例，相关 20 项测试通过，明确路径 0 LLM；语义指代只在必要时 1 次调用。下一步进入 L2 Planner Lite 与统一 Retrieval Router 的合并实现，不建设通用 Supervisor 或自由 DAG。
+
+2026-08-20 已一次性完成当前 P1 剩余阶段：L2 Planner Lite 将“比较 A 和 B”编译为两个可并行、来源交给 Router 的检索任务，以及一个依赖双方证据的综合任务；复用现有零 LLM Scheduler，最大并行仍为 2，不引入通用 Supervisor。新增统一 Retrieval Strategy 节点，在执行前输出 `mode / sources / reason / fallback / requested_scope`，当前可真实执行 Online、Local 和 Local+Online Hybrid；Local 失败允许一次在线降级，Hybrid 某一侧失败保留另一侧结果。Personal Library 请求只有 Zotero 已配置时进入 personal，否则以 `personal_library_not_configured` 安全停止，不用公开论文冒充用户收藏；Memory RAG 尚未实现时也安全停止，绝不伪装为已读取历史派生知识。Strategy 进入 State、Metadata、Metrics 与 Web 范围路由展示。6 条阶段验收及相邻回归通过，0 LLM、0 Token。至此 P1 收口；下一阶段进入 P2 Long-Term Research Memory v1，先实现同调用 Memory Metadata、Write Gate 与持久 Store，再实现 Need Detection / Memory RAG。
 
 GraphRAG 不作为当前必做主线。只有当固定测试中的“跨论文关系与全局归纳”任务明显暴露 Hybrid RAG 的不足时，才实现一个小型 `GraphRetriever` PoC，并通过相同接口比较；不预先建设 GraphRAG、LightRAG、Dense RAG 的完整研究矩阵。
 

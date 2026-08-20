@@ -1,4 +1,4 @@
-from research.analyzer import analyze_with_llm, enforce_analysis_policy, rule_analyze
+from research.analyzer import analyze_with_llm, enforce_analysis_policy, extract_complexity_features, rule_analyze
 from research.contracts import ResearchAnalysis
 from research.contracts import ResearchPlan, ResearchTask
 from research.planning import build_research_brief, build_research_plan, validate_research_plan
@@ -192,3 +192,18 @@ def test_plan_validator_applies_current_brief_source_allowlist():
 
     assert result.valid is False
     assert result.errors == ["source_not_allowed:T1:local_rag"]
+
+
+def test_complexity_features_explain_l1_l2_l3_policy_decisions():
+    simple = rule_analyze("ReAct 是什么？")
+    comparison = rule_analyze("比较 ReAct 和 Reflexion")
+    deep = rule_analyze("系统调研2024年以来 Agent Memory 的技术路线、代表论文、局限和未来趋势")
+
+    assert simple.task_level == "L1"
+    assert comparison.task_level == "L2"
+    assert comparison.complexity_features["comparison_degree"] == 1.0
+    assert deep.task_level == "L3"
+    assert deep.complexity_features["temporal_analysis"] == 1.0
+    assert deep.complexity_features["multi_source_need"] == 1.0
+    assert simple.complexity_score < comparison.complexity_score < deep.complexity_score
+    assert extract_complexity_features(deep.topic)[1] == deep.complexity_score

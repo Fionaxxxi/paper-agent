@@ -14,6 +14,9 @@ class AgentState(TypedDict, total=False):
     retrieval_score: float
     retrieval_outcome: str
     retrieval_stop_reason: str
+    retrieval_evaluation: Dict[str, Any]
+    retrieval_strategy: Dict[str, Any]
+    retrieval_scope: str
 
     # 最终答案
     answer: str
@@ -62,6 +65,7 @@ class AgentState(TypedDict, total=False):
     trace_id: str
 
     conversation_id: str
+    user_id: str
     history: List[Dict[str, Any]]
     history_text: str
 
@@ -74,6 +78,11 @@ class AgentState(TypedDict, total=False):
     pdf_vision_status: str
     pdf_grounding_validation: Dict[str, Any]
     multi_agent_trace: Dict[str, Any]
+    memory_metadata: Dict[str, Any]
+    memory_retrieval: Dict[str, Any]
+    retrieved_memories: List[Dict[str, Any]]
+    long_term_memory_context: str
+    memory_write_gate: Dict[str, Any]
 
     sub_queries: list[str]
     query_plan_enabled: bool
@@ -98,6 +107,7 @@ class AgentState(TypedDict, total=False):
     repository_enrichment: Dict[str, Any]
     research_coverage: Dict[str, Any]
     citation_validation: Dict[str, Any]
+    claim_evidence_validation: Dict[str, Any]
     citation_repair: Dict[str, Any]
 
     # query_rewrite.py 增加 rewritten_query

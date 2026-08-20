@@ -1,6 +1,27 @@
 from research.contracts import PlanValidation, ResearchAnalysis, ResearchBrief, ResearchPlan, ResearchTask
 
-ALLOWED_SOURCES = {"arxiv", "openalex", "local_rag", "evidence_store"}
+ALLOWED_SOURCES = {"arxiv", "openalex", "local_rag", "retrieval_router", "evidence_store"}
+
+
+def _comparison_entities(topic: str) -> list[str]:
+    import re
+    match = re.search(r"(?:比较|对比)\s*(.+?)\s*(?:和|与|及|vs\.?|versus)\s*(.+?)(?:的|在|$)", topic, re.IGNORECASE)
+    if not match:
+        return []
+    return [match.group(1).strip(), match.group(2).strip(" ？?。")]
+
+
+def build_l2_planner_lite(brief: ResearchBrief) -> ResearchPlan:
+    """明确比较拆成双方检索与一次综合，不构建自由DAG。"""
+    entities = _comparison_entities(brief.topic)
+    if len(entities) == 2:
+        tasks = [
+            ResearchTask(task_id="T1", objective=f"分析{entities[0]}的核心机制", query=f"{entities[0]} core architecture method original paper", source="retrieval_router", expected_evidence=f"{entities[0]}原论文方法证据"),
+            ResearchTask(task_id="T2", objective=f"分析{entities[1]}的核心机制", query=f"{entities[1]} core architecture method original paper", source="retrieval_router", expected_evidence=f"{entities[1]}原论文方法证据"),
+            ResearchTask(task_id="T3", objective="基于双方证据完成结构化比较", query="", source="evidence_store", depends_on=["T1", "T2"], expected_evidence="双方方法与差异的Claim–Evidence对照"),
+        ]
+        return ResearchPlan(objective=brief.objective, tasks=tasks, max_parallel_tasks=2)
+    return build_research_plan(brief)
 
 
 def build_research_brief(analysis: ResearchAnalysis) -> ResearchBrief:

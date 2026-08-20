@@ -8,7 +8,7 @@ from research.analyzer import (
     rule_analyze,
     should_use_llm,
 )
-from research.planning import build_research_brief, build_research_plan, validate_research_plan
+from research.planning import build_l2_planner_lite, build_research_brief, build_research_plan, validate_research_plan
 
 
 def research_analyze_node(state: AgentState) -> AgentState:
@@ -34,10 +34,10 @@ def research_analyze_node(state: AgentState) -> AgentState:
         except Exception:
             analysis = analysis.model_copy(update={"analysis_source": "rule_fallback"})
     brief = build_research_brief(analysis)
-    plan = build_research_plan(brief)
+    plan = build_l2_planner_lite(brief) if analysis.task_level == "L2" else build_research_plan(brief)
     validation = validate_research_plan(
         plan,
-        allowed_sources={*brief.allowed_sources, "evidence_store"},
+        allowed_sources={*brief.allowed_sources, "retrieval_router", "evidence_store"},
     )
     return {
         **usage_update,
@@ -53,5 +53,8 @@ def research_analyze_node(state: AgentState) -> AgentState:
             "research_intent": analysis.intent,
             "research_analysis_source": analysis.analysis_source,
             "research_plan_valid": validation.valid,
+            "complexity_features": analysis.complexity_features,
+            "complexity_score": analysis.complexity_score,
+            "complexity_decision_basis": analysis.complexity_decision_basis,
         },
     }

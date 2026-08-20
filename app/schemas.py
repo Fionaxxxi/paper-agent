@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Literal
 
 from pydantic import BaseModel, Field, model_validator
 
@@ -18,6 +18,9 @@ class ChatRequest(BaseModel):
         description="需要重点分析的 PDF 页码，按 1 开始，最多 3 页",
         max_length=3,
     )
+    retrieval_scope: Literal["auto", "online", "personal", "hybrid"] = Field(
+        default="auto", description="检索范围：自动、在线、个人论文库或混合"
+    )
 
     @model_validator(mode="after")
     def validate_pdf_page_selection(self):
@@ -26,6 +29,17 @@ class ChatRequest(BaseModel):
         if any(isinstance(page, bool) or page < 1 for page in self.pdf_pages):
             raise ValueError("pdf_pages 必须是从 1 开始的正整数")
         return self
+
+
+class RegisterRequest(BaseModel):
+    email: str
+    password: str = Field(min_length=8, max_length=128)
+    display_name: str = Field(default="", max_length=80)
+
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
 
 
 class PaperInfo(BaseModel):

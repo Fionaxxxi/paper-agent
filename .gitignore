@@ -110,6 +110,8 @@ data/pdfs/
 
 # Local memory
 data/memory/
+data/product/
+data/personal_libraries/
 
 # Generated, human-reviewable LLM Wiki notes
 data/wiki/

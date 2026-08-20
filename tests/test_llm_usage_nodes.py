@@ -7,6 +7,7 @@ import nodes.reason as reason_module
 
 class FakeLLM:
     def __init__(self, content, input_tokens=10, output_tokens=2):
+        self.call_count = 0
         self.response = SimpleNamespace(
             content=content,
             usage_metadata={
@@ -18,6 +19,7 @@ class FakeLLM:
         )
 
     def invoke(self, prompt):
+        self.call_count += 1
         return self.response
 
 
@@ -96,6 +98,31 @@ def test_generate_node_records_usage(monkeypatch):
     assert result["llm_call_count"] == 1
     assert result["token_usage"] == 120
     assert result["llm_usage"][0]["node_name"] == "generate"
+
+
+def test_generate_collects_memory_metadata_in_same_llm_call(monkeypatch):
+    monkeypatch.setattr(generate_module, "attach_skill_context", lambda state: state)
+    monkeypatch.setattr(generate_module, "get_skill", lambda state: FakeSkill())
+    llm = FakeLLM(
+        '可验证的综合结论。<MEMORY_METADATA>{"worth_storing":true,'
+        '"memory_type":"research_finding","value_score":0.9,'
+        '"stability":"stable","time_sensitive":false,"topic":"RAG"}'
+        '</MEMORY_METADATA>'
+    )
+    monkeypatch.setattr(generate_module, "get_llm", lambda: llm)
+
+    result = generate_module.generate_node({
+        "query": "比较两种RAG方案",
+        "task_type": "compare",
+        "task_level": "L2",
+        "documents": [{"title": "RAG paper"}],
+        "paper_metadata": {},
+    })
+
+    assert llm.call_count == 1
+    assert result["answer"] == "可验证的综合结论。"
+    assert result["memory_metadata"]["status"] == "valid"
+    assert result["memory_metadata"]["source_answer_hash"]
 
 
 def test_rule_based_evaluate_does_not_create_an_llm_call(monkeypatch):

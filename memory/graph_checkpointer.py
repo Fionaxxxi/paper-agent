@@ -60,4 +60,23 @@ def close_default_graph_checkpointer() -> None:
         _DEFAULT_PATH = None
 
 
+def delete_thread_checkpoints(thread_id: str) -> int:
+    """删除当前默认 SqliteSaver 中属于指定 thread 的检查点。"""
+    if not thread_id or _DEFAULT_CONNECTION is None:
+        return 0
+    deleted = 0
+    with _LOCK:
+        for table in ("checkpoint_writes", "checkpoint_blobs", "checkpoints"):
+            exists = _DEFAULT_CONNECTION.execute(
+                "SELECT 1 FROM sqlite_master WHERE type='table' AND name=?", (table,)
+            ).fetchone()
+            if exists:
+                cursor = _DEFAULT_CONNECTION.execute(
+                    f"DELETE FROM {table} WHERE thread_id=?", (thread_id,)
+                )
+                deleted += max(cursor.rowcount, 0)
+        _DEFAULT_CONNECTION.commit()
+    return deleted
+
+
 atexit.register(close_default_graph_checkpointer)

@@ -34,12 +34,20 @@ def build_retrieval_replan(state: AgentState) -> dict[str, Any]:
     codes = _tool_failure_codes(state)
     documents = state.get("documents", [])
     score = float(state.get("retrieval_score", 0.0))
+    evaluation = state.get("retrieval_evaluation", {})
+    comparison = evaluation.get("comparison_coverage", {})
 
     if any(code in TRANSIENT_TOOL_ERRORS for code in codes):
         failure_type = "transient_tool_failure"
         action = "retry_same_query"
         replanned_query = query
         reason = f"检测到可恢复工具错误：{', '.join(codes)}"
+    elif evaluation.get("failure_type") == "source_coverage_missing":
+        missing = comparison.get("missing_entities", [])
+        failure_type = "source_coverage_missing"
+        action = "target_missing_comparison_entity"
+        replanned_query = f"{' '.join(missing)} architecture method original paper".strip()
+        reason = f"比较任务缺少一方证据：{', '.join(missing)}"
     elif not documents:
         failure_type = "empty_results"
         action = "broaden_query"

@@ -21,6 +21,11 @@ def instrumented_graph(monkeypatch):
     )
     monkeypatch.setattr(
         graph_module,
+        "memory_retrieve_node",
+        node("memory_retrieve", {"memory_retrieval": {"status": "not_needed"}}),
+    )
+    monkeypatch.setattr(
+        graph_module,
         "research_analyze_node",
         node("research_analyze", {"task_level": "L1"}),
     )
@@ -72,6 +77,11 @@ def instrumented_graph(monkeypatch):
         "multi_agent_finalize_node",
         node("multi_agent_finalize", {"multi_agent_trace": {"status": "not_applicable"}}),
     )
+    monkeypatch.setattr(
+        graph_module,
+        "memory_write_gate_node",
+        node("memory_write_gate", {"memory_write_gate": {"action": "skip"}}),
+    )
 
     return graph_module.build_graph(), calls
 
@@ -83,6 +93,7 @@ def test_standard_query_runs_the_agentic_rag_path(instrumented_graph):
 
     assert calls == [
         "research_analyze",
+        "memory_retrieve",
         "query_rewrite",
         "query_plan",
         "retrieve",
@@ -90,6 +101,7 @@ def test_standard_query_runs_the_agentic_rag_path(instrumented_graph):
         "reason",
         "generate",
         "answer_verify",
+        "memory_write_gate",
         "multi_agent_finalize",
         "metrics",
     ]
@@ -104,7 +116,7 @@ def test_pdf_query_skips_query_planning_and_retrieval(instrumented_graph):
         {"query": "summarize this PDF", "pdf_path": "paper.pdf", "retry_count": 0}
     )
 
-    assert calls == ["research_analyze", "query_rewrite", "reason", "generate", "answer_verify", "multi_agent_finalize", "metrics"]
+    assert calls == ["research_analyze", "memory_retrieve", "query_rewrite", "reason", "generate", "answer_verify", "memory_write_gate", "multi_agent_finalize", "metrics"]
     assert result["answer"] == "grounded answer"
 
 

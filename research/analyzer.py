@@ -9,6 +9,9 @@ from research.contracts import ResearchAnalysis
 DEEP_SIGNALS = ("前景", "价值", "趋势", "研究空白", "系统调研", "综述", "代表论文", "open problems", "future directions")
 DIRECTION_SIGNALS = tuple(signal for signal in DEEP_SIGNALS if signal != "代表论文")
 COMPARE_SIGNALS = ("比较", "对比", "区别", "差异", "compare", " vs ")
+TEMPORAL_SIGNALS = ("最新", "当前", "近年", "近年来", "今年", "趋势", "future", "recent", "since")
+SYNTHESIS_SIGNALS = ("分析", "总结", "梳理", "综述", "报告", "比较", "对比", "路线", "空白")
+MULTI_SOURCE_SIGNALS = ("代表论文", "多篇", "多来源", "综述", "趋势", "研究方向", "研究空白")
 ALLOWED_SKILLS = {
     "qa",
     "paper_compare",
@@ -49,12 +52,36 @@ def build_l3_objectives(query: str, deep: list[str], compare: bool) -> list[str]
     return list(dict.fromkeys(objectives or ["完成结构化研究分析"]))[:6]
 
 
+def extract_complexity_features(query: str) -> tuple[dict[str, float], float]:
+    """抽取可审计复杂度特征；权重是Policy初始值，不由模型直接决定等级。"""
+    lowered = query.casefold()
+    deep_count = sum(signal in lowered for signal in DEEP_SIGNALS)
+    objective_count = 1 + len(re.findall(r"[、，,]|以及|并且|同时|和未来|与未来", query))
+    features = {
+        "research_scope": min(deep_count / 3, 1.0),
+        "comparison_degree": 1.0 if any(signal in lowered for signal in COMPARE_SIGNALS) else 0.0,
+        "multi_objective": min(max(objective_count - 1, 0) / 3, 1.0),
+        "temporal_analysis": 1.0 if re.search(r"20\d{2}", query) or any(signal in lowered for signal in TEMPORAL_SIGNALS) else 0.0,
+        "synthesis_required": 1.0 if sum(signal in lowered for signal in SYNTHESIS_SIGNALS) >= 2 else (0.6 if any(signal in lowered for signal in SYNTHESIS_SIGNALS) else 0.0),
+        "multi_source_need": 1.0 if any(signal in lowered for signal in MULTI_SOURCE_SIGNALS) else 0.0,
+    }
+    weights = {
+        "research_scope": 0.25, "comparison_degree": 0.15,
+        "multi_objective": 0.2, "temporal_analysis": 0.15,
+        "synthesis_required": 0.15, "multi_source_need": 0.1,
+    }
+    score = round(sum(features[name] * weight for name, weight in weights.items()), 3)
+    return features, score
+
+
 def rule_analyze(query: str) -> ResearchAnalysis:
     lowered = query.casefold()
     deep = [signal for signal in DEEP_SIGNALS if signal in lowered]
     directions = [signal for signal in DIRECTION_SIGNALS if signal in lowered]
     compare = any(signal in lowered for signal in COMPARE_SIGNALS)
-    if len(deep) >= 2 or (deep and compare):
+    features, complexity_score = extract_complexity_features(query)
+    deep_policy = len(deep) >= 2 or (deep and compare) or complexity_score >= 0.65
+    if deep_policy:
         return ResearchAnalysis(
             intent="deep_research", task_level="L3", topic=query,
             objectives=build_l3_objectives(query, deep, compare),
@@ -62,6 +89,8 @@ def rule_analyze(query: str) -> ResearchAnalysis:
             primary_skill="literature_review", secondary_skills=["research_direction", "paper_compare"],
             requires_multiple_sources=True, requires_report=True, confidence=0.72,
             reason="复杂研究信号：" + "、".join(deep),
+            complexity_features=features, complexity_score=complexity_score,
+            complexity_decision_basis="feature_policy_l3",
         )
     if compare or directions:
         return ResearchAnalysis(
@@ -70,11 +99,15 @@ def rule_analyze(query: str) -> ResearchAnalysis:
             objectives=["检索相关论文", "完成结构化比较" if compare else "总结研究方向"],
             primary_skill="paper_compare" if compare else "research_direction",
             confidence=0.85, reason="规则识别到比较或方向分析任务",
+            complexity_features=features, complexity_score=complexity_score,
+            complexity_decision_basis="feature_policy_l2",
         )
     return ResearchAnalysis(
         intent="paper_search" if any(word in lowered for word in ("检索", "搜索", "论文", "paper")) else "research_qa",
         task_level="L1", topic=query, objectives=["检索并回答用户的单一研究问题"],
         confidence=0.95, reason="单一明确研究目标",
+        complexity_features=features, complexity_score=complexity_score,
+        complexity_decision_basis="feature_policy_l1",
     )
 
 
@@ -126,6 +159,9 @@ def enforce_analysis_policy(
             "objectives": objectives[:6],
             "requires_retrieval": True,
             "requires_report": task_level == "L3" or candidate.requires_report,
+            "complexity_features": rule_analysis.complexity_features,
+            "complexity_score": rule_analysis.complexity_score,
+            "complexity_decision_basis": "llm_advice_with_policy",
         }
     )
 

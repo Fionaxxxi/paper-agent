@@ -49,8 +49,12 @@ def metrics_node(state: AgentState) -> AgentState:
     evidence_store = state.get("evidence_store", {})
     research_coverage = state.get("research_coverage", {})
     citation_validation = state.get("citation_validation", {})
+    claim_evidence_validation = state.get("claim_evidence_validation", {})
     citation_repair = state.get("citation_repair", {})
     repository_enrichment = state.get("repository_enrichment", {})
+    memory_metadata = state.get("memory_metadata", {})
+    memory_write_gate = state.get("memory_write_gate", {})
+    memory_retrieval = state.get("memory_retrieval", {})
 
     total_time = round(sum(node_timings.values()), 2)
     input_token_usage = state.get("input_token_usage", 0)
@@ -76,10 +80,13 @@ def metrics_node(state: AgentState) -> AgentState:
         "retrieval_count": len(documents),
         "retrieval_score": state.get("retrieval_score", 0.0),
         "retrieval_source": paper_metadata.get("retrieval_source", ""),
+        "retrieval_strategy": state.get("retrieval_strategy", paper_metadata.get("retrieval_strategy", {})),
         "cache_hit": paper_metadata.get("cache_hit", False),
         "retry_count": state.get("retry_count", 0),
         "retrieval_outcome": state.get("retrieval_outcome", ""),
         "retrieval_stop_reason": state.get("retrieval_stop_reason", ""),
+        "retrieval_failure_type": state.get("retrieval_evaluation", {}).get("failure_type", ""),
+        "comparison_coverage": state.get("retrieval_evaluation", {}).get("comparison_coverage", {}),
         "retrieval_recovered": state.get("retrieval_outcome") == "recovered",
         "retrieval_budget_exhausted": (
             state.get("retrieval_stop_reason") == "retry_budget_exhausted"
@@ -132,12 +139,23 @@ def metrics_node(state: AgentState) -> AgentState:
         "invalid_evidence_id_count": len(citation_validation.get("invalid_evidence_ids", [])),
         "uncited_synthesis_count": len(citation_validation.get("uncited_synthesis_lines", [])),
         "critique_overreach_count": len(citation_validation.get("critique_overreach_lines", [])),
+        "claim_evidence_status": claim_evidence_validation.get("status", "not_applicable"),
+        "claim_evidence_passed": claim_evidence_validation.get("passed", True),
+        "claim_evidence_support_rate_pct": claim_evidence_validation.get("support_rate_pct", 0.0),
+        "claim_supported_count": claim_evidence_validation.get("supported_count", 0),
+        "claim_partial_count": claim_evidence_validation.get("partial_count", 0),
+        "claim_contradicted_count": claim_evidence_validation.get("contradicted_count", 0),
+        "claim_insufficient_count": claim_evidence_validation.get("insufficient_count", 0),
         "citation_repair_status": citation_repair.get("status", "not_triggered"),
         "citation_repaired_line_count": citation_repair.get("repaired_line_count", 0),
         "complexity_reason": paper_metadata.get(
             "complexity_reason",
             state.get("complexity_reason", ""),
         ),
+        "complexity_features": state.get("research_analysis", {}).get("complexity_features", {}),
+        "complexity_score": state.get("research_analysis", {}).get("complexity_score", 0.0),
+        "complexity_decision_basis": state.get("research_analysis", {}).get("complexity_decision_basis", ""),
+        "clarification_resolution_source": paper_metadata.get("clarification_resolution_source", ""),
         "sub_queries": sub_queries,
         "raw_document_count": paper_metadata.get(
             "raw_document_count",
@@ -233,6 +251,7 @@ def metrics_node(state: AgentState) -> AgentState:
 
         # Memory
         "conversation_id": state.get("conversation_id", ""),
+        "user_id": state.get("user_id", ""),
         "history_count": len(state.get("history", [])),
         "memory_total_message_count": paper_metadata.get("memory_total_message_count", 0),
         "memory_compressed_message_count": paper_metadata.get("memory_compressed_message_count", 0),
@@ -240,6 +259,21 @@ def metrics_node(state: AgentState) -> AgentState:
         "memory_active_paper_count": len(paper_metadata.get("memory_active_papers", [])),
         "langgraph_checkpoint_enabled": paper_metadata.get("langgraph_checkpoint_enabled", False),
         "langgraph_thread_id": paper_metadata.get("langgraph_thread_id", ""),
+        "memory_metadata_status": memory_metadata.get("status", "not_applicable"),
+        "memory_type": memory_metadata.get("memory_type", "none"),
+        "memory_value_score": memory_metadata.get("value_score", 0.0),
+        "memory_stability": memory_metadata.get("stability", "unknown"),
+        "memory_time_sensitive": memory_metadata.get("time_sensitive", False),
+        "memory_write_allowed": memory_write_gate.get("allowed", False),
+        "memory_write_reason": memory_write_gate.get("reason", "not_evaluated"),
+        "memory_write_action": memory_write_gate.get("action", "skip"),
+        "memory_id": memory_write_gate.get("memory_id", ""),
+        "memory_retrieval_status": memory_retrieval.get("status", "not_evaluated"),
+        "memory_retrieval_needed": memory_retrieval.get("needed", False),
+        "memory_retrieval_reason": memory_retrieval.get("reason", ""),
+        "memory_retrieved_count": memory_retrieval.get("retrieved_count", 0),
+        "memory_context_chars": memory_retrieval.get("context_chars", 0),
+        "memory_retrieval_additional_llm_calls": memory_retrieval.get("additional_llm_calls", 0),
 
         # PDF
         "pdf_path": state.get("pdf_path", ""),

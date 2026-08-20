@@ -11,6 +11,7 @@ from core.llm_usage import (
 )
 from prompts.evaluator import EVALUATOR_TEMPLATE
 from prompts.contracts import get_prompt_version, wrap_untrusted_evidence
+from retrieval.comparison import comparison_coverage, comparison_targets
 
 
 def get_llm():
@@ -31,6 +32,15 @@ def rule_based_score(state: AgentState) -> float:
 
     if not documents:
         return 0.0
+
+    targets = comparison_targets(query, state.get("task_type", ""))
+    coverage = comparison_coverage(documents, targets)
+    if coverage["enabled"]:
+        if coverage["passed"]:
+            return 0.85
+        if coverage["covered_entities"]:
+            return 0.55
+        return 0.4
 
     query_text = query + " " + rewritten_query
 
@@ -118,7 +128,13 @@ def evaluate_node(state: AgentState) -> AgentState:
         score = rule_based_score(state)
 
     retry_count = state.get("retry_count", 0)
-    if score >= 0.7:
+    requested_scope_unavailable = (
+        state.get("retrieval_strategy", {}).get("mode") == "unavailable"
+    )
+    if requested_scope_unavailable:
+        retrieval_outcome = "stopped_low_quality"
+        retrieval_stop_reason = "requested_scope_unavailable"
+    elif score >= 0.7:
         retrieval_outcome = "recovered" if retry_count > 0 else "accepted"
         retrieval_stop_reason = "quality_threshold_met"
     elif retry_count > 0:
@@ -128,9 +144,21 @@ def evaluate_node(state: AgentState) -> AgentState:
         retrieval_outcome = "replan_required"
         retrieval_stop_reason = "quality_below_threshold"
 
+    targets = comparison_targets(state.get("query", ""), state.get("task_type", ""))
+    comparison_check = comparison_coverage(state.get("documents", []), targets)
+    failure_type = ""
+    if comparison_check["enabled"] and not comparison_check["passed"]:
+        failure_type = "source_coverage_missing"
+    elif score < 0.7:
+        failure_type = "quality_below_threshold"
+
     return {
         **usage_update,
         "retrieval_score": max(0.0, min(score, 1.0)),
         "retrieval_outcome": retrieval_outcome,
         "retrieval_stop_reason": retrieval_stop_reason,
+        "retrieval_evaluation": {
+            "failure_type": failure_type,
+            "comparison_coverage": comparison_check,
+        },
     }

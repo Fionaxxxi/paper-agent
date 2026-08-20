@@ -17,6 +17,9 @@ class ResearchAnalysis(BaseModel):
     confidence: float = Field(ge=0.0, le=1.0)
     reason: str
     analysis_source: Literal["rule", "llm", "rule_fallback"] = "rule"
+    complexity_features: dict[str, float] = Field(default_factory=dict)
+    complexity_score: float = Field(default=0.0, ge=0.0, le=1.0)
+    complexity_decision_basis: str = "rule_features"
 
 
 class ResearchBrief(BaseModel):

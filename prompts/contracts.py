@@ -20,6 +20,7 @@ PROMPT_VERSIONS = {
     "formula_explanation": "formula_explanation_v2_structured",
     "research_writer": "research_writer_v2_security",
     "answer_reflect": "answer_reflection_v2_security",
+    "clarification_resolve": "clarification_resolver_v2",
 }
 
 

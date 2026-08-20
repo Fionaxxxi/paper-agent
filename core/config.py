@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     MULTI_SOURCE_MAX_WORKERS: int = 2
     MULTI_QUERY_PARALLEL_ENABLED: bool = False
     MULTI_QUERY_MAX_WORKERS: int = 2
+    COMPARISON_LOCAL_FALLBACK_ENABLED: bool = True
 
     # OpenAlex
     OPENALEX_BASE_URL: str = "https://api.openalex.org"
@@ -80,6 +81,20 @@ class Settings(BaseSettings):
     MEMORY_CONTEXT_MAX_CHARS: int = 2400
     LLM_WIKI_DIR: str = "data/wiki"
     LLM_WIKI_AUTO_PUBLISH_ENABLED: bool = False
+    LONG_TERM_MEMORY_ENABLED: bool = True
+    LONG_TERM_MEMORY_DB_PATH: str = "data/memory/long_term_research_memory.db"
+    LONG_TERM_MEMORY_VALUE_THRESHOLD: float = 0.75
+    LONG_TERM_MEMORY_TOP_K: int = 3
+    LONG_TERM_MEMORY_SNAPSHOT_DAYS: int = 30
+    LONG_TERM_MEMORY_CONTEXT_MAX_CHARS: int = 3000
+    PRODUCT_DB_PATH: str = "data/product/paper_agent_product.db"
+    PERSONAL_LIBRARY_FILES_DIR: str = "data/personal_libraries"
+    PERSONAL_LIBRARY_MAX_PDF_MB: int = 25
+    AUTH_TOKEN_TTL_HOURS: int = 24
+    PRODUCT_DB_PATH: str = "data/product/paper_agent_product.db"
+    PERSONAL_LIBRARY_FILES_DIR: str = "data/personal_libraries"
+    PERSONAL_LIBRARY_MAX_PDF_MB: int = 25
+    AUTH_TOKEN_TTL_HOURS: int = 24
     LLM_WIKI_ALLOWED_TASK_TYPES: str = (
         "summarize,compare,recommend,literature_review,paper_critique"
     )
@@ -94,6 +109,10 @@ class Settings(BaseSettings):
     REASON_CONFIDENCE_THRESHOLD: float = 0.75
     RESEARCH_ANALYSIS_WITH_LLM: bool = True
     RESEARCH_ANALYZER_PROMPT_VARIANT: str = "zero_shot"
+    CLARIFICATION_SEMANTIC_WITH_LLM: bool = True
+    CLARIFICATION_SEMANTIC_CONFIDENCE_THRESHOLD: float = 0.8
+    CLARIFICATION_SEMANTIC_WITH_LLM: bool = True
+    CLARIFICATION_SEMANTIC_CONFIDENCE_THRESHOLD: float = 0.8
 
     model_config = SettingsConfigDict(
         env_file=".env",

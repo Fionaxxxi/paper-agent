@@ -14,6 +14,16 @@ PaperAgent 是一个面向科研论文场景的 Agent 项目。它不只是调�
 - **统一工具层**：在线检索经过 Tool Router、Registry、Policy 和 Executor，统一处理参数、超时、重试与错误结构。
 - **多论文源检索**：支持 arXiv、OpenAlex，以及可选的多源合并、去重、元数据校验和重排。
 - **本地全文 RAG**：支持 PDF 解析、Chunk、BM25、Dense Retrieval、向量缓存和置信度门控 Hybrid。
+- **比较证据门控**：GraphRAG/LightRAG 等明确比较会保留双方实体；在线结果缺边时定向补充本地全文，双方证据齐全后才进入生成。
+- **逐声明证据验证**：L3 报告在引用格式检查后，将带 Evidence ID 的声明标记为 supported、partial、contradicted 或 insufficient，并公开支持率。
+- **分层意图理解**：明确指代由规则零成本解析，越界序号主动澄清，描述性指代才使用一次受候选与置信度 Policy 约束的语义解析；任务等级由六维复杂度特征与结构化分析共同决定。
+- **Planner Lite + 检索范围路由**：L2 比较拆成双方检索与一次综合；统一 Router 在已实现能力内选择 Online、Local 或 Local+Online Hybrid，Personal/Memory 未配置时安全停止而非用公开结果冒充。
+- **长期研究记忆写入门**：L2/L3 生成在同一次模型调用中附带内部 Memory Metadata；只有最终答案、引用和声明验证通过后，代码 Policy 才会写入 SQLite，并执行重复合并、相关版本更新、冲突拒绝与时效快照。
+- **按需 Memory RAG**：显式历史请求和 L3 研究任务才触发长期记忆检索；按 conversation owner、相关度、有效期、Top-K 与上下文长度过滤后注入研究 Skill，普通 L1 问题不加载记忆，判断与召回均为 0 LLM。
+- **记忆生命周期管理**：冲突候选写入独立审计表，过期 Snapshot 标记失效；FastAPI 提供记忆/冲突查询、Owner 约束的单条删除、会话级隐私清除和过期维护接口。认证上线前这些接口只适合本地展示环境。
+- **账号与个人论文库 MVP**：注册/登录使用 PBKDF2 密码哈希和服务端不透明 Bearer Token；用户可上传 PDF、查看或删除个人论文，并通过 Owner-scoped BM25 在 LangGraph 中只检索自己的全文 Chunk。
+- **私人 + 公开混合研究**：登录用户可显式选择 Personal、Online 或 Hybrid；Hybrid 以两个受控并行分支检索个人 PDF 与 arXiv，统一合并、去重后进入 Evidence Store。网页已提供登录、上传、论文管理和范围选择。
+- **真实 Hybrid 冒烟**：已用 ReAct PDF + arXiv + 当前主模型跑通一次完整在线链路；结果、Token、延迟和发现的问题记录在 `docs/HYBRID_SMOKE_REPORT.md`，脚本默认拒绝未确认的在线调用。
 - **可审计检索路由**：本地 RAG 会记录 Dense Top-1、分数间隔，以及最终选择 Dense 或 Hybrid 的原因。
 - **多 Skill 回答**：根据任务选择问答、总结、比较、引用、研究方向或 PDF 阅读 Skill。
 - **有界轻量 Multi-Agent**：仅 L3 将现有研究节点组织为 Planner、Executor、Reviewer 三段交接，额外 LLM 调用为 0，审查循环上限为 1。

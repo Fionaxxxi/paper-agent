@@ -32,9 +32,22 @@ def test_demo_page_exposes_research_agent_trace_panels():
 def test_demo_script_consumes_existing_research_metadata_contract():
     """作用：前端直接消费服务已有研究元数据，不增加新的模型或API调用。"""
     script=TestClient(app).get("/static/app.js").text
-    for field in ("research_analysis", "research_plan", "research_schedule", "evidence_store", "research_coverage", "citation_validation", "citation_repair"):
+    for field in ("research_analysis", "research_plan", "research_schedule", "evidence_store", "research_coverage", "citation_validation", "claim_evidence_validation", "citation_repair"):
         assert field in script
     assert "renderResearch(meta)" in script
+    assert "Claim Support" in script
+    assert "retrieval_strategy" in script
+    assert "范围路由" in script
+
+
+def test_research_conclusion_renders_markdown_as_safe_readable_html():
+    """作用：最终研究结论按普通 AI 回答排版，并先转义不可信 HTML。"""
+    script = TestClient(app).get("/static/app.js").text
+
+    assert "function renderMarkdown(markdown)" in script
+    assert '$("answer").innerHTML=renderMarkdown(lastAnswer)' in script
+    assert "answer-table-wrap" in script
+    assert "const inlineMarkdown=value=>esc(value)" in script
 
 
 def test_demo_page_offers_zero_api_frozen_research_trace():
@@ -84,3 +97,14 @@ def test_demo_page_explains_selected_pdf_pages_without_exposing_local_paths():
     assert sample["paper_metadata"]["pdf_grounding_validation"]["passed"] is True
     assert sample["paper_metadata"]["pdf_structured_output"]["valid"] is True
     assert "D:\\" not in sample_response.text
+
+
+def test_demo_page_exposes_auth_library_and_retrieval_scope_controls():
+    client = TestClient(app)
+    page = client.get("/").text
+    script = client.get("/static/app.js").text
+    for marker in ("个人研究空间", "Personal Paper Library", "retrievalScope", "个人库 + 在线"):
+        assert marker in page
+    for marker in ("paperagent_token", "/auth/login", "/library/documents", "retrieval_scope", "authHeaders"):
+        assert marker in script
+    assert "/static/product.css" in page

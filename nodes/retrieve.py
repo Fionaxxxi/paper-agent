@@ -9,6 +9,11 @@ from retrieval.cache import load_cached_papers, save_cached_papers
 from retrieval.metadata_resolver import extract_arxiv_ids, normalize_doi
 from retrieval.reranker import rerank_documents_with_stats
 from retrieval.result_merger import merge_documents_with_stats
+from retrieval.comparison import (
+    comparison_coverage,
+    comparison_targets,
+    prioritize_comparison_evidence,
+)
 from tools.contracts import ToolErrorCode
 from tools.runtime import paper_tool_executor, paper_tool_router
 
@@ -39,6 +44,60 @@ FALLBACK_PAPERS = [
         "source": "fallback",
     },
 ]
+
+
+def supplement_comparison_from_local(
+    documents: List[Dict[str, Any]], state: AgentState
+) -> tuple[List[Dict[str, Any]], Dict[str, Any], List[str], List[Dict[str, Any]]]:
+    """在线比较缺少一方证据时，按缺失实体受控补充本地全文。"""
+    targets = comparison_targets(state.get("query", ""), state.get("task_type", ""))
+    coverage = comparison_coverage(documents, targets)
+    mode = settings.RETRIEVAL_MODE.lower()
+    if (
+        not coverage["enabled"]
+        or coverage["passed"]
+        or not settings.COMPARISON_LOCAL_FALLBACK_ENABLED
+        or mode == "local_rag"
+    ):
+        return documents, {**coverage, "fallback_status": "not_needed"}, [], []
+
+    statuses: List[Dict[str, Any]] = []
+    try:
+        from local_rag.runtime import search_local_papers
+
+        local_documents: List[Dict[str, Any]] = []
+        for entity in coverage["missing_entities"]:
+            result = search_local_papers(f"{entity} architecture method retrieval design", 3)
+            found = result.get("documents", [])
+            local_documents.extend(found)
+            statuses.append({
+                "provider": "local_rag",
+                "retrieval_source": "comparison_local_fallback",
+                "search_entity": entity,
+                "paper_count": len(found),
+                "cache_hit": True,
+            })
+        combined = prioritize_comparison_evidence(
+            documents + local_documents, targets, max(settings.ARXIV_MAX_RESULTS, len(targets))
+        )
+        final = comparison_coverage(combined, targets)
+        status = "recovered" if final["passed"] else "still_missing"
+        return combined, {**final, "fallback_status": status}, [
+            "comparison_coverage_router", "local_rag_retriever"
+        ], statuses
+    except Exception as error:
+        statuses.append({
+            "provider": "local_rag",
+            "retrieval_source": "comparison_local_fallback",
+            "paper_count": 0,
+            "cache_hit": False,
+            "error_type": type(error).__name__,
+        })
+        return documents, {
+            **coverage,
+            "fallback_status": "failed",
+            "fallback_error": type(error).__name__,
+        }, ["comparison_coverage_router"], statuses
 
 
 def load_arxiv_authority_evidence(
@@ -314,11 +373,84 @@ def retrieve_from_source(
 def retrieve_by_query(query: str, state: AgentState) -> Dict[str, Any]:
     """Retrieve one query from the configured single or multiple providers."""
 
-    retrieval_mode = settings.RETRIEVAL_MODE.lower()
+    strategy = state.get("retrieval_strategy", {})
+    strategy_mode = strategy.get("mode", "")
+    strategy_sources = list(strategy.get("sources", []))
+    if strategy_mode == "unavailable":
+        return {
+            "documents": [], "retrieval_source": "requested_scope_unavailable",
+            "retrieval_mode": "unavailable", "cache_hit": False,
+            "search_query": query, "paper_count": 0,
+            "tools_used": ["retrieval_strategy_router"], "tool_executions": [],
+            "source_statuses": [{
+                "provider": strategy.get("requested_scope", "unknown"),
+                "retrieval_source": "unavailable", "cache_hit": False,
+                "paper_count": 0, "reason": strategy.get("reason", ""),
+            }],
+            "cache_hit_count": 0, "raw_document_count": 0,
+            "merged_document_count": 0, "deduplicated_count": 0,
+            "ranking_strategy": "scope_policy_stop",
+        }
+    if strategy_mode == "hybrid":
+        private_source = "personal_library" if "personal_library" in strategy_sources else "local_rag"
+        online_state = {**state, "retrieval_strategy": {"mode": "online", "sources": ["arxiv"]}}
+        private_state = {**state, "retrieval_strategy": (
+            {"mode": "personal", "sources": ["personal_library"], "fallback": "none"}
+            if private_source == "personal_library"
+            else {"mode": "local", "sources": ["local_rag"], "fallback": "none"}
+        )}
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            online_future = pool.submit(retrieve_by_query, query, online_state)
+            private_future = pool.submit(retrieve_by_query, query, private_state)
+            try:
+                online = online_future.result()
+            except Exception as error:
+                online = {"documents": [], "tools_used": [], "tool_executions": [],
+                          "source_statuses": [{"provider": "arxiv", "paper_count": 0, "error_type": type(error).__name__}],
+                          "retrieval_source": "arxiv_failed", "cache_hit_count": 0}
+            try:
+                local = private_future.result()
+            except Exception as error:
+                local = {"documents": [], "tools_used": [], "tool_executions": [],
+                         "source_statuses": [{"provider": private_source, "paper_count": 0, "error_type": type(error).__name__}],
+                         "retrieval_source": f"{private_source}_failed", "cache_hit_count": 0}
+        merge = merge_documents_with_stats(
+            [online.get("documents", []), local.get("documents", [])],
+            max_documents=settings.MULTI_SOURCE_MAX_RESULTS,
+        )
+        return {
+            "documents": merge["documents"],
+            "retrieval_source": "hybrid_personal_online" if private_source == "personal_library" else "hybrid_local_online",
+            "retrieval_mode": "hybrid", "cache_hit": False, "search_query": query,
+            "paper_count": len(merge["documents"]),
+            "tools_used": list(dict.fromkeys([*online.get("tools_used", []), *local.get("tools_used", []), "retrieval_strategy_router"])),
+            "tool_executions": [*online.get("tool_executions", []), *local.get("tool_executions", [])],
+            "source_statuses": [*online.get("source_statuses", []), *local.get("source_statuses", [])],
+            "cache_hit_count": online.get("cache_hit_count", 0) + local.get("cache_hit_count", 0),
+            "raw_document_count": merge["raw_document_count"],
+            "merged_document_count": merge["merged_document_count"],
+            "deduplicated_count": merge["deduplicated_count"],
+            "ranking_strategy": "hybrid_private_public_merge",
+        }
+    if strategy_mode == "local":
+        retrieval_mode = "local_rag"
+    elif strategy_mode == "personal":
+        retrieval_mode = strategy_sources[0] if strategy_sources else "zotero"
+    elif strategy_mode == "online" and strategy_sources:
+        retrieval_mode = "multi" if len(strategy_sources) > 1 else strategy_sources[0]
+    else:
+        retrieval_mode = settings.RETRIEVAL_MODE.lower()
     if retrieval_mode == "local_rag":
         from local_rag.runtime import search_local_papers
 
-        local_result = search_local_papers(query, settings.LOCAL_RAG_MAX_RESULTS)
+        try:
+            local_result = search_local_papers(query, settings.LOCAL_RAG_MAX_RESULTS)
+        except Exception:
+            if strategy.get("fallback") == "online":
+                return retrieve_by_query(query, {
+                    **state, "retrieval_strategy": {"mode": "online", "sources": ["arxiv"]}
+                })
+            raise
         documents = local_result["documents"]
         decision = local_result["decision"]
         return {
@@ -342,6 +474,22 @@ def retrieve_by_query(query: str, state: AgentState) -> Dict[str, Any]:
             "metadata_quarantined_count": 0,
             "ranking_strategy": "confidence_gated_bm25_dense_rrf",
             "local_rag_decision": decision,
+        }
+    if retrieval_mode == "personal_library":
+        from product.runtime import personal_library_store
+        personal = personal_library_store().search(
+            state.get("user_id", ""), query, settings.LOCAL_RAG_MAX_RESULTS
+        )
+        documents, decision = personal["documents"], personal["decision"]
+        return {
+            "documents": documents, "retrieval_source": "personal_library",
+            "retrieval_mode": "personal", "cache_hit": True, "search_query": query,
+            "paper_count": len(documents), "tools_used": ["personal_library_retriever", "bm25"],
+            "tool_execution": {}, "tool_executions": [],
+            "source_statuses": [{"provider": "personal_library", "paper_count": len(documents)}],
+            "cache_hit_count": 1, "raw_document_count": len(documents),
+            "merged_document_count": len(documents), "deduplicated_count": 0,
+            "ranking_strategy": "owner_scoped_bm25", "personal_library_decision": decision,
         }
     sources = get_retrieval_sources(retrieval_mode)
     if settings.MULTI_SOURCE_PARALLEL_ENABLED and len(sources) > 1:
@@ -528,16 +676,24 @@ def retrieve_multi_query(state: AgentState, sub_queries: List[str]) -> AgentStat
             if tool not in tools_used:
                 tools_used.append(tool)
 
+    strategy_mode = state.get("retrieval_strategy", {}).get("mode", "")
     merge_result = merge_documents_with_stats(
         document_groups=document_groups,
         max_documents=(
             settings.MULTI_SOURCE_MAX_RESULTS
-            if settings.RETRIEVAL_MODE.lower() in {"multi", "multi_source"}
+            if settings.RETRIEVAL_MODE.lower() in {"multi", "multi_source"} or strategy_mode == "hybrid"
             else settings.ARXIV_MAX_RESULTS
         ),
     )
 
     documents = merge_result["documents"]
+    documents, comparison_check, fallback_tools, fallback_statuses = (
+        supplement_comparison_from_local(documents, state)
+    )
+    for tool in fallback_tools:
+        if tool not in tools_used:
+            tools_used.append(tool)
+    source_statuses.extend(fallback_statuses)
 
     if "agentic_rag_retriever" not in tools_used:
         tools_used.append("agentic_rag_retriever")
@@ -552,7 +708,8 @@ def retrieve_multi_query(state: AgentState, sub_queries: List[str]) -> AgentStat
             "search_queries": search_queries,
             "paper_count": len(documents),
             "retrieval_count": len(documents),
-            "retrieval_mode": settings.RETRIEVAL_MODE.lower(),
+            "retrieval_mode": strategy_mode or settings.RETRIEVAL_MODE.lower(),
+            "retrieval_strategy": state.get("retrieval_strategy", {}),
             "cache_hit": False,
             "cache_hit_count": cache_hit_count,
             "sub_queries": sub_queries,
@@ -564,6 +721,7 @@ def retrieve_multi_query(state: AgentState, sub_queries: List[str]) -> AgentStat
             "source_statuses": source_statuses,
             "agentic_rag_enabled": True,
             "tool_executions": tool_executions,
+            "comparison_coverage": comparison_check,
         },
     }
 
@@ -615,6 +773,13 @@ def retrieve_node(state: AgentState) -> AgentState:
         if tool not in tools_used:
             tools_used.append(tool)
 
+    documents, comparison_check, fallback_tools, fallback_statuses = (
+        supplement_comparison_from_local(documents, state)
+    )
+    for tool in fallback_tools:
+        if tool not in tools_used:
+            tools_used.append(tool)
+
     return {
         "documents": documents,
         "tools_used": tools_used,
@@ -628,11 +793,12 @@ def retrieve_node(state: AgentState) -> AgentState:
             "cache_hit": single_result.get("cache_hit", False),
             "agentic_rag_enabled": False,
             "tool_executions": single_result.get("tool_executions", []),
-            "source_statuses": single_result.get("source_statuses", []),
+            "source_statuses": single_result.get("source_statuses", []) + fallback_statuses,
             "raw_document_count": single_result.get("raw_document_count", len(documents)),
             "merged_document_count": single_result.get("merged_document_count", len(documents)),
             "deduplicated_count": single_result.get("deduplicated_count", 0),
             "ranking_strategy": single_result.get("ranking_strategy", "source_priority"),
             "local_rag_decision": single_result.get("local_rag_decision", {}),
+            "comparison_coverage": comparison_check,
         },
     }

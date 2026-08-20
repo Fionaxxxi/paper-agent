@@ -4,7 +4,7 @@ from research.scheduler import build_schedule
 
 def research_schedule_node(state: AgentState) -> AgentState:
     if (
-        state.get("task_level") != "L3"
+        state.get("task_level") not in {"L2", "L3"}
         or not state.get("research_plan_validation", {}).get("valid")
     ):
         return {"research_schedule": {"enabled": False, "waves": [],

@@ -1809,6 +1809,221 @@ TEST_CASE_CATALOG: dict[str, CaseDescription] = {
         "代表普通问答保持低成本，复杂任务也不能演变为无限审查循环。",
         "若失败，简单请求可能承担多角色开销，或Reviewer预算约束可被绕过。",
     ),
+    "tests/test_demo_page.py::test_research_conclusion_renders_markdown_as_safe_readable_html": _description(
+        "验证网页把研究结论中的标题、列表、链接和表格渲染成普通AI回答样式，并先转义原始HTML。",
+        "代表用户看到的是可阅读的研究结论而不是Markdown源码，同时保留基本前端注入防护。",
+        "若失败，页面可能继续显示井号和列表符号，或不可信模型文本可能直接进入HTML。",
+    ),
+    "tests/test_comparison_retrieval.py::test_comparison_query_rewrite_preserves_both_entities_and_design_scope": _description(
+        "验证GraphRAG与LightRAG比较请求改写后仍保留双方专名和核心设计约束。",
+        "代表查询不会再被通用RAG规则提前截获，在线与本地检索都能看到完整意图。",
+        "若失败，检索会退化为普通RAG搜索并再次触发证据不足误阻断。",
+    ),
+    "tests/test_comparison_retrieval.py::test_comparison_evaluator_requires_both_entities_and_explains_missing_side": _description(
+        "验证比较任务只有同时获得双方证据才通过，并明确列出缺失实体。",
+        "代表质量门控按任务覆盖而非中英文关键词偶然命中进行判断。",
+        "若失败，单边材料可能生成虚假比较，或完整证据仍被错误阻断。",
+    ),
+    "tests/test_comparison_retrieval.py::test_online_comparison_uses_local_fallback_only_for_missing_entity": _description(
+        "验证在线结果缺少LightRAG时只补查该实体的本地全文，并保留双来源审计。",
+        "代表系统能自动组合公开发现与已有全文，不要求用户手动切换检索模式。",
+        "若失败，系统可能重复检索已有一方、加载无关全文或仍无法恢复比较证据。",
+    ),
+    "tests/test_comparison_retrieval.py::test_missing_comparison_side_gets_targeted_single_replan": _description(
+        "验证本地补充后仍缺少一方时，唯一一次Replan只搜索缺失方法的原论文与架构。",
+        "代表失败恢复由明确缺口驱动，同时继续遵守最多重试一次的边界。",
+        "若失败，系统会进行泛化重试、浪费调用或无法解释停止原因。",
+    ),
+    "tests/test_claim_evidence_validator.py::test_claim_evidence_validator_reports_supported_and_partial_claims": _description(
+        "验证逐声明检查能够区分完整支持与只有部分引用匹配，并计算支持率。",
+        "代表研究报告不再只检查Evidence ID存在，还能公开每条声明的最低语义支持状态。",
+        "若失败，支持率会失真，或部分证据被错误当成完整支持。",
+    ),
+    "tests/test_claim_evidence_validator.py::test_claim_evidence_validator_blocks_insufficient_or_contradicted_claims": _description(
+        "验证无关证据和明确冲突证据分别标记为insufficient与contradicted并阻断。",
+        "代表引用存在但不支持结论时不会被Citation Validator的格式检查放行。",
+        "若失败，模型可以用真实但无关或相反的Evidence ID包装错误声明。",
+    ),
+    "tests/test_claim_evidence_validator.py::test_claim_evidence_node_exposes_metrics_without_extra_llm": _description(
+        "验证Claim验证节点把状态与支持率写入元数据且无需模型调用。",
+        "代表服务、Metrics和前端可复用同一确定性结果，不增加Token与延迟。",
+        "若失败，能力可能只存在于独立函数而未真正接入生产节点。",
+    ),
+    "tests/test_claim_evidence_validator.py::test_claim_evidence_failure_blocks_answer_without_reflection": _description(
+        "验证证据不足的声明进入最终Answer Verifier并停止，但不自动触发额外Reflection。",
+        "代表系统优先安全降级，不允许模型在没有新证据时重新措辞掩盖缺口。",
+        "若失败，unsupported声明可能被放行或产生没有收益的额外模型调用。",
+    ),
+    "tests/test_clarification.py::test_ordinal_reference_resolves_in_range_without_llm": _description(
+        "验证当前候选范围内的第二篇论文可以由序号规则直接解析且不调用模型。",
+        "代表明确指代继续走低成本路径，并把解析来源记录为ordinal_rule。",
+        "若失败，简单序号可能被误判、打断流程或产生不必要Token。",
+    ),
+    "tests/test_clarification.py::test_out_of_range_ordinal_requests_clarification_without_guessing": _description(
+        "验证第10086篇等越界序号会主动澄清并记录请求序号。",
+        "代表Candidate Validator能够阻止不存在的上下文对象进入检索。",
+        "若失败，Agent可能猜测错误论文并生成整条错误证据链。",
+    ),
+    "tests/test_clarification.py::test_descriptive_reference_uses_validated_semantic_candidate": _description(
+        "验证描述性指代仅在多候选时使用一次语义解析，并合并调用用量。",
+        "代表复杂共指可以利用主模型理解，同时候选仍受代码验证。",
+        "若失败，模糊表达无法恢复，或模型调用成本无法审计。",
+    ),
+    "tests/test_clarification.py::test_semantic_candidate_policy_rejects_unknown_or_low_confidence": _description(
+        "验证语义解析返回的未知候选或低置信度候选不能通过代码Policy。",
+        "代表LLM只有建议权，不可以创造上下文对象或绕过置信度门槛。",
+        "若失败，模型幻觉候选会污染后续查询、证据和回答。",
+    ),
+    "tests/test_research_analysis.py::test_complexity_features_explain_l1_l2_l3_policy_decisions": _description(
+        "验证research scope、比较、多目标、时间、综合和多来源特征能解释L1/L2/L3等级。",
+        "代表复杂度不再只依赖少数关键词，且评分与Policy决定可在Trace中审计。",
+        "若失败，自然语言复杂任务可能分级不稳，或系统无法解释升级成本。",
+    ),
+    "tests/test_retrieval_strategy.py::test_l2_planner_lite_splits_two_methods_then_synthesizes": _description(
+        "验证L2明确比较被拆成双方独立检索和一个依赖双方证据的综合任务。",
+        "代表普通比较获得针对性规划，同时不启用L3自由DAG或多轮研究成本。",
+        "若失败，比较仍会使用泛化查询，或综合任务可能在缺少一方证据时提前执行。",
+    ),
+    "tests/test_retrieval_strategy.py::test_l2_planner_lite_uses_bounded_schedule": _description(
+        "验证Planner Lite前两项最多并行2个，综合任务在第二波执行。",
+        "代表L2复用零LLM Scheduler并保持明确依赖与并发边界。",
+        "若失败，L2任务可能串行浪费时间或绕过依赖生成比较。",
+    ),
+    "tests/test_retrieval_strategy.py::test_retrieval_router_distinguishes_online_hybrid_and_unavailable_personal": _description(
+        "验证统一Router区分最新在线、Local+Online混合及尚未配置的个人库请求。",
+        "代表未实现的Personal Library不会伪装成功，而会记录请求范围并安全停止。",
+        "若失败，检索范围可能与用户意图不一致或隐藏能力缺口。",
+    ),
+    "tests/test_retrieval_strategy.py::test_hybrid_strategy_merges_online_and_local_evidence": _description(
+        "验证Hybrid策略将公开论文与本地全文合并为统一证据结果。",
+        "代表Private Knowledge与Public Knowledge已具备当前项目级可执行接缝。",
+        "若失败，Router可能只记录策略但没有真正调度两个已实现后端。",
+    ),
+    "tests/test_retrieval_strategy.py::test_local_scope_failure_falls_back_to_online": _description(
+        "验证本地语料不可用时按策略回退在线来源而不是中断整个研究任务。",
+        "代表来源失败恢复是显式、有限且可继续交付的。",
+        "若失败，缺少本地模型或PDF会让本可由在线来源完成的任务直接失败。",
+    ),
+    "tests/test_retrieval_strategy.py::test_unavailable_personal_scope_stops_without_public_fallback": _description(
+        "验证个人论文库未配置时直接停止，不用公开论文冒充用户收藏且不浪费一次Replan。",
+        "代表Retrieval Scope具有诚实边界，用户明确要求的私有范围不会被静默替换。",
+        "若失败，系统可能生成看似基于个人收藏、实际来自公开网络的误导性回答。",
+    ),
+    "tests/test_long_term_memory.py::test_memory_metadata_is_parsed_and_removed_from_user_answer": _description(
+        "验证主生成调用附带的Memory Metadata可被结构化解析，并从用户可见答案中移除。",
+        "代表价值判断不需要第二次LLM调用，也不会把内部控制JSON显示给用户。",
+        "若失败，内部元数据可能泄露到回答，或无法进入确定性写入Policy。",
+    ),
+    "tests/test_long_term_memory.py::test_invalid_memory_metadata_keeps_readable_answer_and_is_rejected": _description(
+        "验证模型返回损坏Metadata时仍保留正文，同时禁止长期写入。",
+        "代表结构化输出异常只降级记忆能力，不会破坏本轮回答或污染数据库。",
+        "若失败，格式错误可能导致答案丢失，或未验证数据被长期保存。",
+    ),
+    "tests/test_long_term_memory.py::test_write_gate_requires_final_verified_unchanged_answer": _description(
+        "验证只有最终验证通过且生成后未被Reflection修改的答案可以写入。",
+        "代表Answer/Citation/Claim验证与内容哈希共同构成写入前安全门。",
+        "若失败，过期Metadata可能为已经改变或验证失败的结论授权。",
+    ),
+    "tests/test_long_term_memory.py::test_memory_store_writes_merges_and_versions_related_finding": _description(
+        "验证新结论写入、完全重复合并、相关新版本更新三种生命周期动作。",
+        "代表长期记忆不会无限复制相同结论，并保留可审计版本语义。",
+        "若失败，数据库可能重复膨胀，或新结论无法替换旧版本。",
+    ),
+    "tests/test_long_term_memory.py::test_memory_store_skips_related_polarity_conflict": _description(
+        "验证与现有结论极性相反的相关内容不会静默覆盖旧记忆。",
+        "代表冲突先进入Skip与人工/后续机制处理，而不是错误自动合并。",
+        "若失败，相反研究结论可能被当作普通版本更新并丢失冲突信号。",
+    ),
+    "tests/test_llm_usage_nodes.py::test_generate_collects_memory_metadata_in_same_llm_call": _description(
+        "验证L2研究回答在主生成调用中同时返回Memory Metadata，且总调用次数仍为一次。",
+        "代表长期记忆价值建议复用现有生成Token，不新增一次分类模型请求。",
+        "若失败，系统可能增加额外LLM成本，或内部Metadata残留在用户答案。",
+    ),
+    "tests/test_long_term_memory.py::test_memory_retrieval_is_owner_isolated_and_injected_on_demand": _description(
+        "验证显式历史请求只召回当前conversation owner的相关记忆并注入Skill Context。",
+        "代表长期结论可以被后续研究复用，同时不同会话的数据保持隔离且不增加LLM调用。",
+        "若失败，Agent可能想不起已存结论，或把其他用户/会话的私有内容混入回答。",
+    ),
+    "tests/test_long_term_memory.py::test_independent_l1_query_does_not_load_memory": _description(
+        "验证无历史依赖的L1独立问题不会查询或注入长期研究记忆。",
+        "代表Memory Need Detection能够控制上下文长度，避免每轮无差别加载历史。",
+        "若失败，简单问题会承担无关上下文、延迟和潜在干扰。",
+    ),
+    "tests/test_long_term_memory.py::test_expired_snapshot_is_not_retrieved": _description(
+        "验证超过TTL的时效性Snapshot不会重新进入研究上下文。",
+        "代表最新、当前类结论不会在过期后继续冒充有效知识。",
+        "若失败，Agent可能依据过时研究快照生成误导性结论。",
+    ),
+    "tests/test_retrieval_strategy.py::test_memory_scope_is_augmented_instead_of_reported_unavailable": _description(
+        "验证基于之前结论的请求组合长期记忆与正常在线检索，而非报告Memory RAG不可用。",
+        "代表派生知识提供研究上下文，公开数据源仍负责补充和验证当前论文证据。",
+        "若失败，显式历史请求可能被错误中止，或只依赖旧记忆而不继续检索。",
+    ),
+    "tests/test_long_term_memory.py::test_conflict_is_persisted_for_owner_audit": _description(
+        "验证被Write Gate阻断的相反结论会写入独立冲突审计表并进入统计。",
+        "代表冲突信号不会随着单次请求结束而丢失，可供用户或后续治理流程检查。",
+        "若失败，系统虽然拒绝覆盖旧结论，却无法解释或追踪候选冲突。",
+    ),
+    "tests/test_long_term_memory.py::test_snapshot_cleanup_marks_expired_and_preserves_audit_record": _description(
+        "验证生命周期清理将到期Snapshot标记为expired而不是直接物理删除。",
+        "代表过期内容不会参与召回，同时仍保留基本审计记录和状态统计。",
+        "若失败，过期快照可能继续生效，或清理后完全失去可追溯性。",
+    ),
+    "tests/test_long_term_memory.py::test_memory_delete_is_scoped_to_owner_and_owner_delete_clears_conflicts": _description(
+        "验证单条删除必须匹配Owner，整段删除同时清除该Owner的记忆与冲突。",
+        "代表知道其他Owner的Memory ID也不能越权删除，并具备基础隐私清除能力。",
+        "若失败，可能发生跨会话删除或用户数据删除不完整。",
+    ),
+    "tests/test_memory_management_api.py::test_memory_management_routes_are_registered": _description(
+        "验证长期记忆查询、冲突查看、单条删除、Owner删除和过期维护路由已注册。",
+        "代表生命周期能力能够通过FastAPI服务层使用，而不只存在于SQLite内部函数。",
+        "若失败，管理能力无法从产品层访问或部署时路由缺失。",
+    ),
+    "tests/test_product_mvp.py::test_identity_register_login_and_invalid_password": _description(
+        "验证注册、PBKDF2密码校验、不透明Token签发与错误密码拒绝。",
+        "代表系统不保存明文密码，登录身份可以由服务端会话安全恢复。",
+        "若失败，账号可能无法登录，或错误凭据被错误接受。",
+    ),
+    "tests/test_product_mvp.py::test_personal_library_ingests_searches_and_isolates_users": _description(
+        "验证PDF按用户入库、分页切块、BM25搜索，并对另一用户返回空结果。",
+        "代表Personal Library既能检索真实PDF内容，也具备数据隔离边界。",
+        "若失败，个人论文无法被搜索，或不同用户的私有论文可能串库。",
+    ),
+    "tests/test_product_mvp.py::test_authenticated_personal_request_routes_to_private_library": _description(
+        "验证已登录的我的论文请求路由至Personal Library，匿名请求明确停止。",
+        "代表检索范围同时受用户意图和认证状态控制，公开来源不会冒充私人收藏。",
+        "若失败，私有请求可能被路由到错误来源或匿名读取个人库。",
+    ),
+    "tests/test_product_mvp.py::test_retrieve_node_executes_authenticated_personal_bm25": _description(
+        "验证主检索节点真实调用用户级BM25后端并返回统一论文结构。",
+        "代表Personal Library不只是管理页面，已经接入LangGraph研究执行路径。",
+        "若失败，Router虽选择个人库，但研究流程拿不到私人论文证据。",
+    ),
+    "tests/test_product_mvp.py::test_auth_and_library_api_end_to_end": _description(
+        "验证注册、登录、Bearer鉴权、原始PDF上传、论文列表及匿名拒绝的API闭环。",
+        "代表产品化MVP可以由前端或API客户端完整操作，而不是孤立的数据层。",
+        "若失败，认证Token或论文库接口之间存在断链。",
+    ),
+    "tests/test_product_mvp.py::test_authenticated_hybrid_merges_personal_and_online_evidence": _description(
+        "验证登录用户的Hybrid检索合并个人PDF Chunk与arXiv公开论文。",
+        "代表Private Knowledge和Public Knowledge已经在同一研究请求中真实执行并统一返回。",
+        "若失败，混合模式可能只显示在Router中，实际仍然只检索单一来源。",
+    ),
+    "tests/test_product_mvp.py::test_anonymous_api_rejects_private_retrieval_scope": _description(
+        "验证匿名请求不能显式选择Personal或Hybrid私人检索范围。",
+        "代表权限在LangGraph执行前由API拒绝，不会先访问私有数据再过滤。",
+        "若失败，未登录客户端可能触发个人库执行路径。",
+    ),
+    "tests/test_demo_page.py::test_demo_page_exposes_auth_library_and_retrieval_scope_controls": _description(
+        "验证网页包含注册登录、PDF论文库管理、Token请求头与四种研究范围控件。",
+        "代表后端产品能力已经可以从简历演示页面完整操作。",
+        "若失败，认证和个人库只能通过手写API调用，前端产品闭环不完整。",
+    ),
+    "tests/test_arxiv_hygiene.py::test_arxiv_withdrawn_records_are_rejected_before_ranking": _description(
+        "验证标题或摘要明确声明withdrawn的arXiv记录在进入排序前被过滤。",
+        "代表已撤稿候选不会占用Hybrid Top-K或作为研究结论证据。",
+        "若失败，已撤回论文可能被当作正常代表工作进入Evidence Store。",
+    ),
 }
 
 

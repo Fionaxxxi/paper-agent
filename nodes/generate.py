@@ -1,4 +1,5 @@
 import base64
+import hashlib
 from pathlib import Path
 
 from langchain_core.messages import HumanMessage
@@ -20,6 +21,7 @@ from document_loader.pdf_visual_evidence import (
 from research.writer import build_coverage_blocked_answer, build_writer_prompt
 from prompts.contracts import get_prompt_version, wrap_untrusted_evidence
 from skills.pdf_structured_output import parse_pdf_structured_output
+from memory.long_term_memory import memory_metadata_instruction, parse_memory_metadata
 
 
 def get_llm(model_name: str | None = None):
@@ -125,7 +127,16 @@ def build_low_quality_answer(state: AgentState) -> str:
     ]
     candidates = "\n".join(candidate_lines) or "- 暂无可用候选论文"
     replan = state.get("retrieval_replan", {})
-    reason = replan.get("reason") or "第二轮检索质量仍低于系统门槛"
+    strategy = state.get("retrieval_strategy", {})
+    scope_reasons = {
+        "personal_library_not_configured": "个人论文库尚未配置，系统没有用公开论文冒充你的收藏。",
+        "memory_rag_not_available": "长期研究记忆检索尚未启用，系统没有用在线结果冒充历史结论。",
+    }
+    reason = (
+        scope_reasons.get(strategy.get("reason", ""))
+        or replan.get("reason")
+        or "第二轮检索质量仍低于系统门槛"
+    )
 
     return f"""## 证据不足，已停止继续检索
 
@@ -205,6 +216,9 @@ def generate_node(state: AgentState) -> AgentState:
     ).get("enabled")
     if is_research_writer:
         prompt = build_writer_prompt(prompt, state)
+    memory_metadata_enabled = state.get("task_level") in {"L2", "L3"}
+    if memory_metadata_enabled:
+        prompt = f"{prompt}\n\n{memory_metadata_instruction()}"
     prompt_version = get_prompt_version(
         "research_writer" if is_research_writer else skill.name
     )
@@ -247,17 +261,28 @@ def generate_node(state: AgentState) -> AgentState:
             prompt_version=prompt_version,
         )
         usage_update = build_llm_usage_update(usage_state, usage_record)
+        raw_answer = str(response.content)
+        if memory_metadata_enabled:
+            answer_text, memory_metadata = parse_memory_metadata(raw_answer)
+        else:
+            answer_text = raw_answer
+            memory_metadata = {"status": "not_applicable", "worth_storing": False}
         answer, structured_output = parse_pdf_structured_output(
-            str(response.content),
+            answer_text,
             skill.name,
             expected_pages=state.get("pdf_selected_pages", []) or None,
             expected_evidence_mode=("ocr_visual" if vision_requested else "text_only")
             if state.get("task_type") == "pdf_reading" else None,
         )
+        if memory_metadata.get("status") == "valid":
+            memory_metadata["source_answer_hash"] = hashlib.sha256(
+                answer.strip().encode("utf-8")
+            ).hexdigest()
 
         return {
             **usage_update,
             "answer": answer,
+            "memory_metadata": memory_metadata,
             "pdf_vision_status": "used" if vision_requested else state.get("pdf_vision_status", "not_requested"),
             "paper_metadata": {
                 **skill_state.get("paper_metadata", {}),

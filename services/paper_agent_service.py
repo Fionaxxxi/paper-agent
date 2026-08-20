@@ -13,6 +13,8 @@ from memory.conversation_memory import (
 )
 from memory.llm_wiki import publish_agent_result
 from memory.graph_checkpointer import get_default_graph_checkpointer
+from memory.graph_checkpointer import delete_thread_checkpoints
+from memory.long_term_memory import LongTermMemoryStore
 from document_loader.pdf_loader import load_pdf_pages, load_pdf_text
 from core.config import settings
 
@@ -40,8 +42,10 @@ class PaperAgentService:
             self,
             query: str,
             conversation_id: str | None = None,
+            user_id: str | None = None,
             pdf_path: str | None = None,
             pdf_pages: list[int] | None = None,
+            retrieval_scope: str = "auto",
     ) -> Dict[str, Any]:
         trace_id = generate_trace_id()
         start_time = time.perf_counter()
@@ -99,6 +103,7 @@ class PaperAgentService:
         initial_state = {
             "trace_id": trace_id,
             "conversation_id": conversation_id,
+            "user_id": user_id or "",
             "history": history,
             "history_text": history_text,
 
@@ -108,6 +113,9 @@ class PaperAgentService:
             "retrieval_score": 0.0,
             "retrieval_outcome": "",
             "retrieval_stop_reason": "",
+            "retrieval_evaluation": {},
+            "retrieval_strategy": {},
+            "retrieval_scope": retrieval_scope,
             "answer": "",
             "pdf_path": pdf_path or "",
             "pdf_text": pdf_text,
@@ -162,12 +170,19 @@ class PaperAgentService:
             "repository_enrichment": {},
             "research_coverage": {},
             "citation_validation": {},
+            "claim_evidence_validation": {},
             "citation_repair": {},
             "pdf_grounding_validation": {},
             "multi_agent_trace": {},
+            "memory_metadata": {},
+            "memory_write_gate": {},
+            "memory_retrieval": {},
+            "retrieved_memories": [],
+            "long_term_memory_context": "",
             "node_timings": {},
             "paper_metadata": {
                 "conversation_id": conversation_id,
+                "user_id": user_id or "",
                 "history_count": len(history),
                 "memory_total_message_count": memory_context.total_message_count,
                 "memory_compressed_message_count": memory_context.compressed_message_count,
@@ -236,6 +251,7 @@ class PaperAgentService:
             "paper_metadata": {
                 **result.get("paper_metadata", {}),
                 "conversation_id": conversation_id,
+                "user_id": user_id or "",
                 "history_count": len(history),
                 "memory_total_message_count": memory_context.total_message_count,
                 "memory_compressed_message_count": memory_context.compressed_message_count,
@@ -260,9 +276,13 @@ class PaperAgentService:
                 "repository_enrichment": result.get("repository_enrichment", {}),
                 "research_coverage": result.get("research_coverage", {}),
                 "citation_validation": result.get("citation_validation", {}),
+                "claim_evidence_validation": result.get("claim_evidence_validation", {}),
                 "citation_repair": result.get("citation_repair", {}),
                 "pdf_grounding_validation": result.get("pdf_grounding_validation", {}),
                 "multi_agent_trace": result.get("multi_agent_trace", {}),
+                "memory_metadata": result.get("memory_metadata", {}),
+                "memory_write_gate": result.get("memory_write_gate", {}),
+                "memory_retrieval": result.get("memory_retrieval", {}),
                 "pdf_path": pdf_path,
                 "pdf_page_count": result.get("pdf_page_count", pdf_page_count),
                 "pdf_error": result.get("pdf_error", pdf_error),
@@ -314,6 +334,32 @@ class PaperAgentService:
             )
 
         return formatted_papers
+
+    def list_long_term_memories(self, owner_id: str, *, include_inactive: bool = False) -> Dict[str, Any]:
+        store = LongTermMemoryStore(settings.LONG_TERM_MEMORY_DB_PATH)
+        store.expire_snapshots()
+        return {
+            "owner_id": owner_id,
+            "memories": store.list_memories(owner_id, include_inactive=include_inactive),
+            "statistics": store.statistics(owner_id),
+        }
+
+    def list_memory_conflicts(self, owner_id: str) -> Dict[str, Any]:
+        store = LongTermMemoryStore(settings.LONG_TERM_MEMORY_DB_PATH)
+        return {"owner_id": owner_id, "conflicts": store.list_conflicts(owner_id)}
+
+    def delete_long_term_memory(self, owner_id: str, memory_id: str) -> bool:
+        return LongTermMemoryStore(settings.LONG_TERM_MEMORY_DB_PATH).delete_memory(owner_id, memory_id)
+
+    def delete_owner_memory(self, owner_id: str) -> Dict[str, int]:
+        """隐私删除：同时清除会话、派生长期记忆和当前进程的工作流检查点。"""
+        get_memory_store().delete_conversation(owner_id)
+        long_term_count = LongTermMemoryStore(settings.LONG_TERM_MEMORY_DB_PATH).delete_owner(owner_id)
+        checkpoint_count = delete_thread_checkpoints(owner_id)
+        return {"long_term_deleted": long_term_count, "checkpoint_rows_deleted": checkpoint_count}
+
+    def expire_long_term_snapshots(self) -> int:
+        return LongTermMemoryStore(settings.LONG_TERM_MEMORY_DB_PATH).expire_snapshots()
 
 
 paper_agent_service = PaperAgentService()

@@ -17,13 +17,17 @@ from nodes.answer_reflect import answer_reflect_node
 from nodes.research_analyze import research_analyze_node
 from nodes.clarification import clarification_node
 from nodes.research_schedule import research_schedule_node
+from nodes.retrieval_route import retrieval_route_node
 from nodes.evidence_store import evidence_store_node
 from nodes.repository_enrich import repository_enrich_node
 from nodes.research_coverage import research_coverage_node
 from nodes.research_citation_validate import research_citation_validate_node
 from nodes.research_citation_repair import research_citation_repair_node
+from nodes.claim_evidence_validate import claim_evidence_validate_node
 from nodes.pdf_grounding_validate import pdf_grounding_validate_node
 from nodes.multi_agent_finalize import multi_agent_finalize_node
+from nodes.memory_write_gate import memory_write_gate_node
+from nodes.memory_retrieve import memory_retrieve_node
 
 from utils.timer import timed_node
 
@@ -67,6 +71,10 @@ def build_graph(checkpointer=None):
     workflow.add_node(
         "query_rewrite",
         timed_node("query_rewrite", query_rewrite_node),
+    )
+    workflow.add_node(
+        "memory_retrieve",
+        timed_node("memory_retrieve", memory_retrieve_node),
     )
     workflow.add_node(
         "research_analyze",
@@ -115,8 +123,16 @@ def build_graph(checkpointer=None):
         timed_node("pdf_grounding_validate", pdf_grounding_validate_node),
     )
     workflow.add_node(
+        "claim_evidence_validate",
+        timed_node("claim_evidence_validate", claim_evidence_validate_node),
+    )
+    workflow.add_node(
         "multi_agent_finalize",
         timed_node("multi_agent_finalize", multi_agent_finalize_node),
+    )
+    workflow.add_node(
+        "memory_write_gate",
+        timed_node("memory_write_gate", memory_write_gate_node),
     )
 
     workflow.add_node(
@@ -138,6 +154,10 @@ def build_graph(checkpointer=None):
         timed_node("research_schedule", research_schedule_node),
     )
     workflow.add_node(
+        "retrieval_route",
+        timed_node("retrieval_route", retrieval_route_node),
+    )
+    workflow.add_node(
         "evidence_store",
         timed_node("evidence_store", evidence_store_node),
     )
@@ -154,7 +174,8 @@ def build_graph(checkpointer=None):
         route_after_clarification,
         {"analyze": "research_analyze", "end": END},
     )
-    workflow.add_edge("research_analyze", "query_rewrite")
+    workflow.add_edge("research_analyze", "memory_retrieve")
+    workflow.add_edge("memory_retrieve", "query_rewrite")
     workflow.add_node(
         "answer_verify",
         timed_node("answer_verify", answer_verify_node),
@@ -173,7 +194,8 @@ def build_graph(checkpointer=None):
     )
 
     workflow.add_edge("query_plan", "research_schedule")
-    workflow.add_edge("research_schedule", "retrieve")
+    workflow.add_edge("research_schedule", "retrieval_route")
+    workflow.add_edge("retrieval_route", "retrieve")
     workflow.add_edge("retrieve", "repository_enrich")
     workflow.add_edge("repository_enrich", "evidence_store")
     workflow.add_edge("evidence_store", "research_coverage")
@@ -192,17 +214,19 @@ def build_graph(checkpointer=None):
     workflow.add_edge("reason", "generate")
     workflow.add_edge("generate", "research_citation_validate")
     workflow.add_edge("research_citation_validate", "research_citation_repair")
-    workflow.add_edge("research_citation_repair", "pdf_grounding_validate")
+    workflow.add_edge("research_citation_repair", "claim_evidence_validate")
+    workflow.add_edge("claim_evidence_validate", "pdf_grounding_validate")
     workflow.add_edge("pdf_grounding_validate", "answer_verify")
     workflow.add_conditional_edges(
         "answer_verify",
         route_after_answer_verify,
         {
             "reflect": "answer_reflect",
-            "finish": "multi_agent_finalize",
+            "finish": "memory_write_gate",
         },
     )
     workflow.add_edge("answer_reflect", "pdf_grounding_validate")
+    workflow.add_edge("memory_write_gate", "multi_agent_finalize")
     workflow.add_edge("multi_agent_finalize", "metrics")
     workflow.add_edge("metrics", END)
 

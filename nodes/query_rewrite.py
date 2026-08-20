@@ -1,4 +1,5 @@
 from agent.state import AgentState
+from retrieval.comparison import comparison_targets
 
 
 def query_rewrite_node(state: AgentState) -> AgentState:
@@ -9,16 +10,27 @@ def query_rewrite_node(state: AgentState) -> AgentState:
     original_query = state.get("query", "")
     query = original_query.lower()
 
-    if "rag" in query or "检索增强" in query:
-        rewritten_query = (
-            "retrieval augmented generation RAG large language models "
-            "recent research directions"
-        )
+    targets = comparison_targets(original_query, state.get("task_type", ""))
 
+    if targets == ["GraphRAG", "LightRAG"]:
+        rewritten_query = (
+            "GraphRAG LightRAG core architecture design comparison "
+            "entity graph community summaries dual-level retrieval incremental update"
+        )
     elif "graphrag" in query or "graph rag" in query:
         rewritten_query = (
             "GraphRAG graph retrieval augmented generation "
-            "large language models"
+            "entity graph community summaries global search"
+        )
+    elif "lightrag" in query or "light rag" in query:
+        rewritten_query = (
+            "LightRAG simple fast retrieval augmented generation "
+            "dual-level retrieval graph vector incremental update"
+        )
+    elif "rag" in query or "检索增强" in query:
+        rewritten_query = (
+            "retrieval augmented generation RAG large language models "
+            "recent research directions"
         )
 
     elif "agent" in query or "智能体" in query:
@@ -54,5 +66,6 @@ def query_rewrite_node(state: AgentState) -> AgentState:
             **state.get("paper_metadata", {}),
             "original_query": original_query,
             "rewritten_query": rewritten_query,
+            "query_entities": targets,
         },
     }

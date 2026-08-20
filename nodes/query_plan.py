@@ -195,7 +195,7 @@ def query_plan_node(state: AgentState) -> AgentState:
 
     research_plan = state.get("research_plan", {})
     if (
-        state.get("task_level") == "L3"
+        state.get("task_level") in {"L2", "L3"}
         and state.get("research_plan_validation", {}).get("valid")
         and research_plan.get("tasks")
     ):
@@ -209,7 +209,7 @@ def query_plan_node(state: AgentState) -> AgentState:
         return {
             "sub_queries": sub_queries,
             "query_plan_enabled": True,
-            "query_plan_reason": "structured_research_plan",
+            "query_plan_reason": "planner_lite" if state.get("task_level") == "L2" else "structured_research_plan",
             "query_complexity": "complex",
             "complexity_reason": "L3 validated research plan",
             "paper_metadata": {
@@ -218,7 +218,7 @@ def query_plan_node(state: AgentState) -> AgentState:
                 "sub_query_count": len(sub_queries),
                 "planned_query_count": len(sub_queries),
                 "query_plan_enabled": True,
-                "query_plan_reason": "structured_research_plan",
+                "query_plan_reason": "planner_lite" if state.get("task_level") == "L2" else "structured_research_plan",
                 "query_complexity": "complex",
                 "complexity_reason": "L3 validated research plan",
             },

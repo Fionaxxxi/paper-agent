@@ -53,11 +53,15 @@ def build_skill_context(state: Dict[str, Any]) -> Dict[str, Any]:
     query = get_state_value(state, "query", "")
     rewritten_query = get_state_value(state, "rewritten_query", "")
     history_text = get_state_value(state, "history_text", "")
+    long_term_memory_context = get_state_value(state, "long_term_memory_context", "")
     documents = get_state_value(state, "documents", [])
     pdf_text = get_state_value(state, "pdf_text", "")
 
     if not policy.get("use_history", True):
         history_text = ""
+        long_term_memory_context = ""
+    elif long_term_memory_context:
+        history_text = f"{history_text}\n\n【按需召回的长期研究记忆】\n{long_term_memory_context}".strip()
 
     if policy.get("use_documents", True):
         documents_text = format_documents_for_prompt(
@@ -88,6 +92,7 @@ def build_skill_context(state: Dict[str, Any]) -> Dict[str, Any]:
         "rewritten_query": rewritten_query,
         "task_type": task_type,
         "history_text": history_text,
+        "long_term_memory_context": long_term_memory_context,
         "documents_text": documents_text,
         "pdf_text": pdf_text,
         "metadata": metadata,
