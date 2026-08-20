@@ -60,6 +60,25 @@ def build_pdf_multimodal_input(prompt: str, image_paths: list[str]):
 PDF_OCR_PROMPT = """请解析这些论文页面：提取标题、分节、正文、表格、公式、图注和可识别的布局关系。保持原文事实，不做研究结论扩写；无法识别处明确标记。"""
 
 
+def build_pdf_visual_prompt(query: str, skill_name: str, selected_pages: list[int]) -> str:
+    """让视觉模型围绕当前研究问题解析页面，而不是只做无差别文字转录。"""
+    pages = "、".join(f"第 {page} 页" for page in selected_pages) or "指定页面"
+    focus = {
+        "figure_understanding": "重点读取模块、箭头、分组、输入输出、图例和空间关系。",
+        "table_analysis": "重点保持表头、行列对应、指标、单位、加粗值和脚注，不得错列数值。",
+        "chart_analysis": "重点读取图表类型、坐标轴、图例、系列、趋势、拐点、误差带和可辨认刻度。",
+        "formula_explanation": "重点保持公式、上下标、符号定义及其附近解释，不得按常见记号猜测。",
+    }.get(skill_name, "重点保留与用户问题直接相关的页面内容和版面关系。")
+    return f"""{PDF_OCR_PROMPT}
+
+用户问题：{query}
+页面范围：{pages}
+视觉任务：{skill_name}
+{focus}
+
+按页输出；明确区分直接可见内容、依据附近文字得到的解释和无法确认的信息。"""
+
+
 def build_pdf_ocr_degraded_answer(ocr_text: str, error_message: str) -> str:
     return f"""## PDF 页面 OCR 已完成，研究综合暂不可用
 
@@ -228,7 +247,10 @@ def generate_node(state: AgentState) -> AgentState:
     visual_evidence = {}
     try:
         if vision_requested:
-            ocr_input = build_pdf_multimodal_input(PDF_OCR_PROMPT, state.get("pdf_page_images", []))
+            visual_prompt = build_pdf_visual_prompt(
+                state.get("query", ""), skill.name, state.get("pdf_selected_pages", [])
+            )
+            ocr_input = build_pdf_multimodal_input(visual_prompt, state.get("pdf_page_images", []))
             ocr_llm = get_llm(settings.PDF_VISION_MODEL_NAME)
             ocr_response, ocr_usage = invoke_llm_with_usage(
                 llm=ocr_llm, prompt=ocr_input, node_name="pdf_ocr",
@@ -240,6 +262,8 @@ def generate_node(state: AgentState) -> AgentState:
                 pdf_path=state.get("pdf_path", ""),
                 selected_pages=state.get("pdf_selected_pages", []),
                 model_name=settings.PDF_VISION_MODEL_NAME,
+                task=skill.name,
+                page_selection=state.get("pdf_page_selection", {}),
             )
             ocr_text = visual_evidence["text"]
             ocr_evidence = wrap_untrusted_evidence(

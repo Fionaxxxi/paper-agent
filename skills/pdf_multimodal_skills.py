@@ -66,6 +66,29 @@ class TableAnalysisSkill(PDFReadingSkill):
         )
 
 
+class ChartAnalysisSkill(PDFReadingSkill):
+    name = "chart_analysis"
+    description = "论文曲线图、柱状图、散点图与热力图分析 Skill"
+
+    def build_prompt(self, state: AgentState) -> str:
+        return super().build_prompt(state) + _grounding_instruction(state) + """
+
+当前子任务是分析论文数据图表。请优先说明：
+1. 图表类型、横纵轴名称、单位和数值方向；
+2. 各曲线、柱、点集或色块代表的实验对象；
+3. 可直接观察到的上升、下降、拐点、饱和、异常和组间差异；
+4. 趋势与图注、附近正文是否一致；
+5. 误差带、图例、刻度或颜色无法辨认时明确标记。
+
+不得根据模糊像素编造精确数值；没有清晰刻度时只描述可验证趋势。颜色、线型和位置只有在视觉证据模式下才能作为依据。
+""" + _structured_instruction(
+            '{"chart_type":"line或bar或scatter或heatmap或area或box或other或unknown",'
+            '"x_axis":"...","y_axis":"...","series":[{"name":"...","trend":"rising或falling或flat或mixed或unknown"}],'
+            '"observations":["..."],'
+            f'"evidence_scope":{{"pages":{_schema_pages(state)},"evidence_mode":"text_only或ocr_visual","uncertainties":[]}}}}'
+        )
+
+
 class FormulaExplanationSkill(PDFReadingSkill):
     name = "formula_explanation"
     description = "论文公式、损失函数与符号解释 Skill"

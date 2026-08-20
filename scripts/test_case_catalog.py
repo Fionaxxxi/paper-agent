@@ -1739,6 +1739,11 @@ TEST_CASE_CATALOG: dict[str, CaseDescription] = {
         "指定页模式不会扫描或发送整篇PDF，页面图像可供后续视觉模型使用。",
         "若失败，系统可能分析错误页面、扩大上下文或无法生成视觉输入。",
     ),
+    "tests/test_pdf_page_analysis.py::test_visual_page_selector_ranks_relevant_pages_without_llm": _description(
+        "验证图表类问题无需用户手填页码即可按查询词、图注和页面标记选出最多3个关键页，普通总结不触发自动视觉选页。",
+        "代表关键页发现为零LLM本地步骤，图表问题优先命中相关页且普通PDF快速路径不增加图片成本。",
+        "若失败，系统可能看错图表页、扫描后仍无依据，或把所有PDF请求都升级为视觉调用。",
+    ),
     "tests/test_pdf_page_analysis.py::test_selected_pdf_pages_reject_invalid_range_and_page_budget": _description(
         "验证超出文档范围的页码和超过3页的请求在模型调用前被拒绝。",
         "页面范围与成本预算得到确定性约束。",
@@ -1770,7 +1775,7 @@ TEST_CASE_CATALOG: dict[str, CaseDescription] = {
         "若失败，主模型可能收到难以使用的原始JSON，或响应元数据泄露本地目录结构。",
     ),
     "tests/test_pdf_page_analysis.py::test_pdf_subskill_router_uses_explicit_intent_without_llm": _description(
-        "验证PDF问题根据明确的图、表、公式关键词路由到对应子Skill，普通总结保持通用阅读。",
+        "验证PDF问题根据明确的架构图、数据表、曲线图和公式关键词路由到对应子Skill，普通总结保持通用阅读。",
         "代表系统无需额外LLM调用即可选择更有针对性的分析规则，并保留低成本快速路径。",
         "若失败，公式、表格或架构图问题可能使用通用Prompt，或者普通请求被不必要地复杂化。",
     ),
@@ -1795,8 +1800,8 @@ TEST_CASE_CATALOG: dict[str, CaseDescription] = {
         "若失败，普通回答可能被要求提供并不存在的视觉证据说明。",
     ),
     "tests/test_pdf_page_analysis.py::test_pdf_structured_contracts_reject_missing_scope_and_invalid_metric_direction": _description(
-        "验证PDF结构化契约拒绝缺少证据范围和非法指标方向的结果。",
-        "代表图表公式的机器可读结果必须包含可追溯页码，并使用受控枚举表达指标含义。",
+        "验证PDF结构化契约拒绝缺少证据范围、非法指标方向和非法曲线趋势，并接受合法坐标轴与系列。",
+        "代表图、表、曲线和公式的机器可读结果必须包含可追溯页码，并使用受控枚举表达指标与趋势。",
         "若失败，不完整或含任意字段值的JSON可能被误当成可靠结构化结果。",
     ),
     "tests/test_pdf_page_analysis.py::test_pdf_structured_parser_returns_clean_answer_and_validated_data": _description(
@@ -1808,6 +1813,11 @@ TEST_CASE_CATALOG: dict[str, CaseDescription] = {
         "验证模型漏写JSON时记录invalid但保留正常中文回答，通用PDF阅读保持不适用。",
         "代表当前不支持原生结构化输出的主模型偶发格式失败不会中断用户任务。",
         "若失败，一次格式错误可能导致完整回答丢失，或普通PDF请求被错误标记失败。",
+    ),
+    "tests/test_pdf_page_analysis.py::test_chart_structured_parser_preserves_axes_series_and_visual_scope": _description(
+        "验证曲线图回答中的坐标轴、系列、趋势和视觉证据页经过Pydantic校验后保存在结构化元数据中。",
+        "代表Chart Skill既返回正常中文解释，也能为后续跨论文图表比较提供稳定机器接口。",
+        "若失败，图表结论可能丢失坐标轴或系列关系，或无法证明来自指定视觉页面。",
     ),
     "tests/test_pdf_page_analysis.py::test_pdf_structured_output_runs_through_generate_node": _description(
         "验证表格专项请求从OCR、主模型双通道输出到Pydantic校验完整贯通。",

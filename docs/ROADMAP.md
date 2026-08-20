@@ -52,7 +52,7 @@ LangGraph Graph Engineering（显式状态、条件路由、恢复边和有限�
 | 4 | 科研型 Skill + 结构化输出 | 优先实现 `LiteratureReviewSkill` 与 `PaperCritiqueSkill`；实验建议并入批判分析，报告排版并入综述输出 | 用少量高价值 Skill 覆盖真实科研任务 |
 | 5 | 轻量深度研究模式（Citation Validator v1 已完成） | 已增加 L0～L3 分级、Research Analyzer、Plan Validator、有界调度、Evidence Store、覆盖门控、受约束报告生成和逐引用确定性校验；下一步复测真实Writer并决定受限修复策略 | 把前述能力组合成可交付带引用研究报告的差异化闭环 |
 | 6 | 外部 MCP | 先接只读 Zotero，再接只读 GitHub；分别服务个人文献库和论文代码仓库 | 证明 MCP 的跨应用复用价值 |
-| 7 | 单页多模态 PDF | 用户指定代表性页面，渲染后交给视觉模型分析图、表或公式，并保留页码依据 | 以可控成本展示真正的多模态能力 |
+| 7 | 关键页多模态 PDF（v2 已完成） | 显式页码优先；图、表、曲线或公式意图可零 LLM 自动选择最多3页，使用查询感知视觉解析、专项 Skill、结构化契约与 Grounding | 以可控成本展示真正的论文视觉理解能力 |
 | 8 | 工程化交付 | 完善 Web 轨迹展示、Docker、基础 CI、中文使用说明和一组端到端演示案例；最终结论已按 Markdown 语义渲染为普通 AI 阅读样式 | 让项目可运行、可展示、可复现 |
 | 9 | 研究报告导出（v1 已完成） | 基于同一份已验证答案和论文证据生成 `.docx` 与 `.pdf`；已提供网页下载入口、中文排版、运行摘要、来源与生成时间，导出过程不再次调用 LLM | 把聊天结论升级为可提交、可分享的正式研究产物 |
 
@@ -308,7 +308,7 @@ Register / Login
 
 ### Phase F：多模态与轻量 Benchmark
 
-现有指定页多模态 v1 已覆盖 Text、OCR、Figure、Table、Formula 和 Structured Evidence。后续只有真实案例证明必要时才扩展 Page Analyzer，不默认扫描整篇 PDF。
+关键页多模态 v2 已覆盖 Text、Figure、Table、Chart、Formula 和 Structured Evidence：新增本地图注/查询词 Page Selector，未指定页码的视觉问题可自动选择关键页；新增 Chart Skill 读取坐标轴、系列、趋势与误差带；视觉模型按当前问题和 Skill 解析页面，主模型再结合页面文本综合。普通总结仍不扫描整篇图像，选页上限固定为3，最多扫描120页文本；后续只在真实案例需要时增加跨页图表关联与跨论文 Visual Evidence 比较。
 
 Benchmark 按能力风险分层维护，而不是一次性建设大型研究平台：
 

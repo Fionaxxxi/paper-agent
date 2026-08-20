@@ -17,6 +17,7 @@ PROMPT_VERSIONS = {
     "pdf_reading": "pdf_reading_v2_security",
     "figure_understanding": "figure_understanding_v2_structured",
     "table_analysis": "table_analysis_v2_structured",
+    "chart_analysis": "chart_analysis_v1_structured",
     "formula_explanation": "formula_explanation_v2_structured",
     "research_writer": "research_writer_v2_security",
     "answer_reflect": "answer_reflection_v2_security",

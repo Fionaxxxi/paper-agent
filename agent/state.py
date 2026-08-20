@@ -76,6 +76,7 @@ class AgentState(TypedDict, total=False):
     pdf_selected_pages: List[int]
     pdf_page_images: List[str]
     pdf_vision_status: str
+    pdf_page_selection: Dict[str, Any]
     pdf_grounding_validation: Dict[str, Any]
     multi_agent_trace: Dict[str, Any]
     memory_metadata: Dict[str, Any]

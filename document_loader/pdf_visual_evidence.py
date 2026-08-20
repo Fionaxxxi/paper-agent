@@ -48,6 +48,8 @@ def build_visual_evidence(
     pdf_path: str,
     selected_pages: list[int],
     model_name: str,
+    task: str = "pdf_reading",
+    page_selection: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """生成不含本地绝对路径的、可审计的页面 OCR 证据摘要。"""
     normalized = normalize_ocr_text(raw_output)
@@ -63,6 +65,9 @@ def build_visual_evidence(
         "source_file": Path(pdf_path).name,
         "pages": list(selected_pages),
         "model": model_name,
+        "analysis_mode": "query_aware_page_vision_v2",
+        "task": task,
+        "page_selection": page_selection or {"enabled": False, "reason": "manual_pages"},
         "content_types": content_types,
         "character_count": len(normalized),
         "text": normalized,
@@ -77,5 +82,6 @@ def format_visual_evidence_for_prompt(evidence: dict[str, Any]) -> str:
         f"来源页码：{pages}\n"
         f"识别内容类型：{types}\n"
         f"OCR 模型：{evidence.get('model', '')}\n\n"
+        f"视觉任务：{evidence.get('task', 'pdf_reading')}\n"
         f"{evidence.get('text', '')}"
     )

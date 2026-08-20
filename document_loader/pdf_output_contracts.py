@@ -42,6 +42,20 @@ class TableAnalysisOutput(StrictPDFContract):
     evidence_scope: PDFEvidenceScope
 
 
+class ChartSeries(StrictPDFContract):
+    name: str = Field(min_length=1)
+    trend: Literal["rising", "falling", "flat", "mixed", "unknown"] = "unknown"
+
+
+class ChartAnalysisOutput(StrictPDFContract):
+    chart_type: Literal["line", "bar", "scatter", "heatmap", "area", "box", "other", "unknown"]
+    x_axis: str = Field(min_length=1)
+    y_axis: str = Field(min_length=1)
+    series: list[ChartSeries] = Field(default_factory=list, max_length=12)
+    observations: list[str] = Field(default_factory=list, max_length=12)
+    evidence_scope: PDFEvidenceScope
+
+
 class FormulaSymbol(StrictPDFContract):
     symbol: str = Field(min_length=1)
     meaning: str = Field(min_length=1)

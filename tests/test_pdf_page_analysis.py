@@ -6,11 +6,12 @@ from pydantic import ValidationError
 
 from app.schemas import ChatRequest
 from document_loader.pdf_loader import load_pdf_pages
+from document_loader.pdf_page_selector import select_visual_pages
 from document_loader.pdf_visual_evidence import build_visual_evidence, normalize_ocr_text
-from document_loader.pdf_output_contracts import FigureUnderstandingOutput, TableAnalysisOutput
+from document_loader.pdf_output_contracts import ChartAnalysisOutput, FigureUnderstandingOutput, TableAnalysisOutput
 from eval_harness import pdf_vision_smoke
 from nodes import generate as generate_module
-from skills.pdf_multimodal_skills import FigureUnderstandingSkill, FormulaExplanationSkill, TableAnalysisSkill
+from skills.pdf_multimodal_skills import ChartAnalysisSkill, FigureUnderstandingSkill, FormulaExplanationSkill, TableAnalysisSkill
 from skills.pdf_reading_skill import PDFReadingSkill
 from skills.router import get_skill
 from skills.pdf_structured_output import parse_pdf_structured_output
@@ -25,6 +26,36 @@ def _make_pdf(path):
         page.insert_text((72, 72), f"Representative content on page {number}")
     document.save(path)
     document.close()
+
+
+def _make_visual_pdf(path):
+    document = pymupdf.open()
+    contents = (
+        "Introduction and related work",
+        "Figure 1 Architecture pipeline with retriever and generator",
+        "Table 1 Benchmark accuracy and ablation results",
+        "Figure 3 Accuracy curve chart. x-axis epochs, y-axis accuracy. Rising trend and error band.",
+    )
+    for content in contents:
+        page = document.new_page()
+        page.insert_text((72, 72), content)
+    document.save(path)
+    document.close()
+
+
+def test_visual_page_selector_ranks_relevant_pages_without_llm(tmp_path):
+    pdf_path = tmp_path / "visual-paper.pdf"
+    _make_visual_pdf(pdf_path)
+
+    result = select_visual_pages(str(pdf_path), "分析 accuracy curve 的趋势和误差带", max_pages=2)
+    generic = select_visual_pages(str(pdf_path), "总结这篇论文", max_pages=2)
+
+    assert result["enabled"] is True and result["intent"] == "chart"
+    assert result["selected_pages"][0] == 4
+    assert len(result["selected_pages"]) <= 2
+    assert result["reason"] == "caption_and_query_rank"
+    assert result["scanned_page_count"] == 4 and result["scan_truncated"] is False
+    assert generic["enabled"] is False and generic["selected_pages"] == []
 
 
 def test_selected_pdf_pages_extract_only_requested_text_and_render_png(tmp_path):
@@ -101,8 +132,11 @@ def test_pdf_vision_uses_separate_model_only_after_explicit_enable(monkeypatch, 
     assert result["paper_metadata"]["pdf_synthesis_model"] == "qwen3.7-max-2026-05-17"
     assert result["paper_metadata"]["pdf_visual_evidence"] == {
         "source_file": "paper.pdf", "pages": [1], "model": "qwen3.5-ocr",
+        "analysis_mode": "query_aware_page_vision_v2", "task": "chart_analysis",
+        "page_selection": {"enabled": False, "reason": "manual_pages"},
         "content_types": ["text"], "character_count": 7, "text": "OCR页面文字",
     }
+    assert "用户问题：分析第 1 页图表" in captured["prompts"][0][0].content[0]["text"]
     assert result["llm_call_count"] == 2
     assert result["token_usage"] == 65
 
@@ -174,6 +208,7 @@ def test_pdf_visual_evidence_normalizes_json_and_hides_absolute_path():
     ("query", "expected_skill"),
     [
         ("解释第3页的模型架构图", FigureUnderstandingSkill),
+        ("分析准确率曲线的趋势和误差带", ChartAnalysisSkill),
         ("比较表格中的实验结果和消融指标", TableAnalysisSkill),
         ("解释这个损失函数中每个符号", FormulaExplanationSkill),
         ("总结这一页的主要内容", PDFReadingSkill),
@@ -194,12 +229,14 @@ def test_pdf_subskills_keep_grounding_and_uncertainty_rules():
     }
     figure_prompt = FigureUnderstandingSkill().build_prompt(state)
     table_prompt = TableAnalysisSkill().build_prompt(state)
+    chart_prompt = ChartAnalysisSkill().build_prompt(state)
     formula_prompt = FormulaExplanationSkill().build_prompt(state)
 
     assert "只依据图注和提取文本" in figure_prompt
     assert "不得猜测或补齐" in table_prompt and "比较对象和数值" in table_prompt
+    assert "不得根据模糊像素编造精确数值" in chart_prompt and "误差带" in chart_prompt
     assert "不凭常见记号猜测" in formula_prompt
-    assert all("<UNTRUSTED_EVIDENCE" in prompt for prompt in (figure_prompt, table_prompt, formula_prompt))
+    assert all("<UNTRUSTED_EVIDENCE" in prompt for prompt in (figure_prompt, table_prompt, chart_prompt, formula_prompt))
 
 
 def test_pdf_grounding_validator_passes_traceable_visual_answer():
@@ -251,6 +288,19 @@ def test_pdf_structured_contracts_reject_missing_scope_and_invalid_metric_direct
             "metrics": [{"name": "Accuracy", "direction": "bigger_is_better"}],
             "evidence_scope": {"pages": [3], "evidence_mode": "ocr_visual"},
         })
+    chart = ChartAnalysisOutput.model_validate({
+        "chart_type": "line", "x_axis": "Epoch", "y_axis": "Accuracy",
+        "series": [{"name": "PaperAgent", "trend": "rising"}],
+        "observations": ["前期提升后趋于稳定"],
+        "evidence_scope": {"pages": [4], "evidence_mode": "ocr_visual"},
+    })
+    assert chart.series[0].trend == "rising"
+    with pytest.raises(ValidationError):
+        ChartAnalysisOutput.model_validate({
+            "chart_type": "line", "x_axis": "Epoch", "y_axis": "Accuracy",
+            "series": [{"name": "PaperAgent", "trend": "dramatic_improvement"}],
+            "evidence_scope": {"pages": [4], "evidence_mode": "ocr_visual"},
+        })
     with pytest.raises(ValidationError):
         FigureUnderstandingOutput.model_validate({
             "summary": "流程", "components": ["Retriever"],
@@ -295,6 +345,22 @@ def test_pdf_structured_parser_falls_back_without_losing_readable_answer():
     assert result["status"] == "invalid" and result["error"] == "missing_json_block"
     assert generic == "普通回答"
     assert generic_result["status"] == "not_applicable"
+
+
+def test_chart_structured_parser_preserves_axes_series_and_visual_scope():
+    answer = "证据范围：第 4 页；证据模式：OCR/视觉证据与提取文本。曲线前期上升，后期趋稳。\n```json\n" \
+        '{"chart_type":"line","x_axis":"Epoch","y_axis":"Accuracy",' \
+        '"series":[{"name":"PaperAgent","trend":"rising"}],"observations":["后期趋稳"],' \
+        '"evidence_scope":{"pages":[4],"evidence_mode":"ocr_visual","uncertainties":[]}}\n```'
+
+    readable, result = parse_pdf_structured_output(
+        answer, "chart_analysis", expected_pages=[4], expected_evidence_mode="ocr_visual"
+    )
+
+    assert "曲线前期上升" in readable and "```json" not in readable
+    assert result["valid"] is True
+    assert result["data"]["x_axis"] == "Epoch"
+    assert result["data"]["series"][0]["trend"] == "rising"
 
 
 def test_pdf_structured_output_runs_through_generate_node(monkeypatch, tmp_path):

@@ -7,6 +7,7 @@ from skills.citation_skill import CitationSkill
 from skills.qa_skill import QASkill
 from skills.pdf_reading_skill import PDFReadingSkill
 from skills.pdf_multimodal_skills import (
+    ChartAnalysisSkill,
     FigureUnderstandingSkill,
     FormulaExplanationSkill,
     TableAnalysisSkill,
@@ -23,7 +24,8 @@ RESEARCH_SKILLS = {
 
 PDF_SKILL_RULES = (
     (FormulaExplanationSkill, ("公式", "方程", "损失函数", "目标函数", "符号", "变量", "equation", "formula", "loss function")),
-    (TableAnalysisSkill, ("表格", "图表", "实验结果", "指标", "消融", "数值", "table", "ablation", "benchmark result")),
+    (ChartAnalysisSkill, ("图表", "曲线", "折线", "柱状", "散点", "热力图", "趋势", "坐标轴", "误差带", "plot", "chart", "curve", "axis", "trend")),
+    (TableAnalysisSkill, ("表格", "实验结果", "指标", "消融", "数值", "table", "ablation", "benchmark result")),
     (FigureUnderstandingSkill, ("架构图", "流程图", "示意图", "模型图", "图中", "figure", "diagram", "pipeline")),
 )
 

@@ -5,6 +5,7 @@ from typing import Any
 from pydantic import BaseModel, ValidationError
 
 from document_loader.pdf_output_contracts import (
+    ChartAnalysisOutput,
     FigureUnderstandingOutput,
     FormulaExplanationOutput,
     TableAnalysisOutput,
@@ -12,6 +13,7 @@ from document_loader.pdf_output_contracts import (
 
 
 CONTRACTS: dict[str, type[BaseModel]] = {
+    "chart_analysis": ChartAnalysisOutput,
     "figure_understanding": FigureUnderstandingOutput,
     "table_analysis": TableAnalysisOutput,
     "formula_explanation": FormulaExplanationOutput,

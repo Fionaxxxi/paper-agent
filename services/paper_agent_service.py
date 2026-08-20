@@ -16,6 +16,7 @@ from memory.graph_checkpointer import get_default_graph_checkpointer
 from memory.graph_checkpointer import delete_thread_checkpoints
 from memory.long_term_memory import LongTermMemoryStore
 from document_loader.pdf_loader import load_pdf_pages, load_pdf_text
+from document_loader.pdf_page_selector import select_visual_pages
 from core.config import settings
 
 
@@ -75,8 +76,14 @@ class PaperAgentService:
         pdf_selected_pages = list(pdf_pages or [])
         pdf_page_images: list[str] = []
         pdf_vision_status = "not_requested"
+        pdf_page_selection = {"enabled": False, "selected_pages": [], "reason": "not_requested"}
 
         if pdf_path:
+            if not pdf_selected_pages:
+                pdf_page_selection = select_visual_pages(
+                    pdf_path, query, max_pages=settings.PDF_MAX_SELECTED_PAGES
+                )
+                pdf_selected_pages = pdf_page_selection.get("selected_pages", [])
             pdf_result = (
                 load_pdf_pages(
                     pdf_path=pdf_path,
@@ -124,6 +131,7 @@ class PaperAgentService:
             "pdf_selected_pages": pdf_selected_pages,
             "pdf_page_images": pdf_page_images,
             "pdf_vision_status": pdf_vision_status,
+            "pdf_page_selection": pdf_page_selection,
 
             "retry_count": 0,
             "retry_query": "",
@@ -195,6 +203,7 @@ class PaperAgentService:
                 "pdf_error": pdf_error,
                 "pdf_selected_pages": pdf_selected_pages,
                 "pdf_vision_status": pdf_vision_status,
+                "pdf_page_selection": pdf_page_selection,
             },
         }
 
@@ -288,6 +297,7 @@ class PaperAgentService:
                 "pdf_error": result.get("pdf_error", pdf_error),
                 "pdf_selected_pages": result.get("pdf_selected_pages", pdf_selected_pages),
                 "pdf_vision_status": result.get("pdf_vision_status", pdf_vision_status),
+                "pdf_page_selection": result.get("pdf_page_selection", pdf_page_selection),
                 "llm_call_count": result.get("llm_call_count", 0),
                 "llm_failed_call_count": result.get("llm_failed_call_count", 0),
                 "input_token_usage": result.get("input_token_usage", 0),

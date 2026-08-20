@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Tuple
 PDF_SPECIALIST_SKILLS = {
     "figure_understanding",
     "table_analysis",
+    "chart_analysis",
     "formula_explanation",
 }
 UNCERTAINTY_MARKERS = ("无法识别", "无法辨认", "不清晰", "不确定", "未定义", "unclear", "unknown")

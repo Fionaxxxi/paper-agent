@@ -13,7 +13,7 @@ PaperAgent 是一个面向科研论文场景的 Agent 项目。它不只是调�
 - **查询规划与受控重试**：复杂问题可拆分为多个子查询；低质量结果最多执行一次有依据的 Replan，避免无限 Agent Loop。
 - **统一工具层**：在线检索经过 Tool Router、Registry、Policy 和 Executor，统一处理参数、超时、重试与错误结构。
 - **多论文源检索**：支持 arXiv、OpenAlex，以及可选的多源合并、去重、元数据校验和重排。
-- **本地全文 RAG**：支持 PDF 解析、Chunk、BM25、Dense Retrieval、向量缓存和置信度门控 Hybrid。
+- **本地全文 RAG + PDF 视觉理解**：支持 PDF 解析、Chunk、BM25、Dense Retrieval、向量缓存和置信度门控 Hybrid；图、表、曲线和公式问题可自动选择关键页并进入受限视觉分析。
 - **比较证据门控**：GraphRAG/LightRAG 等明确比较会保留双方实体；在线结果缺边时定向补充本地全文，双方证据齐全后才进入生成。
 - **逐声明证据验证**：L3 报告在引用格式检查后，将带 Evidence ID 的声明标记为 supported、partial、contradicted 或 insufficient，并公开支持率。
 - **分层意图理解**：明确指代由规则零成本解析，越界序号主动澄清，描述性指代才使用一次受候选与置信度 Policy 约束的语义解析；任务等级由六维复杂度特征与结构化分析共同决定。
@@ -174,7 +174,7 @@ $body = @{
 Invoke-RestMethod -Method Post -Uri http://127.0.0.1:8000/chat -ContentType "application/json" -Body $body
 ```
 
-展示重点：PDF 任务绕过在线检索，直接进入论文阅读 Skill。`pdf_pages` 使用从 1 开始的页码，一次最多 3 页；系统只提取指定页文本，并用 PyMuPDF 将这些页面渲染到 `data/cache/pdf_pages/`，不会扫描整篇图像。
+展示重点：PDF 任务绕过在线检索，直接进入论文阅读 Skill。`pdf_pages` 使用从 1 开始的页码，一次最多 3 页；显式页码优先。若没有填写页码但问题明确提到架构图、实验表、曲线/柱状/散点/热力图或公式，系统会在本地读取图注和页面文本，零 LLM 打分选出最多 3 个关键页，再用 PyMuPDF 渲染到 `data/cache/pdf_pages/`。普通总结不自动渲染图片。
 
 默认 `PDF_VISION_ENABLED=false`，此时模型只依据指定页文本回答，`pdf_vision_status` 会标记为 `rendered_text_only`。确认视觉模型可用后，可在 `.env` 开启：
 
@@ -185,7 +185,7 @@ PDF_VISION_MODEL_NAME=qwen3.5-ocr
 
 默认选择 `qwen3.5-ocr`：它面向文档解析、文字识别、文字定位与关键信息提取，输入为图像、输出为文本；它不是任意场景的通用视觉推理模型。开启后，只有用户通过 `pdf_pages` 明确指定的页面 PNG 会发送给 OCR 模型；OCR 的 JSON 或纯文本输出先归一化为结构化视觉证据，记录文件名、页码、内容类型、字符数和模型，但不记录本地绝对路径。该证据按不可信外部材料处理，再由主模型结合 pypdf 文本生成最终研究回答。因此页面 OCR 模式会产生两次模型调用。状态变为 `used` 后，回答才能使用页面 OCR/布局信息；若综合模型失败则进入 `ocr_only_degraded` 并保留已提取内容。页码越多会增加图像 Token 和延迟，因此仍保留最多 3 页的硬限制。具体价格、地域与免费额度以百炼控制台为准。
 
-PDF 阅读会按用户的明确表达进行零 LLM 子路由：公式、损失函数和符号问题进入 `FormulaExplanationSkill`；实验表格、指标和消融问题进入 `TableAnalysisSkill`；架构图、流程图和示意图问题进入 `FigureUnderstandingSkill`；其余请求继续使用 `PDFReadingSkill`。专项 Skill 不增加调用次数，只改变主模型的证据检查与回答结构；视觉未启用时仍只能依据图注和提取文本。
+PDF 阅读会按用户的明确表达进行零 LLM 子路由：公式、损失函数和符号问题进入 `FormulaExplanationSkill`；实验表格、指标和消融问题进入 `TableAnalysisSkill`；曲线、柱状图、散点图、热力图、坐标轴与误差带进入 `ChartAnalysisSkill`；架构图、流程图和示意图进入 `FigureUnderstandingSkill`；其余请求继续使用 `PDFReadingSkill`。视觉模型的提示词会结合用户问题、页码和当前 Skill，提取模块关系、表格行列、曲线趋势或公式符号，再由主模型结合页面文本综合；不是只做无差别文字 OCR。
 
 专项 PDF 回答生成后还会经过零 LLM 的 `PDF Grounding Validator`：检查是否写明全部重点页码、是否披露使用了 OCR/视觉证据或仅提取文本，以及 OCR 存在识别不确定性时是否保留限制。结果通过 `paper_metadata.pdf_grounding_validation` 和网页执行轨迹公开；验证失败会影响最终 Answer Verification，但不会自动触发 Reflection，避免为了格式披露增加模型调用。
 

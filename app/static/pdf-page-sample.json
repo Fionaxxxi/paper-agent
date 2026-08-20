@@ -23,10 +23,14 @@
       "source_file": "2404.16130_graph_rag.pdf",
       "pages": [3],
       "model": "qwen3.5-ocr",
+      "analysis_mode": "query_aware_page_vision_v2",
+      "task": "figure_understanding",
+      "page_selection": {"enabled": true, "intent": "figure", "selected_pages": [3], "reason": "caption_and_query_rank"},
       "content_types": ["text", "figure"],
       "character_count": 1217,
       "text": "GraphRAG 索引流程页面的 OCR 摘要"
     },
+    "pdf_page_selection": {"enabled": true, "intent": "figure", "selected_pages": [3], "reason": "caption_and_query_rank"},
     "pdf_grounding_validation": {
       "enabled": true,
       "status": "passed",
