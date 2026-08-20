@@ -24,6 +24,7 @@ PaperAgent 是一个面向科研论文场景的 Agent 项目。它不只是调�
 - **账号与个人论文库 MVP**：注册/登录使用 PBKDF2 密码哈希和服务端不透明 Bearer Token；用户可上传 PDF、查看或删除个人论文，并通过 Owner-scoped BM25 在 LangGraph 中只检索自己的全文 Chunk。
 - **私人 + 公开混合研究**：登录用户可显式选择 Personal、Online 或 Hybrid；Hybrid 以两个受控并行分支检索个人 PDF 与 arXiv，统一合并、去重后进入 Evidence Store。网页已提供登录、上传、论文管理和范围选择。
 - **真实 Hybrid 冒烟**：已用 ReAct PDF + arXiv + 当前主模型跑通一次完整在线链路；结果、Token、延迟和发现的问题记录在 `docs/HYBRID_SMOKE_REPORT.md`，脚本默认拒绝未确认的在线调用。
+- **Word/PDF 正式报告**：网页结论可一键导出为中文 Word 或 PDF；报告复用已生成答案和论文证据，不再次调用 LLM，并附带检索范围、质量校验、Trace ID、来源与页码。
 - **可审计检索路由**：本地 RAG 会记录 Dense Top-1、分数间隔，以及最终选择 Dense 或 Hybrid 的原因。
 - **多 Skill 回答**：根据任务选择问答、总结、比较、引用、研究方向或 PDF 阅读 Skill。
 - **有界轻量 Multi-Agent**：仅 L3 将现有研究节点组织为 Planner、Executor、Reviewer 三段交接，额外 LLM 调用为 0，审查循环上限为 1。

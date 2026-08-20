@@ -5,7 +5,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.schemas import ChatRequest, ChatResponse, HealthResponse, LoginRequest, RegisterRequest
+from app.schemas import ChatRequest, ChatResponse, HealthResponse, LoginRequest, RegisterRequest, ReportExportRequest
 from core.config import settings
 from core.logger import logger
 from core.trace import generate_trace_id
@@ -13,6 +13,7 @@ from errors.base import InvalidQueryError, PaperAgentError
 from errors.error_codes import ErrorCode
 from services.paper_agent_service import paper_agent_service
 from product.runtime import identity_store, personal_library_store
+from reports.exporter import export_docx, export_pdf
 
 
 app = FastAPI(
@@ -107,6 +108,18 @@ def delete_library_document(document_id: str, user=Depends(current_user)):
     if not personal_library_store().delete_document(user["user_id"], document_id):
         raise HTTPException(status_code=404, detail="论文不存在或不属于当前用户")
     return {"success": True, "deleted": True, "document_id": document_id}
+
+
+@app.post("/reports/export/{report_format}")
+def export_research_report(report_format: str, request: ReportExportRequest, user=Depends(optional_user)):
+    if report_format not in {"docx", "pdf"}:
+        raise HTTPException(status_code=400, detail="报告格式只支持 docx 或 pdf")
+    owner = user["user_id"] if user else "anonymous"
+    output_dir = Path(settings.REPORT_OUTPUT_DIR) / owner
+    payload = request.model_dump()
+    path = export_docx(payload, output_dir) if report_format == "docx" else export_pdf(payload, output_dir)
+    media_type = "application/vnd.openxmlformats-officedocument.wordprocessingml.document" if report_format == "docx" else "application/pdf"
+    return FileResponse(path, media_type=media_type, filename=path.name)
 
 
 @app.post("/memory/maintenance/expire")

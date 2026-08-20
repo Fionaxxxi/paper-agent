@@ -91,6 +91,7 @@ class Settings(BaseSettings):
     PERSONAL_LIBRARY_FILES_DIR: str = "data/personal_libraries"
     PERSONAL_LIBRARY_MAX_PDF_MB: int = 25
     AUTH_TOKEN_TTL_HOURS: int = 24
+    REPORT_OUTPUT_DIR: str = "outputs/research_reports"
     PRODUCT_DB_PATH: str = "data/product/paper_agent_product.db"
     PERSONAL_LIBRARY_FILES_DIR: str = "data/personal_libraries"
     PERSONAL_LIBRARY_MAX_PDF_MB: int = 25

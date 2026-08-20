@@ -42,6 +42,16 @@ class LoginRequest(BaseModel):
     password: str
 
 
+class ReportExportRequest(BaseModel):
+    title: str = Field(default="PaperAgent 研究报告", max_length=120)
+    query: str = Field(default="", max_length=4000)
+    answer: str = Field(min_length=1, max_length=100000)
+    task_type: str = Field(default="research", max_length=80)
+    papers: List[Dict[str, Any]] = Field(default_factory=list, max_length=50)
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+    trace_id: str = Field(default="", max_length=120)
+
+
 class PaperInfo(BaseModel):
     title: Optional[str] = None
     authors: List[str] = []

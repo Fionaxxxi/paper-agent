@@ -24,6 +24,26 @@ def _description(
 
 
 TEST_CASE_CATALOG: dict[str, CaseDescription] = {
+    "tests/test_report_export.py::test_docx_report_contains_readable_sections_and_evidence": _description(
+        "验证 Word 报告把研究问题、Markdown 结论、六项运行摘要和论文证据写成可阅读结构。",
+        "通过代表 DOCX 不是空壳文件，核心章节和摘要表均可被 Word 解析。",
+        "失败通常表示 Markdown 转换、报告章节或 Word 表格生成发生回归。",
+    ),
+    "tests/test_report_export.py::test_pdf_report_is_reopenable_and_multipage": _description(
+        "验证 PDF 报告能够被标准 PDF 解析器重新打开，并包含结论页与证据页。",
+        "通过代表 PDF 文件结构完整、不是损坏或零字节下载。",
+        "失败通常表示中文字体、ReportLab 排版或文件写入异常。",
+    ),
+    "tests/test_report_export.py::test_report_export_api_returns_downloadable_docx_and_pdf": _description(
+        "验证 FastAPI 可以返回 Word/PDF 两种下载文件及正确的 Content-Type。",
+        "通过代表前端下载按钮调用的真实接口契约可用。",
+        "失败通常表示接口路由、导出目录、响应类型或导出器集成错误。",
+    ),
+    "tests/test_report_export.py::test_report_export_uses_unique_names_and_rejects_unknown_format": _description(
+        "验证连续导出不会覆盖旧报告，并拒绝未支持的 txt 等格式。",
+        "通过代表连续下载有独立文件名，格式白名单约束有效。",
+        "失败通常表示文件命名冲突或导出接口输入约束失效。",
+    ),
     "tests/test_research_analysis.py::test_rule_analyzer_separates_simple_comparison_and_deep_research": _description(
         "验证固定标注示例能分别识别 L1 简单检索、L2 比较和 L3 深度研究。",
         "典型复杂研究请求获得 Literature Review、评价维度和 L3 路由候选。",
