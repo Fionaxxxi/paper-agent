@@ -13,11 +13,12 @@ def main() -> int:
     parser.add_argument("report", type=Path)
     parser.add_argument("--output-dir", type=Path, default=Path("outputs/evolution/real_analyzer_ab"))
     parser.add_argument("--registry", type=Path, default=Path("outputs/evolution/strategy_versions.json"))
+    parser.add_argument("--candidate-variant", default="few_shot")
     args = parser.parse_args()
     source = json.loads(args.report.resolve().read_text(encoding="utf-8"))
     if source.get("mode") != "online_ab":
         raise ValueError("只接受真实 online_ab 报告，不能使用 offline_contract")
-    baseline, candidate = analyzer_ab_scorecards(source)
+    baseline, candidate = analyzer_ab_scorecards(source, args.candidate_variant)
     output_dir = args.output_dir.resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
     failures_path = output_dir / "real_baseline_failures.json"

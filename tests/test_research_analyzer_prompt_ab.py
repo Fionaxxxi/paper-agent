@@ -25,9 +25,19 @@ def test_zero_shot_prompt_has_no_examples_and_unknown_variant_is_rejected():
     try:
         build_analyzer_prompt("测试", "unknown")
     except ValueError as error:
-        assert "zero_shot 或 few_shot" in str(error)
+        assert "zero_shot、schema_guard 或 few_shot" in str(error)
     else:
         raise AssertionError("未知 Prompt variant 必须被拒绝")
+
+
+def test_schema_guard_is_minimal_and_only_adds_json_type_constraints():
+    zero = build_analyzer_prompt("测试", "zero_shot")
+    guarded = build_analyzer_prompt("测试", "schema_guard")
+    few = build_analyzer_prompt("测试", "few_shot")
+    assert "source_requirements" in guarded
+    assert "必须是 JSON 数组" in guarded
+    assert "示例1" not in guarded
+    assert len(zero) < len(guarded) < len(few)
 
 
 def test_analyzer_prompt_ab_dataset_is_frozen_and_has_six_l3_boundaries():

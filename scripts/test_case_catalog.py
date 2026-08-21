@@ -2099,6 +2099,11 @@ TEST_CASE_CATALOG: dict[str, CaseDescription] = {
         "代表Promotion Gate使用真实在线输出，而不是演示或手工伪造的汇总分。",
         "若失败，真实回归或成本增幅可能在转换Scorecard时被丢失。",
     ),
+    "tests/test_research_analyzer_prompt_ab.py::test_schema_guard_is_minimal_and_only_adds_json_type_constraints": _description(
+        "验证Schema Guard候选只补充JSON数组类型约束，不携带完整Few-shot示例且长度介于两者之间。",
+        "代表候选针对真实解析失败做最小修改，降低语义漂移和Token膨胀风险。",
+        "若失败，所谓最小候选可能仍然包含大段示例或没有修复字段类型问题。",
+    ),
 }
 
 

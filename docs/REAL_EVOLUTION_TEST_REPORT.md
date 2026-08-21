@@ -83,6 +83,8 @@ auto_applied = false
 
 本轮按用户要求完成真实测试后停止，不自动继续生成并付费测试第二个候选。
 
+后续经用户要求已继续测试第二个最小候选 Schema Guard。它将解析率提升到 100% 且无逐题回归，但能力通过率没有提升、Token 增加 11.98%，仍被 Gate 拒绝。详见 [Schema Guard 真实进化测试](SCHEMA_GUARD_EVOLUTION_REPORT.md)。
+
 ## 7. 产物
 
 - `outputs/research_analyzer_prompt_ab/latest_analyzer_prompt_ab_online.json`

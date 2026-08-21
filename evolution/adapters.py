@@ -13,10 +13,12 @@ def _p95(values: list[float]) -> float:
     return round(ordered[max(0, math.ceil(0.95 * len(ordered)) - 1)], 4)
 
 
-def analyzer_ab_scorecards(report: dict[str, Any]) -> tuple[Scorecard, Scorecard]:
+def analyzer_ab_scorecards(
+    report: dict[str, Any], candidate_variant: str = "few_shot"
+) -> tuple[Scorecard, Scorecard]:
     variants = {item["variant"]: item for item in report.get("variants", [])}
-    if set(variants) != {"zero_shot", "few_shot"}:
-        raise ValueError("analyzer A/B report must contain zero_shot and few_shot")
+    if "zero_shot" not in variants or candidate_variant not in variants:
+        raise ValueError(f"analyzer A/B report must contain zero_shot and {candidate_variant}")
 
     def convert(name: str, version: str) -> Scorecard:
         variant = variants[name]
@@ -40,7 +42,7 @@ def analyzer_ab_scorecards(report: dict[str, Any]) -> tuple[Scorecard, Scorecard
     dataset_version = report.get("dataset_version", "unknown")
     return (
         convert("zero_shot", f"research-analyzer-zero-shot-{dataset_version}"),
-        convert("few_shot", f"research-analyzer-few-shot-{dataset_version}"),
+        convert(candidate_variant, f"research-analyzer-{candidate_variant}-{dataset_version}"),
     )
 
 

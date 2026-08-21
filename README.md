@@ -155,6 +155,8 @@ powershell -ExecutionPolicy Bypass -File .\scripts\run_evolution_cycle.ps1
 
 首次真实在线进化测试已完成：Research Analyzer few-shot 虽将 6 题通过率从 16.67% 提升至 66.67%，但出现 1 个原通过 Case 回归且平均 Token 增加 28.92%，因此严格 Gate 拒绝晋升并继续保留 zero-shot。详见 [真实进化测试报告](docs/REAL_EVOLUTION_TEST_REPORT.md)。
 
+第二个最小 Schema Guard 候选将结构化解析率提升至 100% 且没有逐题回归，但能力通过率没有提升、Token 增加 11.98%，同样被拒绝。详见 [Schema Guard 真实测试报告](docs/SCHEMA_GUARD_EVOLUTION_REPORT.md)。
+
 Compose 将 `./data` 和 `./logs` 挂载到容器，因此论文、索引和日志不会随容器删除。SQLite 记忆单独保存在名为 `paper-agent-memory` 的 Docker volume 中，避免 Windows bind mount 与 SQLite WAL 的兼容问题；宿主机原有记忆文件不会被容器改写。若只演示冻结的零 API 轨迹，`.env` 可以保留占位 Key；点击“运行 Agent”前必须配置真实模型凭据。
 
 ## 四个代表性演示

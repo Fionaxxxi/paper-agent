@@ -8,6 +8,7 @@ PROMPT_VERSIONS = {
     "evaluate": "evaluate_v1",
     "research_analyze": "research_analyzer_v1_zero_shot",
     "research_analyze_few_shot": "research_analyzer_v2_few_shot",
+    "research_analyze_schema_guard": "research_analyzer_v3_schema_guard",
     "qa": "qa_v2_security",
     "paper_summary": "paper_summary_v2_security",
     "paper_compare": "paper_compare_v2_security",

@@ -177,8 +177,14 @@ primary_skill 只能是 qa、paper_compare、research_direction、literature_rev
     if variant == "zero_shot":
         return f"""{instruction}
 用户请求：{query}"""
+    if variant == "schema_guard":
+        return f"""{instruction}
+严格类型约束：objectives、evaluation_dimensions、source_requirements、secondary_skills 必须是 JSON 数组；
+即使只有一个值也必须写成 ["value"]，没有值写成 []，绝不能把这些字段输出为字符串。
+布尔字段必须是 true 或 false，confidence 必须是 0 到 1 的数字。
+用户请求：{query}"""
     if variant != "few_shot":
-        raise ValueError("Research Analyzer Prompt variant 必须是 zero_shot 或 few_shot")
+        raise ValueError("Research Analyzer Prompt variant 必须是 zero_shot、schema_guard 或 few_shot")
     examples = """
 示例1
 用户请求：检索有关 RAG 的代表论文
@@ -209,7 +215,9 @@ def analyze_with_llm(query, variant: str | None = None):
     variant = variant or settings.RESEARCH_ANALYZER_PROMPT_VARIANT
     prompt = build_analyzer_prompt(query, variant)
     prompt_version_name = (
-        "research_analyze_few_shot" if variant == "few_shot" else "research_analyze"
+        "research_analyze_few_shot" if variant == "few_shot"
+        else "research_analyze_schema_guard" if variant == "schema_guard"
+        else "research_analyze"
     )
     response, usage = invoke_llm_with_usage(
         llm, prompt, "research_analyze", settings.MODEL_NAME,
