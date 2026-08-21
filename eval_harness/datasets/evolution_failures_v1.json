@@ -1,0 +1,26 @@
+{
+  "dataset_version": "evolution-failures-v1",
+  "cases": [
+    {
+      "case_id": "research-compare-01",
+      "query": "比较 GraphRAG 和 LightRAG 的核心设计",
+      "passed": false,
+      "failure_types": ["source_coverage_missing", "uncited_synthesis_claim"],
+      "checks": {"coverage": false, "citation": false}
+    },
+    {
+      "case_id": "pdf-figure-02",
+      "query": "解释第 4 页架构图",
+      "passed": false,
+      "failure_types": ["pdf_grounding_uncertainty_disclosed"],
+      "checks": {"grounding": false}
+    },
+    {
+      "case_id": "followup-03",
+      "query": "比较第二篇和刚才那个方法",
+      "passed": false,
+      "failure_types": ["clarification_low_confidence"],
+      "checks": {"clarification": false}
+    }
+  ]
+}

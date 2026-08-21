@@ -4,7 +4,7 @@
 
 PaperAgent 是一个面向科研论文场景的 Agent 项目。它不只是调用一次大模型，而是使用 LangGraph 编排意图识别、查询规划、多源检索、质量判断、受控重试、Skill 选择、答案生成和运行指标记录。
 
-完整的当前能力、系统架构、演示流程、测试数据和简历讲解建议见 [项目交付与演示手册](docs/PROJECT_DELIVERY.md)。
+完整的当前能力、系统架构、演示流程、测试数据和简历讲解建议见 [项目交付与演示手册](docs/PROJECT_DELIVERY.md)。如需按照一次请求的真实执行顺序理解每个模块，请阅读 [架构模块逐流程详解](docs/ARCHITECTURE_MODULE_GUIDE.md)；准备面试时可直接使用 [PaperAgent 项目面试题完整回答](docs/PROJECT_INTERVIEW_QA.md)。
 
 ## 界面预览
 
@@ -46,6 +46,7 @@ PaperAgent 是一个面向科研论文场景的 Agent 项目。它不只是调�
 - **可审计检索路由**：本地 RAG 会记录 Dense Top-1、分数间隔，以及最终选择 Dense 或 Hybrid 的原因。
 - **多 Skill 回答**：根据任务选择问答、总结、比较、引用、研究方向或 PDF 阅读 Skill。
 - **有界轻量 Multi-Agent**：仅 L3 将现有研究节点组织为 Planner、Executor、Reviewer 三段交接，额外 LLM 调用为 0，审查循环上限为 1。
+- **受控策略进化**：从 Eval/Trace 提取结构化 Badcase，按 Allowlist 生成 Prompt、Policy、Routing 或 RAG 候选；Promotion Gate 同时检查逐题回归、质量、安全、Token 和 P95 延迟，候选只进入人工审批，不自动改代码或上线。
 - **记忆与可观测性**：按 `conversation_id` 将最近会话保存在本地文件，并返回节点耗时、工具记录与 Token 用量。
 
 ## 当前架构
@@ -143,6 +144,14 @@ docker compose ps
 ```powershell
 docker compose down
 ```
+
+### 4. 运行受控策略进化演示
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\run_evolution_cycle.ps1
+```
+
+该命令完全离线，输出 Badcase、候选策略和晋升门控 JSON/CSV；内置分数仅用于演示 Gate，真实晋升必须使用同一冻结集的新旧评测结果。详见 [受控策略进化 v1](docs/CONTROLLED_EVOLUTION.md)。
 
 Compose 将 `./data` 和 `./logs` 挂载到容器，因此论文、索引和日志不会随容器删除。SQLite 记忆单独保存在名为 `paper-agent-memory` 的 Docker volume 中，避免 Windows bind mount 与 SQLite WAL 的兼容问题；宿主机原有记忆文件不会被容器改写。若只演示冻结的零 API 轨迹，`.env` 可以保留占位 Key；点击“运行 Agent”前必须配置真实模型凭据。
 

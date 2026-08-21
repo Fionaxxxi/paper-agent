@@ -2054,6 +2054,46 @@ TEST_CASE_CATALOG: dict[str, CaseDescription] = {
         "代表已撤稿候选不会占用Hybrid Top-K或作为研究结论证据。",
         "若失败，已撤回论文可能被当作正常代表工作进入Evidence Store。",
     ),
+    "tests/test_controlled_evolution.py::test_failure_dataset_classifies_and_deduplicates_failed_cases": _description(
+        "验证评测失败记录可以按失败类型归因到责任模块，并对重复失败去重。",
+        "代表Evolution Harness能够从已有评测报告形成可审计Badcase数据集。",
+        "若失败，同一问题可能重复影响候选生成，或无法定位应优化的模块。",
+    ),
+    "tests/test_controlled_evolution.py::test_candidate_generator_only_emits_allowlisted_non_applying_changes": _description(
+        "验证候选生成器只输出允许的Prompt、Policy、Routing或Retrieval候选，且永不自动应用。",
+        "代表自进化只能提出受限策略建议，不能修改代码、权限或部署。",
+        "若失败，候选可能越过人工审批直接改变系统行为。",
+    ),
+    "tests/test_controlled_evolution.py::test_promotion_gate_accepts_quality_gain_without_regression": _description(
+        "验证质量提升、逐题无回归且成本在预算内时进入人工审批候选状态。",
+        "代表Promotion Gate能够识别值得审阅的有效策略版本。",
+        "若失败，真正改善的候选会被错误拒绝，或门控规则无法正确计算。",
+    ),
+    "tests/test_controlled_evolution.py::test_promotion_gate_rejects_case_regression_even_when_average_improves": _description(
+        "验证平均通过率提高时，只要已有通过Case退化仍必须拒绝晋升。",
+        "代表系统不会用总体平均分掩盖局部负优化。",
+        "若失败，Prompt修复一类问题时可能破坏原本稳定的能力。",
+    ),
+    "tests/test_controlled_evolution.py::test_promotion_gate_rejects_cost_or_latency_budget_overrun": _description(
+        "验证Token或P95延迟超过预算的候选不能晋升。",
+        "代表自进化同时受质量、成本和性能三类约束。",
+        "若失败，微小质量提升可能换来不可接受的成本或响应延迟。",
+    ),
+    "tests/test_controlled_evolution.py::test_promotion_gate_rejects_mismatched_case_set": _description(
+        "验证基线与候选未使用同一组Case时拒绝比较。",
+        "代表候选不能通过删掉困难样本伪造性能提升。",
+        "若失败，不同测试集的分数可能被错误当作可比结果。",
+    ),
+    "tests/test_controlled_evolution.py::test_registry_is_append_only_and_never_changes_active_version": _description(
+        "验证策略版本注册表只追加候选、拒绝重复版本且不会自动切换active_version。",
+        "代表版本记录可审计，并保留明确回滚基线。",
+        "若失败，候选可能覆盖历史版本或未经批准成为当前策略。",
+    ),
+    "tests/test_controlled_evolution.py::test_evolution_cycle_is_repeatable_and_does_not_auto_promote": _description(
+        "验证一键进化流程可重复执行，重复版本只记录已存在且仍不自动晋升。",
+        "代表演示和CI重复运行不会破坏Registry或改变生产策略。",
+        "若失败，第二次运行可能报错，或重复执行产生隐式策略切换。",
+    ),
 }
 
 

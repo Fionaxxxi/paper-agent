@@ -1,5 +1,7 @@
 # PaperAgent 面试与演示指南
 
+本文件用于三分钟快速讲解；逐题技术回答见 [PaperAgent 项目面试题完整回答](PROJECT_INTERVIEW_QA.md)。
+
 更新日期：2026-08-21
 
 ## 1. 简历项目描述
@@ -11,6 +13,7 @@ PaperAgent｜基于 LangGraph 的证据驱动科研 Research Agent
 - 实现 Personal/Online/Hybrid 三类检索范围，以及 BM25、Dense、RRF 和置信度门控 Local RAG；支持个人论文库的用户级数据隔离。
 - 建立 Evidence Store 与 Coverage、Citation、Claim、Grounding、Answer Verification 质量闸门，并通过有限 Replan/Reflection 做失败恢复，避免无界 Agent Loop。
 - 支持 PDF 自动关键页选择与图、表、曲线、公式视觉理解，研究结论可导出中文 Word/PDF；提供 FastAPI Web 演示台、Docker、CI 和 422 项离线回归测试。
+- 构建受控策略进化 Harness，将失败 Trace 转成 Badcase 与受限策略候选，通过质量、安全、成本、延迟和逐题无回归门控后只进入人工审批，禁止自动改代码或上线。
 
 ## 2. 三分钟讲解稿
 

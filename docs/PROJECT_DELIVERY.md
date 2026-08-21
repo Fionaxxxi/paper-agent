@@ -40,8 +40,11 @@ PaperAgent 是一个基于 LangGraph 的研究型论文 Agent：它把用户问�
 | PDF 视觉理解 | 已完成 v2 | 自动关键页、Figure/Table/`ChartAnalysisSkill`/Formula、真实在线测试 |
 | 报告导出 | 已完成 v1 | 中文 Word/PDF 下载，不额外调用 LLM |
 | Web、Docker、CI | 已完成基础版 | 演示页、容器、健康检查、GitHub Actions |
+| 受控策略进化 | 已完成 v1 | Failure Dataset、候选生成、Promotion Gate、Version Registry；只进入人工审批 |
 
 ## 3. 完整系统架构
+
+下面是架构总览；每个节点的输入、判断逻辑、输出、失败恢复和典型请求路径，详见 [架构模块逐流程详解](ARCHITECTURE_MODULE_GUIDE.md)。
 
 ```text
 用户
