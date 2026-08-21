@@ -153,6 +153,8 @@ powershell -ExecutionPolicy Bypass -File .\scripts\run_evolution_cycle.ps1
 
 该命令完全离线，输出 Badcase、候选策略和晋升门控 JSON/CSV；内置分数仅用于演示 Gate，真实晋升必须使用同一冻结集的新旧评测结果。详见 [受控策略进化 v1](docs/CONTROLLED_EVOLUTION.md)。
 
+首次真实在线进化测试已完成：Research Analyzer few-shot 虽将 6 题通过率从 16.67% 提升至 66.67%，但出现 1 个原通过 Case 回归且平均 Token 增加 28.92%，因此严格 Gate 拒绝晋升并继续保留 zero-shot。详见 [真实进化测试报告](docs/REAL_EVOLUTION_TEST_REPORT.md)。
+
 Compose 将 `./data` 和 `./logs` 挂载到容器，因此论文、索引和日志不会随容器删除。SQLite 记忆单独保存在名为 `paper-agent-memory` 的 Docker volume 中，避免 Windows bind mount 与 SQLite WAL 的兼容问题；宿主机原有记忆文件不会被容器改写。若只演示冻结的零 API 轨迹，`.env` 可以保留占位 Key；点击“运行 Agent”前必须配置真实模型凭据。
 
 ## 四个代表性演示

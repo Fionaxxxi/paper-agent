@@ -2094,6 +2094,11 @@ TEST_CASE_CATALOG: dict[str, CaseDescription] = {
         "代表演示和CI重复运行不会破坏Registry或改变生产策略。",
         "若失败，第二次运行可能报错，或重复执行产生隐式策略切换。",
     ),
+    "tests/test_controlled_evolution.py::test_analyzer_ab_adapter_preserves_per_case_regression_and_real_costs": _description(
+        "验证真实Analyzer A/B适配器保留逐题结果、平均Token、P95延迟和基线失败记录。",
+        "代表Promotion Gate使用真实在线输出，而不是演示或手工伪造的汇总分。",
+        "若失败，真实回归或成本增幅可能在转换Scorecard时被丢失。",
+    ),
 }
 
 

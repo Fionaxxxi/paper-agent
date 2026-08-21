@@ -7,6 +7,8 @@ from evolution.models import FailureDataset, StrategyCandidate
 
 
 ALLOWED_PROPOSALS = {
+    "research_analyzer": ("few_shot", {"research_analyzer_prompt_candidate": "few_shot_v1"}, "使用冻结集验证 Research Analyzer Few-shot 候选"),
+    "research_analyzer": ("few_shot", {"research_analyzer_prompt_candidate": "few_shot_v1"}, "使用冻结集验证 Research Analyzer Few-shot 候选"),
     "intent_router": ("routing", {"intent_router_candidate": "add_regression_guard"}, "补充失败意图的确定性回归守卫"),
     "clarification": ("few_shot", {"clarification_prompt_candidate": "candidate_examples_v1"}, "为低置信度描述性指代增加候选内示例"),
     "query_planning": ("prompt", {"research_analyzer_prompt_candidate": "few_shot_v1"}, "为计划失败类型生成受限 Prompt 候选"),

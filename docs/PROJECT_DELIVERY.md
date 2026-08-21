@@ -42,6 +42,8 @@ PaperAgent 是一个基于 LangGraph 的研究型论文 Agent：它把用户问�
 | Web、Docker、CI | 已完成基础版 | 演示页、容器、健康检查、GitHub Actions |
 | 受控策略进化 | 已完成 v1 | Failure Dataset、候选生成、Promotion Gate、Version Registry；只进入人工审批 |
 
+受控策略进化已完成首次真实在线 A/B：12 次主模型调用、16,150 Token。few-shot 的解析率和总体通过率明显提升，但因逐题回归与 Token 超预算被 Gate 拒绝，证明门控会阻止“平均分变好但局部退化”的负优化。详见 [真实进化测试报告](REAL_EVOLUTION_TEST_REPORT.md)。
+
 ## 3. 完整系统架构
 
 下面是架构总览；每个节点的输入、判断逻辑、输出、失败恢复和典型请求路径，详见 [架构模块逐流程详解](ARCHITECTURE_MODULE_GUIDE.md)。

@@ -180,3 +180,7 @@ v1 不继续扩大为自动训练平台。真正有数据后，可按优先级�
 4. 增加人工审批 API 和显式 Activate/Rollback 命令。
 
 在这些能力完成前，不应把 `eligible_for_human_approval` 描述为已经自动上线。
+
+## 9. 首次真实在线结果
+
+已使用当前主模型对 Research Analyzer 的 zero-shot 与 few-shot 运行 6 题、12 次真实调用。few-shot 通过率由 16.67% 提升至 66.67%，但发生 1 个逐题回归且平均 Token 增加 28.92%，Promotion Gate 返回 `rejected`，未切换当前策略。详见 [真实在线测试报告](REAL_EVOLUTION_TEST_REPORT.md)。

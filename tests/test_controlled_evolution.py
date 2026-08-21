@@ -3,6 +3,7 @@ import json
 import pytest
 
 from evolution.candidate_generator import generate_candidates
+from evolution.adapters import analyzer_ab_scorecards, analyzer_baseline_failures
 from evolution.failure_dataset import build_failure_dataset
 from evolution.models import Scorecard
 from evolution.promotion_gate import evaluate_promotion
@@ -94,3 +95,19 @@ def test_evolution_cycle_is_repeatable_and_does_not_auto_promote(tmp_path):
     assert first["registry_status"] == "registered"
     assert second["registry_status"] == "already_registered"
     assert first["promotion_decision"]["auto_applied"] is False
+
+
+def test_analyzer_ab_adapter_preserves_per_case_regression_and_real_costs():
+    report = {"dataset_version": "1", "variants": [
+        {"variant": "zero_shot", "pass_rate_pct": 50, "token_usage": 200,
+         "rows": [{"id": "a", "passed": True, "latency_seconds": 1, "checks": {}}, {"id": "b", "passed": False, "latency_seconds": 2, "checks": {"objective_coverage": False}}]},
+        {"variant": "few_shot", "pass_rate_pct": 50, "token_usage": 300,
+         "rows": [{"id": "a", "passed": False, "latency_seconds": 2, "checks": {}}, {"id": "b", "passed": True, "latency_seconds": 3, "checks": {}}]},
+    ]}
+    baseline, candidate = analyzer_ab_scorecards(report)
+    assert baseline.average_tokens == 100
+    assert candidate.average_tokens == 150
+    assert baseline.per_case_passed["a"] is True
+    assert candidate.per_case_passed["a"] is False
+    failures = analyzer_baseline_failures(report)
+    assert failures["cases"][0]["failure_types"] == ["objective_coverage"]
