@@ -4,7 +4,9 @@
 
 PaperAgent 是一个面向科研论文场景的 Agent 项目。它不只是调用一次大模型，而是使用 LangGraph 编排意图识别、查询规划、多源检索、质量判断、受控重试、Skill 选择、答案生成和运行指标记录。
 
-完整的当前能力、系统架构、演示流程、测试数据和简历讲解建议见 [项目交付与演示手册](docs/PROJECT_DELIVERY.md)。如需按照一次请求的真实执行顺序理解每个模块，请阅读 [架构模块逐流程详解](docs/ARCHITECTURE_MODULE_GUIDE.md)；准备面试时可直接使用 [PaperAgent 项目面试题完整回答](docs/PROJECT_INTERVIEW_QA.md)。
+> **统一项目文档：**项目定位、完整架构、执行流程、每层与每个核心模块、测试和性能结果、开发迭代记录、未来数据源与扩展路线，统一维护在 [PaperAgent 项目完整说明书](docs/PAPERAGENT_PROJECT_MANUAL.md)。README 只保留快速入口，其他文档作为专项实现或历史实验凭证。
+
+准备面试时可配合阅读 [PaperAgent 项目面试题完整回答](docs/PROJECT_INTERVIEW_QA.md)。
 
 ## 界面预览
 
