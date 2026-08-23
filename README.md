@@ -49,6 +49,7 @@ PaperAgent 是一个面向科研论文场景的 Agent 项目。它不只是调�
 - **多 Skill 回答**：根据任务选择问答、总结、比较、引用、研究方向或 PDF 阅读 Skill。
 - **有界轻量 Multi-Agent**：仅 L3 将现有研究节点组织为 Planner、Executor、Reviewer 三段交接，额外 LLM 调用为 0，审查循环上限为 1。
 - **受控策略进化**：从 Eval/Trace 提取结构化 Badcase，按 Allowlist 生成 Prompt、Policy、Routing 或 RAG 候选；Promotion Gate 同时检查逐题回归、质量、安全、Token 和 P95 延迟，候选只进入人工审批，不自动改代码或上线。
+- **最终答案质量实测**：在相同模型和冻结证据的 16 题真实 A/B 中，PaperAgent 相比直接生成将回答内容质量分由 68.44 提升至 92.34、证据不足披露率由 28.57% 提升至 100%；同时记录 Token +271.98% 的代价，因此完整链路只用于 L3 研究任务。
 - **记忆与可观测性**：按 `conversation_id` 将最近会话保存在本地文件，并返回节点耗时、工具记录与 Token 用量。
 
 ## 当前架构

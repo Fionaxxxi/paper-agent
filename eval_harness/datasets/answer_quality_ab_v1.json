@@ -1,0 +1,126 @@
+{
+  "dataset_name": "PaperAgent 最终回答质量 A/B 评测集",
+  "dataset_version": "1.0.0",
+  "frozen": true,
+  "annotation": "由项目作者依据每题冻结证据人工标注必要维度、关键事实、允许证据与证据不足边界",
+  "variants": {
+    "baseline": "相同证据直接交给模型回答，不注入 Research Writer、Evidence ID 引用和验证约束",
+    "paper_agent": "相同证据经 Research Writer 约束生成，并执行 Citation、Claim-Evidence 与 Answer Verification"
+  },
+  "cases": [
+    {
+      "id": "compare_react_reflexion", "category": "method_comparison", "skill": "literature_review",
+      "query": "比较 ReAct 与 Reflexion 的 Agent Loop、记忆方式和适用边界。",
+      "required_dimensions": [{"name":"Agent Loop","keywords":["推理","行动","反馈"]},{"name":"记忆方式","keywords":["情景记忆","记忆"]},{"name":"适用边界","keywords":["边界","适用","证据不足"]}],
+      "facts": [{"label":"ReAct交替推理与行动","keywords":["推理","行动"],"allowed_evidence_ids":["E-react-loop"]},{"label":"Reflexion使用语言反馈和情景记忆","keywords":["语言反馈","情景记忆"],"allowed_evidence_ids":["E-reflexion"]}],
+      "insufficient_topics":["两种方法的统一性能胜负"], "insufficient_keywords":["证据不足","无法判断","不能比较"],
+      "forbidden_claims":["Reflexion在所有任务上优于ReAct"],
+      "evidence":[{"evidence_id":"E-react-loop","title":"ReAct","source":"arxiv","locator":"https://arxiv.org/abs/2210.03629","snippet":"ReAct interleaves reasoning traces and actions, allowing a language model to update action plans using external observations.","task_ids":["T1"]},{"evidence_id":"E-reflexion","title":"Reflexion","source":"arxiv","locator":"https://arxiv.org/abs/2303.11366","snippet":"Reflexion reinforces language agents through linguistic feedback stored in episodic memory for later trials.","task_ids":["T2"]}]
+    },
+    {
+      "id":"compare_rag_graphrag","category":"method_comparison","skill":"literature_review","query":"比较传统 RAG 与 GraphRAG 的知识组织、查询方式和成本边界。",
+      "required_dimensions":[{"name":"知识组织","keywords":["非参数记忆","实体图","社区摘要"]},{"name":"查询方式","keywords":["局部","全局"]},{"name":"成本边界","keywords":["构建成本","索引成本","证据不足"]}],
+      "facts":[{"label":"RAG结合参数与非参数记忆","keywords":["参数","非参数"],"allowed_evidence_ids":["E-rag-paper"]},{"label":"GraphRAG构建实体图和社区摘要","keywords":["实体图","社区摘要"],"allowed_evidence_ids":["E-graphrag"]}],
+      "insufficient_topics":["两者精确成本差值"],"insufficient_keywords":["证据不足","无法量化","未提供"],"forbidden_claims":["GraphRAG成本固定是RAG的两倍"],
+      "evidence":[{"evidence_id":"E-rag-paper","title":"Retrieval-Augmented Generation","source":"arxiv","locator":"https://arxiv.org/abs/2005.11401","snippet":"RAG combines parametric memory with non-parametric memory retrieved from an external dense vector index.","task_ids":["T1"]},{"evidence_id":"E-graphrag","title":"From Local to Global: A Graph RAG Approach","source":"arxiv","locator":"https://arxiv.org/abs/2404.16130","snippet":"GraphRAG builds an entity knowledge graph and community summaries to support global questions over an entire corpus.","task_ids":["T2"]}]
+    },
+    {
+      "id":"compare_bm25_dense","category":"method_comparison","skill":"literature_review","query":"比较 BM25 与 Dense Retrieval 的匹配机制、优势和组合价值。",
+      "required_dimensions":[{"name":"匹配机制","keywords":["词法","稀疏","语义","向量"]},{"name":"优势","keywords":["专有名词","同义","精确词"]},{"name":"组合价值","keywords":["融合","互补","RRF"]}],
+      "facts":[{"label":"BM25依赖词项统计","keywords":["词项","词法"],"allowed_evidence_ids":["E-bm25-info"]},{"label":"Dense使用向量语义相似性","keywords":["向量","语义"],"allowed_evidence_ids":["E-dense-pass"]}],
+      "insufficient_topics":[],"insufficient_keywords":[],"forbidden_claims":["Dense Retrieval永远优于BM25"],
+      "evidence":[{"evidence_id":"E-bm25-info","title":"The Probabilistic Relevance Framework: BM25 and Beyond","source":"paper","locator":"doi:10.1561/1500000019","snippet":"BM25 is a sparse lexical ranking function based on query term occurrence, document frequency and length normalization.","task_ids":["T1"]},{"evidence_id":"E-dense-pass","title":"Dense Passage Retrieval","source":"paper","locator":"https://arxiv.org/abs/2004.04906","snippet":"DPR maps questions and passages into dense vectors and ranks passages by vector similarity, improving semantic matching beyond exact terms.","task_ids":["T2"]}]
+    },
+    {
+      "id":"compare_react_plan_execute","category":"method_comparison","skill":"literature_review","query":"比较 ReAct 和 Plan-and-Execute 在规划时机、执行反馈和任务适用性上的差异。",
+      "required_dimensions":[{"name":"规划时机","keywords":["交替","预先规划","计划"]},{"name":"执行反馈","keywords":["观察","反馈","更新"]},{"name":"任务适用性","keywords":["动态","复杂","适用"]}],
+      "facts":[{"label":"ReAct交替推理行动观察","keywords":["推理","行动","观察"],"allowed_evidence_ids":["E-react-loop"]},{"label":"Plan-and-Execute先规划后执行","keywords":["计划","执行"],"allowed_evidence_ids":["E-planexec"]}],
+      "insufficient_topics":["两者统一基准性能"],"insufficient_keywords":["证据不足","无法判断","未提供"],"forbidden_claims":["Plan-and-Execute一定更准确"],
+      "evidence":[{"evidence_id":"E-react-loop","title":"ReAct","source":"arxiv","locator":"https://arxiv.org/abs/2210.03629","snippet":"ReAct interleaves reasoning, action and observation so plans can be updated during interaction.","task_ids":["T1"]},{"evidence_id":"E-planexec","title":"Plan-and-Solve Prompting","source":"arxiv","locator":"https://arxiv.org/abs/2305.04091","snippet":"Plan-and-solve first devises a plan to divide a task into subtasks and then carries out the subtasks according to that plan.","task_ids":["T2"]}]
+    },
+    {
+      "id":"summarize_rag","category":"paper_summary","skill":"paper_summary","query":"总结原始 RAG 论文解决的问题、核心方法和证据边界。",
+      "required_dimensions":[{"name":"问题","keywords":["知识","事实","生成"]},{"name":"方法","keywords":["检索","非参数","生成器"]},{"name":"证据边界","keywords":["证据不足","未提供","边界"]}],
+      "facts":[{"label":"结合参数与非参数记忆","keywords":["参数","非参数"],"allowed_evidence_ids":["E-rag-paper"]},{"label":"检索文档供生成使用","keywords":["检索","生成"],"allowed_evidence_ids":["E-rag-paper"]}],
+      "insufficient_topics":["最新模型上的性能"],"insufficient_keywords":["证据不足","未提供","无法判断"],"forbidden_claims":["RAG完全消除了幻觉"],
+      "evidence":[{"evidence_id":"E-rag-paper","title":"Retrieval-Augmented Generation","source":"arxiv","locator":"https://arxiv.org/abs/2005.11401","snippet":"RAG combines pretrained parametric and non-parametric memory. Retrieved passages condition generation on knowledge-intensive tasks; the supplied evidence contains no claims about current models.","task_ids":["T1"]}]
+    },
+    {
+      "id":"summarize_toolformer","category":"paper_summary","skill":"paper_summary","query":"总结 Toolformer 如何学习使用工具，以及当前证据不能支持哪些结论。",
+      "required_dimensions":[{"name":"工具学习","keywords":["自监督","API","调用"]},{"name":"使用时机","keywords":["何时","参数","结果"]},{"name":"边界","keywords":["证据不足","未提供"]}],
+      "facts":[{"label":"模型自监督学习API调用","keywords":["自监督","API"],"allowed_evidence_ids":["E-toolformer"]},{"label":"学习何时调用及如何使用结果","keywords":["何时","调用","结果"],"allowed_evidence_ids":["E-toolformer"]}],
+      "insufficient_topics":["企业生产可靠性"],"insufficient_keywords":["证据不足","未提供","无法判断"],"forbidden_claims":["Toolformer已在所有企业场景稳定运行"],
+      "evidence":[{"evidence_id":"E-toolformer","title":"Toolformer","source":"arxiv","locator":"https://arxiv.org/abs/2302.04761","snippet":"Toolformer teaches a language model in a self-supervised way which APIs to call, when to call them, what arguments to pass and how to incorporate returned results.","task_ids":["T1"]}]
+    },
+    {
+      "id":"summarize_graphrag","category":"paper_summary","skill":"paper_summary","query":"总结 GraphRAG 的索引流程、查询流程和当前证据局限。",
+      "required_dimensions":[{"name":"索引流程","keywords":["实体","关系","社区","摘要"]},{"name":"查询流程","keywords":["社区摘要","全局回答"]},{"name":"证据局限","keywords":["证据不足","未提供"]}],
+      "facts":[{"label":"构建实体关系图","keywords":["实体","关系","图"],"allowed_evidence_ids":["E-graphrag"]},{"label":"使用社区摘要支持全局问题","keywords":["社区摘要","全局"],"allowed_evidence_ids":["E-graphrag"]}],
+      "insufficient_topics":["所有领域的泛化效果"],"insufficient_keywords":["证据不足","未提供","无法判断"],"forbidden_claims":["GraphRAG适用于所有领域且效果最佳"],
+      "evidence":[{"evidence_id":"E-graphrag","title":"From Local to Global: A Graph RAG Approach","source":"arxiv","locator":"https://arxiv.org/abs/2404.16130","snippet":"The indexing pipeline extracts entities and relationships, builds communities, and creates community summaries. At query time summaries support map-reduce generation of global answers.","task_ids":["T1"]}]
+    },
+    {
+      "id":"summarize_reflexion","category":"paper_summary","skill":"paper_summary","query":"总结 Reflexion 的反馈、记忆和学习机制，并说明它是否更新模型权重。",
+      "required_dimensions":[{"name":"反馈","keywords":["语言反馈"]},{"name":"记忆","keywords":["情景记忆"]},{"name":"学习机制","keywords":["权重","强化","试次"]}],
+      "facts":[{"label":"语言反馈写入情景记忆","keywords":["语言反馈","情景记忆"],"allowed_evidence_ids":["E-reflexion"]},{"label":"不通过权重更新学习","keywords":["不","权重"],"allowed_evidence_ids":["E-reflexion"]}],
+      "insufficient_topics":[],"insufficient_keywords":[],"forbidden_claims":["Reflexion通过梯度下降更新模型权重"],
+      "evidence":[{"evidence_id":"E-reflexion","title":"Reflexion","source":"arxiv","locator":"https://arxiv.org/abs/2303.11366","snippet":"Reflexion uses linguistic feedback stored in episodic memory to improve later trials and does not update the underlying language model weights.","task_ids":["T1"]}]
+    },
+    {
+      "id":"trend_agent_memory","category":"research_synthesis","skill":"literature_review","query":"根据证据分析 Agent Memory 从短期轨迹到长期经验的研究脉络与空白。",
+      "required_dimensions":[{"name":"短期轨迹","keywords":["推理","行动","轨迹"]},{"name":"长期经验","keywords":["情景记忆","反馈"]},{"name":"研究空白","keywords":["长期","稳定","空白","证据不足"]}],
+      "facts":[{"label":"ReAct保留交互内轨迹","keywords":["推理","行动"],"allowed_evidence_ids":["E-react-loop"]},{"label":"Reflexion跨试次复用反馈","keywords":["反馈","情景记忆"],"allowed_evidence_ids":["E-reflexion"]}],
+      "insufficient_topics":["长期记忆的统一最佳实现"],"insufficient_keywords":["证据不足","无法判断","尚不能"],"forbidden_claims":["向量数据库是Agent长期记忆的唯一最佳方案"],
+      "evidence":[{"evidence_id":"E-react-loop","title":"ReAct","source":"arxiv","locator":"https://arxiv.org/abs/2210.03629","snippet":"ReAct interleaves reasoning traces and actions during an interactive trajectory.","task_ids":["T1"]},{"evidence_id":"E-reflexion","title":"Reflexion","source":"arxiv","locator":"https://arxiv.org/abs/2303.11366","snippet":"Reflexion stores linguistic feedback in episodic memory and reuses it in later trials.","task_ids":["T2"]}]
+    },
+    {
+      "id":"trend_rag_organization","category":"research_synthesis","skill":"literature_review","query":"分析 RAG 知识组织从向量索引到图结构的演进、价值和代价。",
+      "required_dimensions":[{"name":"演进","keywords":["向量","图","社区"]},{"name":"价值","keywords":["局部","全局"]},{"name":"代价","keywords":["索引","构建","证据不足"]}],
+      "facts":[{"label":"原始RAG使用外部向量索引","keywords":["向量","索引"],"allowed_evidence_ids":["E-rag-paper"]},{"label":"GraphRAG使用实体图和社区摘要","keywords":["实体图","社区摘要"],"allowed_evidence_ids":["E-graphrag"]}],
+      "insufficient_topics":["具体计算成本倍数"],"insufficient_keywords":["证据不足","无法量化","未提供"],"forbidden_claims":["图结构一定比向量索引便宜"],
+      "evidence":[{"evidence_id":"E-rag-paper","title":"Retrieval-Augmented Generation","source":"arxiv","locator":"https://arxiv.org/abs/2005.11401","snippet":"RAG retrieves from a dense vector index as non-parametric memory.","task_ids":["T1"]},{"evidence_id":"E-graphrag","title":"From Local to Global: A Graph RAG Approach","source":"arxiv","locator":"https://arxiv.org/abs/2404.16130","snippet":"GraphRAG builds entity graphs, communities and summaries for global corpus-level questions; this introduces an additional indexing pipeline.","task_ids":["T2"]}]
+    },
+    {
+      "id":"trend_agent_planning","category":"research_synthesis","skill":"literature_review","query":"梳理 Agent 规划从交互式 ReAct 到显式任务分解的设计取舍。",
+      "required_dimensions":[{"name":"交互式规划","keywords":["推理","行动","观察"]},{"name":"显式分解","keywords":["计划","子任务"]},{"name":"取舍","keywords":["动态","前置","取舍"]}],
+      "facts":[{"label":"ReAct在交互中更新行动","keywords":["行动","观察"],"allowed_evidence_ids":["E-react-loop"]},{"label":"Plan-and-Solve先拆子任务","keywords":["计划","子任务"],"allowed_evidence_ids":["E-planexec"]}],
+      "insufficient_topics":["所有任务的最优规划方式"],"insufficient_keywords":["证据不足","无法判断","取决于"],"forbidden_claims":["所有复杂任务都应该使用Plan-and-Execute"],
+      "evidence":[{"evidence_id":"E-react-loop","title":"ReAct","source":"arxiv","locator":"https://arxiv.org/abs/2210.03629","snippet":"ReAct interleaves reasoning, action and observation during interaction.","task_ids":["T1"]},{"evidence_id":"E-planexec","title":"Plan-and-Solve Prompting","source":"arxiv","locator":"https://arxiv.org/abs/2305.04091","snippet":"Plan-and-solve first divides a task into subtasks and then executes them according to the plan.","task_ids":["T2"]}]
+    },
+    {
+      "id":"trend_tool_agents","category":"research_synthesis","skill":"literature_review","query":"分析语言模型工具使用从提示驱动到自主学习调用的方向与风险。",
+      "required_dimensions":[{"name":"提示驱动","keywords":["推理","行动","工具"]},{"name":"自主学习","keywords":["自监督","API"]},{"name":"风险","keywords":["错误","权限","证据不足","风险"]}],
+      "facts":[{"label":"ReAct将行动纳入轨迹","keywords":["推理","行动"],"allowed_evidence_ids":["E-react-loop"]},{"label":"Toolformer自监督学习API使用","keywords":["自监督","API"],"allowed_evidence_ids":["E-toolformer"]}],
+      "insufficient_topics":["真实生产安全事故率"],"insufficient_keywords":["证据不足","未提供","无法判断"],"forbidden_claims":["自主工具调用不会产生安全风险"],
+      "evidence":[{"evidence_id":"E-react-loop","title":"ReAct","source":"arxiv","locator":"https://arxiv.org/abs/2210.03629","snippet":"ReAct combines reasoning traces with actions that interact with external sources.","task_ids":["T1"]},{"evidence_id":"E-toolformer","title":"Toolformer","source":"arxiv","locator":"https://arxiv.org/abs/2302.04761","snippet":"Toolformer uses self-supervision to learn when and how to call APIs and consume their outputs.","task_ids":["T2"]}]
+    },
+    {
+      "id":"insufficient_performance_winner","category":"insufficient_evidence","skill":"literature_review","query":"根据这些材料判断 ReAct 和 Reflexion 谁在所有任务上的准确率更高，并给出具体提升百分比。",
+      "required_dimensions":[{"name":"可用证据","keywords":["机制","材料"]},{"name":"不足说明","keywords":["证据不足","无法","未提供"]},{"name":"所需补充","keywords":["数据集","指标","实验"]}],
+      "facts":[{"label":"当前材料只描述机制","keywords":["机制"],"allowed_evidence_ids":["E-react-loop","E-reflexion"]}],
+      "insufficient_topics":["准确率胜负和提升百分比"],"insufficient_keywords":["证据不足","无法判断","未提供"],"forbidden_claims":["Reflexion准确率提升20%","ReAct准确率更高"],
+      "evidence":[{"evidence_id":"E-react-loop","title":"ReAct","source":"arxiv","locator":"https://arxiv.org/abs/2210.03629","snippet":"The supplied excerpt only states that ReAct interleaves reasoning and actions; no accuracy values are included.","task_ids":["T1"]},{"evidence_id":"E-reflexion","title":"Reflexion","source":"arxiv","locator":"https://arxiv.org/abs/2303.11366","snippet":"The supplied excerpt only states that Reflexion uses linguistic feedback and episodic memory; no shared benchmark values are included.","task_ids":["T2"]}]
+    },
+    {
+      "id":"insufficient_graphrag_cost","category":"insufficient_evidence","skill":"literature_review","query":"根据证据计算 GraphRAG 比传统 RAG 贵多少，并判断何时一定值得使用。",
+      "required_dimensions":[{"name":"已知差异","keywords":["向量","实体图","社区"]},{"name":"不足说明","keywords":["证据不足","无法量化","未提供"]},{"name":"决策条件","keywords":["语料","查询","成本"]}],
+      "facts":[{"label":"两者索引结构不同","keywords":["向量","图"],"allowed_evidence_ids":["E-rag-paper","E-graphrag"]}],
+      "insufficient_topics":["精确成本差和必然适用条件"],"insufficient_keywords":["证据不足","无法量化","未提供"],"forbidden_claims":["GraphRAG贵三倍","GraphRAG一定值得使用"],
+      "evidence":[{"evidence_id":"E-rag-paper","title":"Retrieval-Augmented Generation","source":"arxiv","locator":"https://arxiv.org/abs/2005.11401","snippet":"RAG uses a dense vector index; the supplied excerpt has no cost measurement.","task_ids":["T1"]},{"evidence_id":"E-graphrag","title":"From Local to Global: A Graph RAG Approach","source":"arxiv","locator":"https://arxiv.org/abs/2404.16130","snippet":"GraphRAG constructs entity graphs and community summaries; the supplied excerpt has no cost measurement.","task_ids":["T2"]}]
+    },
+    {
+      "id":"insufficient_pdf_chart","category":"insufficient_evidence","skill":"paper_critique","query":"根据文字摘要判断论文图 3 中每条曲线的具体数值和误差带。",
+      "required_dimensions":[{"name":"现有材料","keywords":["摘要","文字"]},{"name":"不足说明","keywords":["图像","证据不足","无法"]},{"name":"所需材料","keywords":["图3","原图","页面"]}],
+      "facts":[{"label":"当前只有文字摘要","keywords":["文字","摘要"],"allowed_evidence_ids":["E-chart-text"]}],
+      "insufficient_topics":["曲线数值和误差带"],"insufficient_keywords":["证据不足","无法读取","需要原图"],"forbidden_claims":["曲线A的最高值是92.4"],
+      "evidence":[{"evidence_id":"E-chart-text","title":"Example Paper Abstract","source":"pdf_text","locator":"paper.pdf#abstract","snippet":"The supplied material is only the abstract and contains no Figure 3 image, axis values, curve labels or error bars.","task_ids":["T1"]}]
+    },
+    {
+      "id":"insufficient_latest_trend","category":"insufficient_evidence","skill":"literature_review","query":"根据两篇早期论文判断 2026 年 Agent Memory 最新研究方向和市场占比。",
+      "required_dimensions":[{"name":"现有研究","keywords":["ReAct","Reflexion","机制"]},{"name":"时效不足","keywords":["2026","最新","证据不足"]},{"name":"补充来源","keywords":["最新论文","市场数据","检索"]}],
+      "facts":[{"label":"证据只覆盖ReAct和Reflexion机制","keywords":["ReAct","Reflexion"],"allowed_evidence_ids":["E-react-loop","E-reflexion"]}],
+      "insufficient_topics":["2026最新方向和市场占比"],"insufficient_keywords":["证据不足","无法判断","需要检索"],"forbidden_claims":["2026年Agent Memory市场占比为35%"],
+      "evidence":[{"evidence_id":"E-react-loop","title":"ReAct","source":"arxiv","locator":"https://arxiv.org/abs/2210.03629","snippet":"ReAct describes interleaved reasoning and action and does not provide 2026 market data.","task_ids":["T1"]},{"evidence_id":"E-reflexion","title":"Reflexion","source":"arxiv","locator":"https://arxiv.org/abs/2303.11366","snippet":"Reflexion describes linguistic feedback and episodic memory and does not provide 2026 market data.","task_ids":["T2"]}]
+    }
+  ]
+}

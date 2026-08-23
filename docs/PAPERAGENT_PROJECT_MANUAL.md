@@ -660,6 +660,7 @@ Docker 镜像不打包 `.env`、API Key、本地论文、模型缓存和评测�
 | PDF v2 专项 | 35 项 | 35/35 | 0 LLM | 关键页、4 类视觉 Skill、Schema、Grounding 和前端契约 |
 | 受控进化与 Schema Guard 离线回归 | 21 项 | 21/21 | 0 LLM | Failure、Candidate、Gate、Registry 和真实报告适配 |
 | 核心在线 LLM 能力集 | 30 题 | 29/30，96.67% | 17 次，62,525 Token | 当前落盘 JSON 的复核结果；Provider Failure 为 0 |
+| 最终回答质量真实 A/B | 16 题 × 2 | 内容质量 68.44 → 92.34 | 32 次，88,440 Token | 相同证据下比较直接生成与 PaperAgent；不足披露 28.57% → 100% |
 | PDF 视觉真实冒烟 | 1 条完整链路 | 1/1 | 2 次，7,549 Token | GraphRAG PDF 第 4 页，Figure Schema 与 Grounding 通过 |
 | Personal + Online Hybrid | 1 条完整链路 | 通过 | 2 次，5,717 Token | 8 条证据，个人库和 arXiv 均命中，最终验证通过 |
 | Research Analyzer few-shot A/B | 6 题 × 2 | 候选拒绝 | 12 次，16,150 Token | 能力提升但 1 题回归且 Token +28.92% |
@@ -723,7 +724,22 @@ Docker 镜像不打包 `.env`、API Key、本地论文、模型缓存和评测�
 
 结论：few-shot 有语义收益但成本高且损伤原有 Case；Schema Guard 修复格式却没有提高任务能力。当前继续保留 zero-shot，证明进化系统不会因为单一平均指标变好而自动上线。
 
-### 14.8 测试用例说明与证据位置
+### 14.8 最终回答质量 A/B
+
+16 题冻结集平均覆盖方法比较、单篇总结、多论文综合和证据不足四类。两边使用相同模型和相同论文证据：Baseline 直接回答，PaperAgent 使用 Evidence Store、Research Writer 与验证链。为避免引用要求使对比失真，主要内容指标不包含引用分。
+
+| 指标 | Baseline | PaperAgent | 变化 |
+|---|---:|---:|---:|
+| 回答内容质量分 | 68.44 | 92.34 | +23.90 |
+| 研究维度覆盖率 | 91.67% | 100.00% | +8.33pp |
+| 关键事实覆盖率 | 56.25% | 78.12% | +21.87pp |
+| 证据不足披露率（14题） | 28.57% | 100.00% | +71.43pp |
+| 声明证据支持率 | 0.00% | 75.00% | +75.00pp |
+| 引用准确率 / 可追溯率 | 0.00% / 0.00% | 100.00% / 100.00% | +100.00pp |
+
+代价是平均 Token 增加 271.98%、P95 延迟增加 48.09%，因此完整 Research Writer 只用于 L3 研究任务，不能为追求质量把所有 L1 问答升级成重流程。完整方法、逐类结果、限制和命令见 `docs/ANSWER_QUALITY_AB_REPORT.md`。
+
+### 14.9 测试用例说明与证据位置
 
 每次本地测试由 `scripts/run_tests_with_report.py` 输出 CSV，包含用例名、所属能力、测试目的、通过代表什么、失败代表什么、耗时和结果。新增测试需同步登记到测试目录或 Catalog，防止只增加代码而没有可读说明。
 
@@ -732,6 +748,7 @@ Docker 镜像不打包 `.env`、API Key、本地论文、模型缓存和评测�
 - 全量 PDF v2 用例表：`outputs/test_reports/full_pdf_visual_v2/latest_test_details.csv`
 - 受控进化用例表：`outputs/test_reports/schema_guard_evolution/latest_test_details.csv`
 - 在线核心逐题结果：`outputs/llm_core_eval/latest_llm_online.json` 和 `.csv`
+- 最终回答质量逐题对照：`outputs/answer_quality_ab/latest_answer_quality_ab.json` 和 `.csv`
 - PDF 视觉原始摘要：`outputs/pdf_vision_smoke/latest.json`
 - Hybrid 冒烟：`docs/HYBRID_SMOKE_REPORT.md`
 - Retrieval/RAG Excel：`outputs/retrieval_eval/`、`outputs/local_rag/`
@@ -746,6 +763,7 @@ Docker 镜像不打包 `.env`、API Key、本地论文、模型缓存和评测�
 |---|---:|---|
 | 多查询并行实验 | 约 1.54× 加速，延迟下降 35.09% | 子查询无依赖时并行，结果顺序仍保持 100% 一致 |
 | 30 题在线核心集 | 435.097 秒，62,525 Token，17 次调用 | 包含规则零调用 Case 和真实模型 Case |
+| 最终回答质量 A/B | Baseline 1,171 Token/题；PaperAgent 4,356 Token/题 | 内容质量 +23.90 分，但 Token +271.98%，用于证明 L3 分级路由的必要性 |
 | Hybrid 冒烟 | 31.71 秒，5,717 Token | 检索 2.65 秒；Reflection 2,353 Token，占约 41% |
 | PDF 视觉冒烟 | 81.668 秒，7,549 Token | OCR + 主模型两阶段，视觉任务天然更慢 |
 | few-shot A/B | 平均延迟 9.64s → 11.37s | Prompt 变长带来成本和延迟上升 |
@@ -791,6 +809,7 @@ Docker 镜像不打包 `.env`、API Key、本地论文、模型缓存和评测�
 | 14. 报告与前端 | 美化 Console、Markdown 渲染、Word/PDF | 展示和交付不足 | 13 项报告专项 |
 | 15. 工程交付 | Docker、CI、Release Checklist | 环境不可复现 | 部署配置与健康检查 |
 | 16. 受控进化 | Failure、Candidate、Gate、Registry、真实 A/B | Prompt 迭代缺少回归控制 | 21 项回归 + 两轮 A/B |
+| 17. 最终答案评测 | 16 题直接生成 vs PaperAgent 真实 A/B | 无法证明复杂工作流是否改善最终回答 | 内容质量 +23.90 分，不足披露达到 100% |
 
 迭代原则：每项新能力必须说明问题、实现、指标和边界；不再为了“看起来先进”持续增加研究型模块。
 
@@ -1021,6 +1040,7 @@ paper-agent/
 - `CONTROLLED_EVOLUTION.md`：受控进化实现契约；
 - `REAL_EVOLUTION_TEST_REPORT.md`：few-shot 真实 A/B；
 - `SCHEMA_GUARD_EVOLUTION_REPORT.md`：Schema Guard 真实 A/B；
+- `ANSWER_QUALITY_AB_REPORT.md`：最终回答质量真实 A/B、成本与边界；
 - `PDF_VISUAL_V2_REPORT.md`：PDF 多模态实现和实测；
 - `HYBRID_SMOKE_REPORT.md`：Personal + Online 真实链路；
 - `RELEASE_CHECKLIST.md`：发布核验；
@@ -1028,4 +1048,3 @@ paper-agent/
 - `outputs/`：逐题 JSON/CSV/XLSX 原始证据。
 
 维护规则：新增模块时先更新本文件对应架构、模块、测试和边界；专项报告只记录实验细节，不再另建一份相互竞争的“完整项目说明”。
-

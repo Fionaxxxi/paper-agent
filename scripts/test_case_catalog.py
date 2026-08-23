@@ -24,6 +24,31 @@ def _description(
 
 
 TEST_CASE_CATALOG: dict[str, CaseDescription] = {
+    "tests/test_answer_quality_ab.py::test_answer_quality_dataset_is_frozen_and_representative": _description(
+        "验证最终回答质量集冻结为16题，并均衡覆盖方法比较、单篇总结、多论文综合和证据不足。",
+        "通过代表A/B使用固定、具有代表性的人工标注问题，不会在看到模型答案后改题。",
+        "失败表示数据集规模、唯一性或任务类别发生未审计变化，结果不能继续横向比较。",
+    ),
+    "tests/test_answer_quality_ab.py::test_grader_rewards_grounded_dimensions_and_safe_insufficiency": _description(
+        "验证答案覆盖必要维度、关键事实就近引用允许证据并披露不足时获得正确高分。",
+        "通过代表评分器能奖励完整、可追溯且诚实披露边界的研究回答。",
+        "失败表示合格答案可能被误判，回答质量提升数据不可信。",
+    ),
+    "tests/test_answer_quality_ab.py::test_grader_detects_missing_citations_and_forbidden_claims": _description(
+        "验证没有Evidence引用或包含人工禁止断言的答案不能通过严格质量门。",
+        "通过代表流畅复述不会冒充证据支持，无依据确定结论会被记录。",
+        "失败表示评测可能把不可追溯或越过证据边界的答案算作高质量。",
+    ),
+    "tests/test_answer_quality_ab.py::test_report_can_be_regraded_without_new_llm_calls": _description(
+        "验证评分权重或规则调整后可以复用已付费的32个原始回答离线重判并导出表格。",
+        "通过代表评测器迭代不会重复消耗真实模型Token，JSON和CSV结果可持续保存。",
+        "失败表示评分修复会迫使整套在线A/B重复付费，或结果无法形成可读表格。",
+    ),
+    "tests/test_answer_quality_ab.py::test_targeted_candidate_rerun_preserves_other_paid_answers": _description(
+        "验证单题Provider Failure只重跑PaperAgent侧指定Case，保留其他Baseline和Candidate原文。",
+        "通过代表外部服务偶发失败只增加一次调用，不会污染或覆盖其他31个有效结果。",
+        "失败表示少量供应商波动可能导致整套评测重复付费或合并错误。",
+    ),
     "tests/test_report_export.py::test_docx_report_contains_readable_sections_and_evidence": _description(
         "验证 Word 报告把研究问题、Markdown 结论、六项运行摘要和论文证据写成可阅读结构。",
         "通过代表 DOCX 不是空壳文件，核心章节和摘要表均可被 Word 解析。",
