@@ -37,7 +37,7 @@ PaperAgent 是一个基于 LangGraph 的研究型论文 Agent：它把用户问�
 | Research Agent | 已完成 | L0-L3、Research Brief、Plan、Schedule、Evidence、Coverage |
 | 质量验证 | 已完成 | Citation、Claim-Evidence、PDF Grounding、Answer Verification |
 | 有限 Agent Loop | 已完成 | Retrieval Replan 与 Answer Reflection 均有次数和证据约束 |
-| 会话与长期记忆 | 已完成 v1 | 文件会话、SQLite Checkpoint、Memory RAG、Write Gate |
+| 会话与长期记忆 | 已完成 v1 | SQLite 会话消息、SQLite Checkpoint、Memory RAG、Write Gate；旧文件仅保留兼容迁移路径 |
 | 个人论文库 | 已完成 MVP | 注册登录、用户隔离、PDF 上传、Personal/Online/Hybrid |
 | PDF 视觉理解 | 已完成 v2 | 自动关键页、Figure/Table/`ChartAnalysisSkill`/Formula、真实在线测试 |
 | 报告导出 | 已完成 v1 | 中文 Word/PDF 下载，不额外调用 LLM |
@@ -273,7 +273,9 @@ PDF_VISION_ENABLED=true
 | 项目完整单元/集成回归 | 422/422 通过 | 离线，0 LLM |
 | PDF 视觉在线冒烟 | 1/1 通过 | 2 次调用，7,549 Token |
 | Personal + Online Hybrid | 通过 | 2 次调用，5,717 Token |
-| LLM 核心正式评测集 | 27/30 通过，90% | 17 次调用，62,525 Token |
+| LLM 核心正式评测集 | 29/30 通过，96.67% | 17 次调用，62,525 Token；Provider Failure 0 |
+
+> 口径说明：首次终端摘要曾显示 27/30；修复报告导出并依据同一轮已保存的原始模型响应重新校验后，当前可追溯结果为 29/30。README、完整说明书和面试材料统一采用 29/30。
 
 完整测试表格位于 `outputs/test_reports/full_pdf_visual_v2/latest_test_details.csv`。每个测试都在 `scripts/test_case_catalog.py` 中记录用途、通过含义和失败含义。
 
