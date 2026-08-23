@@ -509,6 +509,15 @@ Skill 是带明确输入、证据要求和输出约束的回答策略，不是�
 
 简单规则可可靠命中时不调用模型；复杂研究意图复用 Analyzer 的 `primary_skill`，避免再为 Skill 选择增加一次 LLM。
 
+每个 Skill 由四部分组成：
+
+1. `name / description / need_llm`：声明能力身份与是否需要模型；
+2. `build_prompt` 或规则 `run`：定义如何完成任务；
+3. Context Policy：决定是否加载历史、长期记忆、论文、PDF 和元数据，并限制数量与字符；
+4. 输出与验证契约：普通研究回答进入引用/声明验证，PDF 专项能力还具有 Pydantic Structured Output 和 Grounding。
+
+Skill 不是把所有 Prompt 同时注入上下文。路由顺序为：L3 只接受 Research Analyzer 白名单中的研究 Skill；PDF 在用户指定或自动选页后按公式、图表、表格、架构图关键词选择一个专项 Skill；其余任务按 `task_type` 选择 Summary、Compare、Recommend、Citation 或 QA。最终只构造当前主 Skill 的 Prompt，避免 Skill 数量增加时上下文线性膨胀。
+
 ### 9.2 Generate / Research Writer
 
 Writer 接收用户目标、研究计划、Evidence Store、Coverage、按需记忆和选定 Skill。Prompt 要求区分证据事实与推断、使用 Evidence ID、披露证据不足、禁止引用不存在的来源。L2/L3 同次生成内部 Memory Metadata，前端只展示清理后的正常答案。
@@ -567,13 +576,57 @@ Writer 接收用户目标、研究计划、Evidence Store、Coverage、按需记
 
 ### 11.2 会话压缩
 
-系统保留最近消息窗口，并将更早内容压缩为有限长度摘要；当前默认最近 6 条、摘要最多 1200 字符、注入上下文最多 2400 字符。第 11 轮不会每次重算全部原文，而是在已有摘要基础上增量更新，同时保留最近消息，降低 Token。
+#### 上下文如何逐轮增长
 
-### 11.3 Memory Retrieval Gate
+每次请求结束后，用户问题和助手回答作为独立消息追加到 SQLite。下一次请求按 `conversation_id` 读取消息；默认最近 6 条保持原文，更早消息进入确定性提取式摘要。这里的“6 条”是消息条数，不是 6 个完整问答轮次。
+
+```text
+第 1～3 个问答轮次
+→ 最多 6 条 user/assistant 消息全部作为最近原文
+
+继续对话
+→ 最新 6 条仍保留原文
+→ 更早消息按时间顺序组成提取式摘要
+→ 再与研究主题、偏好、活跃论文一起按预算装配
+```
+
+#### 什么时候触发压缩
+
+当前不是通过估算模型 Token 到达 80%/90% 才触发，也不是每轮额外调用摘要模型。只要消息数超过 `MEMORY_RECENT_MESSAGES=6`，构建上下文时就对更早消息进行零 LLM 压缩；摘要最大 `MEMORY_SUMMARY_MAX_CHARS=1200`，最终短期上下文最大 `MEMORY_CONTEXT_MAX_CHARS=2400`。
+
+#### 保留什么、丢弃什么
+
+Prompt 优先保留三类信息：结构化研究状态（用户偏好、当前主题、活跃论文）、旧消息摘要、最近消息原文。装配时分别获得有限预算，最近消息占比最高。旧摘要超过预算时保留靠后的内容，因为它通常距离当前任务更近。
+
+被“丢弃”的是本次 Prompt 中的冗余文本，不是数据库原始消息。完整消息仍保存在 SQLite，可用于审计、重新构建上下文或隐私删除。因此“摘要后原文不再存在”的说法不准确。
+
+#### 第 10 轮以后如何处理
+
+第 11 轮不会把前 10 轮全部原样送进模型。系统重新读取该会话消息，把最新 6 条作为原文，把更早消息生成受限提取式摘要。当前实现不是持久化的增量语义摘要：每次从数据库中的早期原文重新构建摘要，所以模型 Token 有上限，但数据库读取和本地摘要成本仍会随历史增长。生产版本可增加摘要 Checkpoint、按消息游标增量合并和 Token-aware Budget。
+
+#### 为什么不每轮使用 LLM 摘要
+
+对当前单机简历项目，确定性压缩有 0 LLM、结果稳定、易回归的优点。代价是不能理解复杂语义优先级，可能截断较早但重要的约束。项目通过结构化 `user_preferences / active_topics / active_papers` 单独保留重要研究状态来降低风险；未来若引入小模型摘要，仍需保留用户硬约束、未完成任务、实体 ID、证据引用和最近原文，并通过回归集验证压缩后任务一致性。
+
+### 11.3 Skill Context Policy：不是把 State 全部塞进 Prompt
+
+AgentState 保存完整执行事实，但 `build_skill_context` 只按当前任务的 Context Policy 选择：
+
+| 上下文部分 | 控制方式 | 当前优化 |
+|---|---|---|
+| 会话历史 | `use_history` + 2400 字符总预算 | 旧摘要 + 最近原文 |
+| 长期记忆 | Need Detection + Top-K 3 + 3000 字符 | 仅显式历史/L3 按需召回 |
+| 论文结果 | `max_documents` + 单文档截断 | 不注入供应商完整 JSON |
+| PDF | `use_pdf` + 最大字符数 | 仅 PDF Skill 使用，视觉最多 3 页 |
+| 元数据 | `use_metadata` | Trace 等结构化信息不混入正文 |
+
+工具结果先规范化为 Paper/Evidence，只把 Top-K、片段和 Evidence ID 交给 Writer；原始大 JSON、缓存对象、全部 AgentState 和不相关 Skill 描述不会进入模型上下文。
+
+### 11.4 Memory Retrieval Gate
 
 长期记忆不是每轮注入。只有用户显式说“继续上次/基于之前”等，或 L3 任务确实可能复用研究结论时才召回。再按 owner、相关度、有效期、Top-K 和字符预算过滤；默认 Top-K 3、上下文最多 3000 字符。普通 L1 和 Smalltalk 不加载长期记忆。
 
-### 11.4 Memory Write Gate
+### 11.5 Memory Write Gate
 
 主模型在生成正常答案时同时输出内部 Metadata：`worth_storing`、`memory_type`、`value_score`、`stability`、`time_sensitive` 和 `topic`，不为“是否值得记”再调用一次模型。
 
@@ -591,7 +644,30 @@ Answer + Memory Metadata
 
 Smalltalk、一次性改写、随时可重查的简单公开事实和证据不足结论不会直接进入长期记忆。最新/当前/今年等信息优先保存为有过期时间的 Snapshot。
 
-### 11.5 为什么当前不必强制 Redis
+### 11.6 短期 Context 与长期 Memory 是否同时注入
+
+短期 Context 每轮加载，用于理解当前会话；长期 Memory 只有 Retrieval Gate 触发时才召回。两者可以同时存在，但职责和预算独立：短期上下文默认最多 2400 字符，长期研究记忆最多 3000 字符。Personal Library 的论文原文属于 Source Knowledge，Long-Term Memory 保存 Agent 从材料中形成且验证通过的 Derived Knowledge，二者也不会混为同一张记忆表。
+
+### 11.7 Checkpoint、暂停与续跑一致性
+
+官方 LangGraph `SqliteSaver` 使用 `thread_id=conversation_id` 保存节点级快照，数据库为 `data/memory/langgraph_checkpoints.db`，开启 WAL；业务层另有 `pending_clarification`，保存为什么暂停以及需要用户补充什么。
+
+续跑依靠：
+
+- 相同 `conversation_id/thread_id` 找到会话和图状态；
+- `retry_count`、`answer_reflection_count` 保存在 State，恢复时不会自动清零形成无限循环；
+- 新请求显式重置本轮临时检索、答案和验证字段，避免旧状态污染；
+- 工具返回统一结构并记录失败状态，当前工具以只读检索为主，重复执行风险较低。
+
+当前最完整的恢复场景是主动澄清后继续。项目没有实现分布式 Job Queue、事件日志、幂等 Tool Commit 和 exactly-once，因此不能声称支持跨机器任意节点的严格一次长任务续跑。
+
+### 11.8 Session、用户和全局对象隔离
+
+`conversation_id` 用于消息与 Checkpoint 分区，`user_id` 用于 Personal Library 和 Long-Term Memory Owner 过滤；不能用 Session ID 替代用户权限。允许全局复用的对象仅限只读 Tool Registry/Router、模型或索引缓存，以及受锁保护的 Checkpointer 生命周期对象。消息、文档、答案和重试计数都在 AgentState 或 SQLite 中按 ID 隔离；SQLite Memory Store 每次操作创建独立连接，避免多个 Web 请求共享 Cursor。
+
+生产环境还应校验会话属于当前用户、使用服务端不可预测 ID、设置过期与清理，并避免把私有回答写入公共缓存。
+
+### 11.9 为什么当前不必强制 Redis
 
 单机简历项目使用 SQLite 和文件缓存更简单可靠。Redis 只有在多实例部署、跨进程共享 Session、分布式锁、任务队列或高频热点缓存出现后才有明显收益。未来引入时应负责短期缓存/协调，不替代持久化知识和论文库。
 
@@ -1048,3 +1124,129 @@ paper-agent/
 - `outputs/`：逐题 JSON/CSV/XLSX 原始证据。
 
 维护规则：新增模块时先更新本文件对应架构、模块、测试和边界；专项报告只记录实验细节，不再另建一份相互竞争的“完整项目说明”。
+
+---
+
+## 22. 项目相关面试重点工程决策
+
+本章将高频面试追问映射到当前代码事实。更适合逐题背诵的版本见 `PROJECT_INTERVIEW_QA.md`；这里解释设计之间的关系。
+
+### 22.1 为什么是 Workflow-first，而不是自治 Agent 集群
+
+论文研究的主阶段相对稳定：理解、规划、检索、证据、生成、验证。权限、超时、重试和证据合法性必须由代码保证；开放目标理解和多论文综合才使用模型。因此主体使用带条件分支的 LangGraph Workflow，L3 仅增加 Planner、Executor、Reviewer 三段角色交接。
+
+```text
+Planner：生成 Research Brief、DAG 和执行波次，不直接调用工具
+→ Executor：执行只读检索并写 Evidence，不决定答案是否可信
+→ Reviewer：检查 Coverage、Citation、Claim 和 Answer，不重新规划全部任务
+```
+
+角色之间通过结构化 AgentState 通信，不共享自由自然语言聊天室。这样可以复现 Badcase、定位责任节点、控制循环预算；代价是适应完全未知任务的自由度低于自治 Agent Swarm，但更符合当前科研研究场景和简历项目规模。
+
+### 22.2 execCtx 在项目中如何落地
+
+项目没有单独命名为 `execCtx` 的类，其职责由 `PaperAgentService + AgentState + LangGraph configurable` 共同承担：
+
+| 维度 | 字段示例 |
+|---|---|
+| 身份 | `trace_id / user_id / conversation_id` |
+| 输入 | `query / resolved_query / pdf_path / retrieval_scope` |
+| 计划 | `task_level / research_plan / research_schedule` |
+| 执行 | `documents / evidence_store / tools_used / retry_count` |
+| 质量 | Coverage、Citation、Claim、Grounding、Answer Verification |
+| 成本 | `llm_usage / token_usage / node_timings` |
+| 持久化 | `configurable.thread_id=conversation_id` |
+
+每个节点接收 State 快照并只返回增量字段，避免把请求状态放在可变全局变量中。AgentState 是运行事实容器，不等于模型上下文；Context Policy 再从中选择当前 Skill 所需信息。
+
+### 22.3 首次提问、多轮补充和修改诉求
+
+- 首次提问：创建会话与空状态，从 Intent 开始；Smalltalk 可以本地结束。
+- 多轮补充：复用 `conversation_id`，加载最近消息、旧摘要、研究状态和 Checkpoint；Clarification 恢复“第二篇/刚才那个方法”等指代。
+- 修改诉求：新消息作为新请求进入，`original_query` 与 `resolved_query` 分开；一次性缩写不写长期记忆，改变研究目标则重新做复杂度与检索分析。
+- 无法恢复：保存 `pending_clarification` 并向用户提问，不猜测缺失实体。
+
+### 22.4 ReAct、Plan-and-Execute 与有限 Loop
+
+ReAct 在行动和观察之间动态调整，适合路径不确定、工具反馈会改变下一步的任务；Plan-and-Execute 先拆解依赖再执行，适合目标和子任务可以预先定义的复杂研究。PaperAgent 采用混合方式：L3 先生成受限 DAG，再在检索质量不足时基于观察定向 Replan。
+
+项目没有无限 Thought/Action Loop，而是两个可计数闭环：
+
+```text
+Retrieval：Evaluate → Replan → Retrieve，最多 1 次
+Answer：Verify → Reflection → Verify，最多 1 次
+```
+
+重试必须有明确失败类型和现有修复依据；Reflection 没有提高验证分时恢复原答案。这样解决路径震荡、重复搜索和成本不可预测问题。
+
+### 22.5 异步并行与长耗时工具
+
+当前并行发生在无依赖子任务、Personal/Online Hybrid 分支和可选多来源检索；Scheduler 保证综合任务等待依赖完成，并限制最大并发。当前 FastAPI 主图仍是同步请求模型，Tool Executor 适合秒级检索并有超时，不支持半小时任务。
+
+如果扩展长任务，正确方案是：
+
+```text
+POST 创建 Job → 返回 job_id
+→ Worker 执行并持久化 progress / heartbeat / checkpoint
+→ SSE、WebSocket 或轮询读取状态
+→ completed 后主图只消费 Evidence 引用
+```
+
+还需幂等键、取消、租约、超时和失败重试。仅把 HTTP/Tool timeout 改成 1800 秒会占用 Worker，断线后也无法可靠恢复，因此不是可接受方案。
+
+### 22.6 大量 Tool 和 Skill 如何避免 Token 爆炸
+
+当前不会把所有 Tool Schema 和 Skill Prompt 塞给模型：
+
+1. Retrieval Router 先确定 Online/Personal/Hybrid/PDF 范围；
+2. Tool Policy 按来源、权限、配置和风险过滤；
+3. Tool Router 以 `capability + source` 选择一个小候选；
+4. Skill Router 根据任务等级、主 Skill 白名单和 PDF 意图只选择一个主 Skill；
+5. Context Policy 只加载该 Skill 需要的历史、文档、PDF 和元数据。
+
+如果扩展到 500 Tool/500 Skill，应建立分层 Capability Catalog：先做领域/权限粗召回，再对 Top-K 描述进行语义或模型选择；工具 Schema 延迟加载，常用能力缓存，选择结果用 Tool Selection Eval 回归。不能依靠模型在一次 Prompt 中阅读全部描述。
+
+### 22.7 大工具输出和大 JSON 如何处理
+
+外部结果先由 Adapter 转成统一 Paper/ToolResult，再进入 Evidence Store；只向 Writer 注入 Top-K、截断片段、来源和 Evidence ID。Local RAG 结果保存 `document_id/chunk_id/page/score`，不把完整索引或供应商 JSON 放进 Prompt。
+
+更大规模时应将原始输出放入对象存储或数据库，在 State 中只留引用、统计和游标，使用分页或二次检索按需读取。大 JSON 直接进入模型会增加 Token、降低中间字段注意力、造成截断，并让错误重试重复传输同一数据。
+
+### 22.8 Tool 的 Session 隔离与有状态执行
+
+公开 arXiv/日期等只读工具可以不依赖 Session；个人论文库、记忆删除和报告资产必须同时校验 `user_id` 与资源 Owner。Tool 实现不直接读取全局当前用户，而由 Executor 显式传递经过 Policy 检查的上下文，从而降低工具与会话层耦合。
+
+有状态或有副作用 Tool 若未来加入，应使用 `trace_id + task_id + operation` 形成幂等键，写入执行记录后再执行，并在重试前查询状态。当前外部工具主要只读，因此项目没有宣称已经实现 exactly-once 副作用语义。
+
+### 22.9 RAG 相似度、召回观察与技术选型
+
+Dense Retrieval 使用 L2 归一化后的向量相似性，本质上对应余弦方向相似度；BM25 使用词项统计，RRF 按名次融合两路，避免直接混合不可比原始分数。余弦更关注方向、对文本长度不敏感；欧氏距离同时受幅度影响，向量归一化后两者排序关系接近。
+
+每个召回 Chunk 保留文档、Chunk、页码、正文片段、来源和分数；Trace 记录查询、Dense Top-1、margin、Dense/Hybrid 路由原因和缓存命中，Evidence 面板展示最终进入生成的内容。这样 Badcase 可以区分“没有召回、排序靠后、Coverage 误判、还是 Writer 没使用证据”。
+
+GraphRAG、LightRAG、Reranker 和向量数据库均不写死。候选必须在相同事实定位、跨论文比较和全局综述集上比较 Recall/MRR/nDCG、Claim Support、构建更新成本、P95、Token 与 Owner 隔离，再决定是否替换当前 Hybrid RAG。
+
+### 22.10 缓存与 Prompt Cache
+
+当前已实现：在线论文结果缓存、Dense 向量/索引缓存、FastEmbed 模型缓存和 PDF 页面 PNG 缓存。缓存键需要包含规范化查询、Provider、模型、Parser、Chunker 和版本 Fingerprint；公共检索缓存与用户私有数据必须分开。
+
+项目没有实现模型供应商级 Prompt Cache，因此不把它写成已落地能力。若供应商支持，稳定 System Prompt、Tool/Skill Contract 应放在前缀，动态用户问题和 Evidence 放后部；同时版本化 Prompt，避免策略变更后错误命中旧前缀。
+
+### 22.11 Badcase 如何定位和回流
+
+定位顺序不是先改 Prompt：
+
+```text
+意图/澄清错 → 看 Router 与解析置信度
+计划错 → 看 Research Analysis、Plan、Validator、Schedule
+工具错 → 看 Tool Route、参数、权限、超时和错误分类
+检索错 → 看 Chunk 排名、Top-1/margin、Coverage 和数据污染
+证据足但回答错 → 看 Skill Context、Citation、Claim 和 Answer Verify
+记忆污染 → 看 Retrieval Gate、Owner、Write Gate、Dedup/Conflict
+```
+
+Failure Dataset 保存 Case、Trace、责任模块和失败类型；候选只能修改 Allowlist 内 Prompt/Policy/Routing/RAG。相同冻结集生成 Baseline/Candidate Scorecard，Promotion Gate 要求质量提升、逐题零回归、Critical/Safety 不退化、Provider Failure 不增加，并限制 Token 和 P95。真实 few-shot 与 Schema Guard 候选均因回归、收益或成本不满足而被拒绝，说明闭环会阻止负优化。
+
+### 22.12 哪些面试题不属于本项目
+
+PaperAgent 没有实现 Redis Stream 持久事件流、Redis Pub/Sub 游戏平台、Coding Agent 沙箱、多人并发修改文件、Agentic RL、SFT 子 Agent、Hermes 自进化或 OpenClaw/Claude Code 源码复刻。这些可以讨论通用设计，但不能描述成 PaperAgent 项目经验。项目真实边界是单机 SQLite、同步短任务、只读工具为主、有界角色协作和受控策略候选评测。

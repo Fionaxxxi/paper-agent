@@ -1,6 +1,6 @@
 # PaperAgent 项目面试题完整回答
 
-更新日期：2026-08-21  
+更新日期：2026-08-23
 使用原则：只回答 PaperAgent 已实现或与其技术选型直接相关的问题。电商、游戏平台、Redis Stream、Coding Agent、文件协同编辑、Hermes 自进化、Agentic RL、OpenClaw/Claude Code 源码等项目未涉及内容不写入本题库，避免把知识了解包装成项目经验。
 
 回答口径分为两类：
@@ -657,7 +657,7 @@ Skill 与 Tool 的区别：Skill 决定“如何完成和表达任务”，Tool 
 - Generation：答案任务完成度、引用合法率、Claim 支持率、Grounding。
 - Agent：最终通过率、Replan/Reflection 成功率、Token、总延迟和 Stop Reason。
 
-自动化负责稳定回归；人工抽检负责判断开放研究结论、证据是否真正支持、表达是否有误导性。当前基线：完整离线回归 422/422；正式 LLM 核心集 27/30，通过率 90%，供应商失败 0。
+自动化负责稳定回归；人工抽检负责判断开放研究结论、证据是否真正支持、表达是否有误导性。当前基线：完整离线回归 422/422；正式 LLM 核心集 29/30，通过率 96.67%，供应商失败 0；16 题最终回答 A/B 的内容质量分由 68.44 提升至 92.34。
 
 ## 3. 问题回流后，如何定位是 Agent、RAG、检索策略还是 Prompt？
 
@@ -813,4 +813,4 @@ PaperAgent 最值得讲的不是“用了 LangGraph、RAG 和 MCP”这些名词
 2. **证据闭环**：Evidence Store、Coverage、Citation、Claim、Grounding 和 Answer Verification。
 3. **记忆闭环**：短期上下文、Checkpoint、按需长期召回、Write Gate、重复冲突和时效管理。
 
-面试回答应始终落到具体状态字段、阈值、失败路径和测试数据：完整离线回归 422/422，正式 LLM 核心评测 27/30，PDF Vision 和 Personal+Online Hybrid 均完成真实在线冒烟。这样能证明项目不是架构图堆叠，而是可运行、可验证、知道边界的 Agent Engineering 项目。
+面试回答应始终落到具体状态字段、阈值、失败路径和测试数据：完整离线回归基线 422/422，正式 LLM 核心评测 29/30（96.67%）；16 题最终回答 A/B 中，不含引用因素的内容质量分由 68.44 提升至 92.34，证据不足披露率由 28.57% 提升至 100%；PDF Vision 和 Personal+Online Hybrid 均完成真实在线冒烟。这样能证明项目不是架构图堆叠，而是可运行、可验证、知道边界的 Agent Engineering 项目。
