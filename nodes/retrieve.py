@@ -8,6 +8,7 @@ from core.config import settings
 from retrieval.cache import load_cached_papers, save_cached_papers
 from retrieval.metadata_resolver import extract_arxiv_ids, normalize_doi
 from retrieval.reranker import rerank_documents_with_stats
+from retrieval.research_query import filter_documents_by_year
 from retrieval.result_merger import merge_documents_with_stats
 from retrieval.comparison import (
     comparison_coverage,
@@ -677,16 +678,21 @@ def retrieve_multi_query(state: AgentState, sub_queries: List[str]) -> AgentStat
                 tools_used.append(tool)
 
     strategy_mode = state.get("retrieval_strategy", {}).get("mode", "")
-    merge_result = merge_documents_with_stats(
+    strategy_sources = state.get("retrieval_strategy", {}).get("sources", [])
+    max_documents = (
+        settings.MULTI_SOURCE_MAX_RESULTS
+        if len(strategy_sources) > 1 or strategy_mode == "hybrid"
+        else settings.ARXIV_MAX_RESULTS
+    )
+    merge_result = rerank_documents_with_stats(
+        query=state.get("rewritten_query") or state.get("query", ""),
         document_groups=document_groups,
-        max_documents=(
-            settings.MULTI_SOURCE_MAX_RESULTS
-            if settings.RETRIEVAL_MODE.lower() in {"multi", "multi_source"} or strategy_mode == "hybrid"
-            else settings.ARXIV_MAX_RESULTS
-        ),
+        max_documents=max_documents,
     )
 
-    documents = merge_result["documents"]
+    documents, year_filter = filter_documents_by_year(
+        merge_result["documents"], state.get("query", "")
+    )
     documents, comparison_check, fallback_tools, fallback_statuses = (
         supplement_comparison_from_local(documents, state)
     )
@@ -722,6 +728,8 @@ def retrieve_multi_query(state: AgentState, sub_queries: List[str]) -> AgentStat
             "agentic_rag_enabled": True,
             "tool_executions": tool_executions,
             "comparison_coverage": comparison_check,
+            "ranking_strategy": merge_result.get("ranking_strategy", "source_priority"),
+            "year_filter": year_filter,
         },
     }
 

@@ -2129,6 +2129,41 @@ TEST_CASE_CATALOG: dict[str, CaseDescription] = {
         "代表候选针对真实解析失败做最小修改，降低语义漂移和Token膨胀风险。",
         "若失败，所谓最小候选可能仍然包含大段示例或没有修复字段类型问题。",
     ),
+    "tests/test_research_retrieval_quality.py::test_l3_online_request_honors_multi_source_requirement": _description(
+        "验证 Analyzer 声明需要多源时，即使默认模式为 arXiv，Online 执行仍会同时选择 arXiv 与 OpenAlex。",
+        "通过代表研究计划的多源要求能够传递到真实工具路由，不会在网页 Online 入口静默退化为单源。",
+        "失败表示复杂综述可能只搜索 arXiv，论文覆盖和代表性不足。",
+    ),
+    "tests/test_research_retrieval_quality.py::test_l3_plan_builds_english_provider_queries_for_sft": _description(
+        "验证 SFT 研究计划被拆成代表方法、方法比较和研究空白三类英文论文库检索式。",
+        "通过代表中文研究目标不会原样提交给英文数据源，且不同研究维度使用不同检索意图。",
+        "失败表示 arXiv/OpenAlex 可能收到冗长中文任务描述并召回大量无关论文。",
+    ),
+    "tests/test_research_retrieval_quality.py::test_sft_query_rewrite_exposes_normalized_english_topic": _description(
+        "验证 SFT/监督微调被规范为稳定的英文领域主题，并保留缩写与全称。",
+        "通过代表查询元数据和后续评分使用同一语义主题。",
+        "失败表示查询规划与质量评估可能继续使用不一致的中英文表达。",
+    ),
+    "tests/test_research_retrieval_quality.py::test_year_constraint_removes_pre_2023_papers_but_keeps_unknown_year": _description(
+        "验证‘2023年以来’在检索后执行硬年份过滤，同时保留年份缺失的候选供后续核验。",
+        "通过代表明确过期论文不会进入证据层，未知年份不会被无依据误删。",
+        "失败表示旧论文可能突破用户时间范围，或元数据不完整论文被错误丢弃。",
+    ),
+    "tests/test_research_retrieval_quality.py::test_relevant_sft_evidence_passes_without_chinese_exact_phrase_match": _description(
+        "验证至少三篇真实 SFT 英文证据可越过质量门，而不要求英文摘要包含中文整句。",
+        "通过代表规则评分按规范化主题判断相关性，不再把合格英文论文固定误判为 0.50。",
+        "失败表示复杂中文综述即使找到相关论文仍会错误返回证据不足。",
+    ),
+    "tests/test_research_retrieval_quality.py::test_unrelated_results_remain_blocked_for_sft_research": _description(
+        "验证天文学、医学等无关结果不能因放宽检索逻辑而越过 SFT 研究质量门。",
+        "通过代表修复降低的是误杀，不是降低证据安全门槛。",
+        "失败表示无关论文可能被当作 SFT 证据并触发模型生成。",
+    ),
+    "tests/test_research_retrieval_quality.py::test_research_writer_has_bounded_output_budget": _description(
+        "验证 Research Writer 携带最大输出 Token 预算，并限制强制思考模型的隐藏思考预算。",
+        "通过代表 Writer 在连接时限内为隐藏推理和有引用的可见报告分别保留有界额度。",
+        "失败表示复杂报告可能持续到上游断开，或 Token 全被隐藏思考占用而返回空正文。",
+    ),
 }
 
 

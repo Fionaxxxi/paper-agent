@@ -12,6 +12,7 @@ from core.llm_usage import (
 from prompts.evaluator import EVALUATOR_TEMPLATE
 from prompts.contracts import get_prompt_version, wrap_untrusted_evidence
 from retrieval.comparison import comparison_coverage, comparison_targets
+from retrieval.research_query import core_topic_terms, document_matches_topic
 
 
 def get_llm():
@@ -43,6 +44,19 @@ def rule_based_score(state: AgentState) -> float:
         return 0.4
 
     query_text = query + " " + rewritten_query
+
+    topic_terms = core_topic_terms(state)
+    topic_hit_count = sum(
+        document_matches_topic(document, topic_terms) for document in documents
+    )
+    if state.get("task_level") in {"L2", "L3"} and topic_terms:
+        if topic_hit_count >= 3:
+            ratio = topic_hit_count / len(documents)
+            return round(min(0.75 + 0.15 * ratio, 0.9), 2)
+        if topic_hit_count == 2:
+            return 0.72
+        if topic_hit_count == 1:
+            return 0.58
 
     keywords = [
         word.strip()

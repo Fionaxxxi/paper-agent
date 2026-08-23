@@ -13,6 +13,23 @@ HYBRID_SIGNALS = ("结合我", "结合本地", "结合已有", "以及最新", "
 MEMORY_SIGNALS = ("基于之前", "继续上次", "上次结论", "之前总结")
 
 
+def configured_online_sources(state: dict[str, Any]) -> list[str]:
+    configured = settings.RETRIEVAL_MODE.casefold()
+    if configured in {"multi", "multi_source"}:
+        sources = [
+            item.strip().casefold()
+            for item in settings.MULTI_SOURCE_PROVIDERS.split(",")
+            if item.strip()
+        ]
+    else:
+        sources = [configured if configured in {"arxiv", "openalex", "mcp_catalog"} else "arxiv"]
+    if (state.get("research_analysis") or {}).get("requires_multiple_sources"):
+        for source in ("arxiv", "openalex"):
+            if source not in sources:
+                sources.append(source)
+    return sources
+
+
 def select_retrieval_strategy(state: dict[str, Any]) -> dict[str, Any]:
     query = str(state.get("query") or "").casefold()
     configured = settings.RETRIEVAL_MODE.casefold()
@@ -20,7 +37,7 @@ def select_retrieval_strategy(state: dict[str, Any]) -> dict[str, Any]:
     if state.get("pdf_path"):
         return {"mode": "pdf", "sources": ["pdf"], "reason": "uploaded_pdf", "fallback": "none"}
     if requested_scope == "online":
-        return {"mode": "online", "sources": ["arxiv"], "reason": "user_selected_online", "fallback": "local_for_comparison_gap"}
+        return {"mode": "online", "sources": configured_online_sources(state), "reason": "user_selected_online", "fallback": "local_for_comparison_gap"}
     if requested_scope == "personal":
         if state.get("user_id"):
             return {"mode": "personal", "sources": ["personal_library"], "reason": "user_selected_personal", "fallback": "none"}
@@ -52,7 +69,7 @@ def select_retrieval_strategy(state: dict[str, Any]) -> dict[str, Any]:
         return {"mode": "local", "sources": ["local_rag"], "reason": "local_scope_requested", "fallback": "online"}
     if configured == "zotero":
         return {"mode": "personal", "sources": ["zotero"], "reason": "configured_personal_provider", "fallback": "none"}
-    online_sources = ["arxiv", "openalex"] if configured in {"multi", "multi_source"} else [configured if configured in {"arxiv", "openalex", "mcp_catalog"} else "arxiv"]
+    online_sources = configured_online_sources(state)
     return {
         "mode": "online", "sources": online_sources,
         "reason": "freshness_requested" if any(signal in query for signal in ONLINE_SIGNALS) else "default_online",

@@ -381,6 +381,8 @@ Analyzer 输出结构化研究意图：任务等级、主题、目标、评估�
 
 Rewrite 负责清理会话口语、补回已确认实体、规范学术关键词、保留年份和限定词，并生成适合数据源的查询。它不是任意扩写：不能凭空增加研究对象，也不能改变用户范围。当前采用规则与受控模板，复杂语义升级必须经专项评测。
 
+对于“梳理某主题的代表论文、方法比较和研究空白”这类 L3 请求，系统不会把中文任务描述原样提交给英文论文库，而是将同一研究主题拆成 `representative/survey`、`methods/evaluation`、`limitations/open problems` 等英文检索式。用户给出的“2023 年以来”等时间约束在检索后再次执行确定性年份过滤，避免供应商模糊召回突破用户范围。
+
 ### 6.7 Query Plan 与 Plan Validator
 
 L1 通常只有一个任务；L2 比较拆成实体 A、实体 B 和综合任务；L3 根据 objectives 与 dimensions 形成有向无环依赖。Validator 检查任务 ID、依赖是否存在、是否成环、数量和深度是否超预算、查询是否为空，非法计划不会直接执行。
@@ -480,7 +482,7 @@ GraphRAG 对跨论文实体关系、研究脉络和全局主题总结有潜力�
 
 ### 8.5 Coverage 与质量门控
 
-Coverage 检查计划中的实体、维度、来源和子任务是否有证据映射；明确比较必须覆盖双方。检索质量结合数量、相关性、身份有效性和任务覆盖判断 `sufficient / retryable / insufficient`。不足时先定向补检；仍不足则明确告诉用户证据边界，而不是生成看似完整的结论。
+Coverage 检查计划中的实体、维度、来源和子任务是否有证据映射；明确比较必须覆盖双方。检索质量结合数量、相关性、身份有效性和任务覆盖判断 `sufficient / retryable / insufficient`。L2/L3 的规则评估使用规范化英文主题词统计真实主题命中文献数，不再以中文整句是否出现在英文摘要中作为相关性依据；至少两篇主题证据才能越过生成门槛，一篇或全无关结果仍会阻断。Analyzer 声明需要多源时，Online 执行层会使用 arXiv 与 OpenAlex，而不是因界面选择 Online 就固定退化为单一 arXiv。不足时先定向补检；仍不足则明确告诉用户证据边界，而不是生成看似完整的结论。
 
 关键目录：`local_rag/`、`retrieval/`、`research/evidence_store.py`、`research/coverage.py`。
 
@@ -520,7 +522,7 @@ Skill 不是把所有 Prompt 同时注入上下文。路由顺序为：L3 只接
 
 ### 9.2 Generate / Research Writer
 
-Writer 接收用户目标、研究计划、Evidence Store、Coverage、按需记忆和选定 Skill。Prompt 要求区分证据事实与推断、使用 Evidence ID、披露证据不足、禁止引用不存在的来源。L2/L3 同次生成内部 Memory Metadata，前端只展示清理后的正常答案。
+Writer 接收用户目标、研究计划、Evidence Store、Coverage、按需记忆和选定 Skill。Prompt 要求区分证据事实与推断、使用 Evidence ID、披露证据不足、禁止引用不存在的来源。L2/L3 同次生成内部 Memory Metadata，前端只展示清理后的正常答案。当前主模型强制启用思考，因此 Writer 使用 `GENERATE_THINKING_BUDGET=400` 限制隐藏推理，并用 `GENERATE_MAX_TOKENS=1800` 为可见报告保留有界预算，防止长篇生成超过上游连接持续时间或正文预算被隐藏思考耗尽；连接失败时返回明确的检索降级结果，不伪装成正式验证通过的研究结论。
 
 ### 9.3 Verification Pipeline
 

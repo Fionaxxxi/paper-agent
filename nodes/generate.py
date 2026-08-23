@@ -32,6 +32,11 @@ def get_llm(model_name: str | None = None):
         temperature=0,
         timeout=settings.LLM_TIMEOUT,
         max_retries=1,
+        max_tokens=settings.GENERATE_MAX_TOKENS,
+        extra_body={
+            "enable_thinking": True,
+            "thinking_budget": settings.GENERATE_THINKING_BUDGET,
+        },
     )
 
 

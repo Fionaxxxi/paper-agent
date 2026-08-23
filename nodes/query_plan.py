@@ -1,6 +1,7 @@
 from typing import Any, Dict, List
 
 from agent.state import AgentState
+from retrieval.research_query import build_research_search_query
 
 
 COMPLEX_TASK_TYPES = {"compare", "summarize", "recommend", "citation"}
@@ -199,13 +200,11 @@ def query_plan_node(state: AgentState) -> AgentState:
         and state.get("research_plan_validation", {}).get("valid")
         and research_plan.get("tasks")
     ):
-        sub_queries = deduplicate_queries(
-            [
-                task.get("query", "")
-                for task in research_plan["tasks"]
-                if task.get("source") != "evidence_store"
-            ]
-        )
+        sub_queries = deduplicate_queries([
+            build_research_search_query(state, task.get("objective", ""))
+            for task in research_plan["tasks"]
+            if task.get("source") != "evidence_store"
+        ])
         return {
             "sub_queries": sub_queries,
             "query_plan_enabled": True,

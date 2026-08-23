@@ -1,5 +1,6 @@
 from agent.state import AgentState
 from retrieval.comparison import comparison_targets
+from retrieval.research_query import normalized_research_topic
 
 
 def query_rewrite_node(state: AgentState) -> AgentState:
@@ -12,7 +13,9 @@ def query_rewrite_node(state: AgentState) -> AgentState:
 
     targets = comparison_targets(original_query, state.get("task_type", ""))
 
-    if targets == ["GraphRAG", "LightRAG"]:
+    if any(term in query for term in ("sft", "supervised fine-tuning", "supervised finetuning", "监督微调")):
+        rewritten_query = normalized_research_topic(state)
+    elif targets == ["GraphRAG", "LightRAG"]:
         rewritten_query = (
             "GraphRAG LightRAG core architecture design comparison "
             "entity graph community summaries dual-level retrieval incremental update"
