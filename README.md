@@ -24,13 +24,13 @@ PaperAgent 面向需要进行论文检索、方法比较、研究综述和 PDF �
 
 ## 核心能力
 
-- **研究流程自动化：**使用 LangGraph 将复杂问题组织为澄清、分级、规划、检索、证据覆盖、生成和验证节点；支持 L1/L2/L3 分级、有依赖子任务并行，以及最多一次 Replan 和 Reflection。
-- **混合知识检索：**支持 Personal、Online、Hybrid 三种范围，联合个人 PDF 全文与 arXiv、OpenAlex、Crossref、Semantic Scholar；Local RAG 使用 BM25、MPNet Dense Retrieval、RRF 和置信度门控。
-- **证据约束生成：**统一 Evidence Store 保存论文身份、来源、页码和任务映射；Coverage、Citation、Claim-Evidence、PDF Grounding 和 Answer Verification 共同限制无依据结论。
-- **论文多模态阅读：**按问题自动选择关键页，通过 `qwen3.5-ocr` 提取架构图、实验表、曲线和公式信息，再由主模型结合 PDF 文本生成并验证回答。
-- **记忆与个人知识：**提供用户登录、Owner-scoped 个人论文库、会话 Checkpoint、按需 Long-Term Memory RAG 和 Memory Write Gate，避免跨用户数据泄漏及全量记忆污染。
-- **工具与 MCP 治理：**Router、Registry、Policy、Executor 统一处理工具选择、参数、权限、超时、重试和错误；实现自建 Paper Catalog MCP，并提供只读 Zotero/GitHub 集成。
-- **受控策略优化：**从 Badcase 生成 Allowlist 内的 Prompt、Policy、Routing 或 RAG 候选；Promotion Gate 同时检查逐题回归、质量、安全、Token 和 P95 延迟，候选不能自动改代码或上线。
+- **研究流程自动化：** 使用 LangGraph 将复杂问题组织为澄清、分级、规划、检索、证据覆盖、生成和验证节点；支持 L1/L2/L3 分级、有依赖子任务并行，以及最多一次 Replan 和 Reflection。
+- **混合知识检索：** 支持 Personal、Online、Hybrid 三种范围，联合个人 PDF 全文与 arXiv、OpenAlex、Crossref、Semantic Scholar；Local RAG 使用 BM25、MPNet Dense Retrieval、RRF 和置信度门控。
+- **证据约束生成：** 统一 Evidence Store 保存论文身份、来源、页码和任务映射；Coverage、Citation、Claim-Evidence、PDF Grounding 和 Answer Verification 共同限制无依据结论。
+- **论文多模态阅读：** 按问题自动选择关键页，通过 `qwen3.5-ocr` 提取架构图、实验表、曲线和公式信息，再由主模型结合 PDF 文本生成并验证回答。
+- **记忆与个人知识：** 提供用户登录、Owner-scoped 个人论文库、会话 Checkpoint、按需 Long-Term Memory RAG 和 Memory Write Gate，避免跨用户数据泄漏及全量记忆污染。
+- **工具与 MCP 治理：** Router、Registry、Policy、Executor 统一处理工具选择、参数、权限、超时、重试和错误；实现自建 Paper Catalog MCP，并提供只读 Zotero/GitHub 集成。
+- **受控策略优化：** 从 Badcase 生成 Allowlist 内的 Prompt、Policy、Routing 或 RAG 候选；Promotion Gate 同时检查逐题回归、质量、安全、Token 和 P95 延迟，候选不能自动改代码或上线。
 
 ## 系统架构
 
