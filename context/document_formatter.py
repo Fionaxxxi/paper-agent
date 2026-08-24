@@ -67,6 +67,9 @@ def format_single_document(
     source = document.get("source", "")
     pdf_url = document.get("pdf_url", "")
     entry_id = document.get("entry_id", "")
+    page = document.get("page")
+    chunk_id = document.get("chunk_id", "")
+    content_scope = document.get("content_scope", "")
 
     content = truncate_text(
         get_document_content(document),
@@ -92,6 +95,15 @@ def format_single_document(
 
     if entry_id:
         parts.append(f"Entry ID: {entry_id}")
+
+    if page:
+        parts.append(f"Page: {page}")
+
+    if chunk_id:
+        parts.append(f"Chunk ID: {chunk_id}")
+
+    if content_scope:
+        parts.append(f"Content Scope: {content_scope}")
 
     if content:
         parts.append("Content:")

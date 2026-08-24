@@ -36,8 +36,8 @@ CONTEXT_POLICIES: Dict[str, Dict[str, Any]] = {
         "use_documents": True,
         "use_pdf": False,
         "use_metadata": True,
-        "max_documents": 5,
-        "document_content_limit": 700,
+        "max_documents": 8,
+        "document_content_limit": 1600,
         "max_pdf_chars": 0,
     },
     "recommend": {

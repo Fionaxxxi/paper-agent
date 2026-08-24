@@ -24,6 +24,26 @@ def _description(
 
 
 TEST_CASE_CATALOG: dict[str, CaseDescription] = {
+    "tests/test_fulltext_retrieval.py::test_deep_comparison_requires_fulltext_but_simple_lookup_does_not": _description(
+        "验证只有比较、综述、批判或明确要求实验/局限等深度任务才触发在线全文。",
+        "深度任务获得全文证据，简单找论文仍保持低延迟和低下载成本。",
+        "简单请求可能浪费带宽，或复杂研究仍停留在摘要级证据。",
+    ),
+    "tests/test_fulltext_retrieval.py::test_fulltext_enrichment_keeps_pages_links_and_abstract_fallback": _description(
+        "验证全文召回结果保留论文链接、页码、Chunk 标识，并保留摘要作为降级证据。",
+        "回答可以定位原论文页面，全文失败时仍有摘要可用。",
+        "全文证据可能无法追溯，或下载/解析失败会丢掉原检索结果。",
+    ),
+    "tests/test_fulltext_retrieval.py::test_compare_context_does_not_truncate_normal_fulltext_chunks": _description(
+        "验证比较任务允许完整容纳一个标准全文 Chunk，不再错误添加 truncated 标记。",
+        "模型看到的是完整相关段落，不会因人为 700 字符上限误报全文被截断。",
+        "全文已经召回但送入模型前仍被截断，深度比较无法真正使用证据。",
+    ),
+    "tests/test_fulltext_retrieval.py::test_pdf_download_rejects_non_https_and_untrusted_hosts": _description(
+        "验证全文下载仅允许 HTTPS 学术域名，拒绝本机地址、HTTP 和伪造相似域名。",
+        "自动 PDF 获取具备明确的 SSRF 与来源边界。",
+        "恶意论文链接可能让服务访问内网或不可信下载地址。",
+    ),
     "tests/test_answer_quality_ab.py::test_answer_quality_dataset_is_frozen_and_representative": _description(
         "验证最终回答质量集冻结为16题，并均衡覆盖方法比较、单篇总结、多论文综合和证据不足。",
         "通过代表A/B使用固定、具有代表性的人工标注问题，不会在看到模型答案后改题。",

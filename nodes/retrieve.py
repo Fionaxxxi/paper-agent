@@ -15,6 +15,7 @@ from retrieval.comparison import (
     comparison_targets,
     prioritize_comparison_evidence,
 )
+from retrieval.fulltext import enrich_with_fulltext
 from tools.contracts import ToolErrorCode
 from tools.runtime import paper_tool_executor, paper_tool_router
 
@@ -696,6 +697,9 @@ def retrieve_multi_query(state: AgentState, sub_queries: List[str]) -> AgentStat
     documents, comparison_check, fallback_tools, fallback_statuses = (
         supplement_comparison_from_local(documents, state)
     )
+    documents, fulltext_retrieval = enrich_with_fulltext(documents, state)
+    if fulltext_retrieval.get("status") == "enriched" and "fulltext_pdf_retriever" not in tools_used:
+        tools_used.append("fulltext_pdf_retriever")
     for tool in fallback_tools:
         if tool not in tools_used:
             tools_used.append(tool)
@@ -728,6 +732,7 @@ def retrieve_multi_query(state: AgentState, sub_queries: List[str]) -> AgentStat
             "agentic_rag_enabled": True,
             "tool_executions": tool_executions,
             "comparison_coverage": comparison_check,
+            "fulltext_retrieval": fulltext_retrieval,
             "ranking_strategy": merge_result.get("ranking_strategy", "source_priority"),
             "year_filter": year_filter,
         },
@@ -787,6 +792,9 @@ def retrieve_node(state: AgentState) -> AgentState:
     for tool in fallback_tools:
         if tool not in tools_used:
             tools_used.append(tool)
+    documents, fulltext_retrieval = enrich_with_fulltext(documents, state)
+    if fulltext_retrieval.get("status") == "enriched" and "fulltext_pdf_retriever" not in tools_used:
+        tools_used.append("fulltext_pdf_retriever")
 
     return {
         "documents": documents,
@@ -808,5 +816,6 @@ def retrieve_node(state: AgentState) -> AgentState:
             "ranking_strategy": single_result.get("ranking_strategy", "source_priority"),
             "local_rag_decision": single_result.get("local_rag_decision", {}),
             "comparison_coverage": comparison_check,
+            "fulltext_retrieval": fulltext_retrieval,
         },
     }

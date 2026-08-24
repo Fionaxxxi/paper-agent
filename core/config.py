@@ -24,6 +24,12 @@ class Settings(BaseSettings):
     MULTI_QUERY_PARALLEL_ENABLED: bool = False
     MULTI_QUERY_MAX_WORKERS: int = 2
     COMPARISON_LOCAL_FALLBACK_ENABLED: bool = True
+    FULLTEXT_RESEARCH_ENABLED: bool = True
+    FULLTEXT_MAX_PAPERS: int = 3
+    FULLTEXT_CHUNKS_PER_PAPER: int = 3
+    FULLTEXT_MAX_PDF_MB: int = 25
+    FULLTEXT_DOWNLOAD_TIMEOUT: float = 45.0
+    FULLTEXT_CACHE_DIR: str = "data/cache/online_papers"
 
     # OpenAlex
     OPENALEX_BASE_URL: str = "https://api.openalex.org"
