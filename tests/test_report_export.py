@@ -28,6 +28,17 @@ def test_docx_report_contains_readable_sections_and_evidence(tmp_path):
     assert len(document.tables[0].rows) == 6
 
 
+def test_docx_report_converts_markdown_table_to_native_word_table(tmp_path):
+    payload = _payload()
+    payload["answer"] += "\n\n| 方法 | 优势 | 局限 |\n|---|---|---|\n| ReAct | 路径透明 | 长链路成本高 |\n| Reflexion | 可利用失败反馈 | 增加反思调用 |"
+    path = export_docx(payload, tmp_path)
+    document = Document(path)
+    paragraph_text = "\n".join(paragraph.text for paragraph in document.paragraphs)
+    assert len(document.tables) == 2
+    assert [cell.text for cell in document.tables[1].rows[0].cells] == ["方法", "优势", "局限"]
+    assert "|---|" not in paragraph_text
+
+
 def test_pdf_report_is_reopenable_and_multipage(tmp_path):
     path = export_pdf(_payload(), tmp_path)
     reader = PdfReader(path)

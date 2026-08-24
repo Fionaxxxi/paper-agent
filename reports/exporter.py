@@ -38,6 +38,56 @@ def _lines(text: str) -> Iterable[tuple[str, str]]:
             yield "body", _clean_markdown(line)
 
 
+def _markdown_blocks(text: str) -> Iterable[tuple[str, Any]]:
+    """解析报告常见 Markdown，并把管道表格保留为结构化行。"""
+
+    raw_lines = str(text).splitlines()
+    index = 0
+    while index < len(raw_lines):
+        line = raw_lines[index].strip()
+        if not line:
+            index += 1
+            continue
+        if "|" in line and index + 1 < len(raw_lines):
+            separator = raw_lines[index + 1].strip()
+            cells = [cell.strip() for cell in line.strip("|").split("|")]
+            separators = [cell.strip() for cell in separator.strip("|").split("|")]
+            if (
+                len(cells) >= 2
+                and len(cells) == len(separators)
+                and all(re.fullmatch(r":?-{3,}:?", cell) for cell in separators)
+            ):
+                rows = [[_clean_markdown(cell) for cell in cells]]
+                index += 2
+                while index < len(raw_lines):
+                    candidate = raw_lines[index].strip()
+                    if "|" not in candidate:
+                        break
+                    row = [_clean_markdown(cell.strip()) for cell in candidate.strip("|").split("|")]
+                    if len(row) != len(cells):
+                        break
+                    rows.append(row)
+                    index += 1
+                yield "table", rows
+                continue
+        for kind, value in _lines(line):
+            yield kind, value
+        index += 1
+
+
+def _table_widths(rows: list[list[str]], total_dxa: int = 9240) -> list[int]:
+    """按内容估算列宽，并保证总宽不超出页面可用宽度。"""
+
+    weights = []
+    for column in range(len(rows[0])):
+        longest = max(len(str(row[column])) for row in rows)
+        weights.append(max(6, min(longest, 32)))
+    total_weight = sum(weights)
+    widths = [max(720, round(total_dxa * weight / total_weight)) for weight in weights]
+    widths[-1] += total_dxa - sum(widths)
+    return widths
+
+
 def _summary_rows(payload: dict[str, Any]) -> list[tuple[str, str]]:
     metadata = payload.get("metadata") or {}
     verification = metadata.get("answer_verification") or metadata.get("citation_validation") or {}
@@ -70,6 +120,26 @@ def _set_cell_margins(cell, *, top: int = 80, start: int = 120, bottom: int = 80
         node.set(qn("w:type"), "dxa")
 
 
+def _set_cell_borders(cell, color: str = "D5DAE5", size: int = 6) -> None:
+    """显式写入单元格边框，避免 Word 对内置 Table Grid 的局部边框解析不一致。"""
+    from docx.oxml import OxmlElement
+    from docx.oxml.ns import qn
+
+    tc_pr = cell._tc.get_or_add_tcPr()
+    borders = tc_pr.find(qn("w:tcBorders"))
+    if borders is None:
+        borders = OxmlElement("w:tcBorders")
+        tc_pr.append(borders)
+    for side in ("top", "start", "bottom", "end", "insideH", "insideV"):
+        edge = borders.find(qn(f"w:{side}"))
+        if edge is None:
+            edge = OxmlElement(f"w:{side}")
+            borders.append(edge)
+        edge.set(qn("w:val"), "single")
+        edge.set(qn("w:sz"), str(size))
+        edge.set(qn("w:color"), color)
+
+
 def _set_table_geometry(table, widths_dxa: list[int]) -> None:
     """固定 Word 表格的 DXA 总宽、列宽和缩进，避免跨渲染器漂移。"""
     from docx.oxml import OxmlElement
@@ -97,6 +167,19 @@ def _set_table_geometry(table, widths_dxa: list[int]) -> None:
             tc_w.set(qn("w:w"), str(width))
             tc_w.set(qn("w:type"), "dxa")
             _set_cell_margins(cell)
+            _set_cell_borders(cell)
+
+
+def _repeat_table_header(row) -> None:
+    from docx.oxml import OxmlElement
+    from docx.oxml.ns import qn
+
+    tr_pr = row._tr.get_or_add_trPr()
+    header = tr_pr.find(qn("w:tblHeader"))
+    if header is None:
+        header = OxmlElement("w:tblHeader")
+        tr_pr.append(header)
+    header.set(qn("w:val"), "true")
 
 
 def export_docx(payload: dict[str, Any], output_dir: str | Path) -> Path:
@@ -154,7 +237,8 @@ def export_docx(payload: dict[str, Any], output_dir: str | Path) -> Path:
     rows = _summary_rows(payload)
     table = doc.add_table(rows=len(rows), cols=2)
     table.style = "Table Grid"
-    _set_table_geometry(table, [2160, 7200])
+    # 6.5 英寸正文区为 9360 DXA；预留 120 DXA 表格缩进，避免 Word 右侧越界。
+    _set_table_geometry(table, [2040, 7200])
     for row, (label, value) in zip(table.rows, rows):
         row.cells[0].text, row.cells[1].text = label, value
         for cell in row.cells:
@@ -167,9 +251,25 @@ def export_docx(payload: dict[str, Any], output_dir: str | Path) -> Path:
     doc.add_heading("研究问题", level=1)
     doc.add_paragraph(str(payload.get("query") or "未提供"))
     doc.add_heading("研究结论", level=1)
-    for kind, text in _lines(str(payload.get("answer") or "")):
+    for kind, text in _markdown_blocks(str(payload.get("answer") or "")):
         if kind.startswith("heading_"):
             doc.add_heading(text, level=int(kind[-1]))
+        elif kind == "table":
+            answer_table = doc.add_table(rows=len(text), cols=len(text[0]))
+            answer_table.style = "Table Grid"
+            _set_table_geometry(answer_table, _table_widths(text))
+            _repeat_table_header(answer_table.rows[0])
+            for row_index, (word_row, values) in enumerate(zip(answer_table.rows, text)):
+                for cell, value in zip(word_row.cells, values):
+                    cell.text = value
+                    cell.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
+                    paragraph = cell.paragraphs[0]
+                    paragraph.paragraph_format.space_after = Pt(0)
+                    if row_index == 0:
+                        paragraph.runs[0].bold = True
+                        shading = OxmlElement("w:shd")
+                        shading.set(qn("w:fill"), "E8ECF8")
+                        cell._tc.get_or_add_tcPr().append(shading)
         elif kind == "bullet":
             doc.add_paragraph(text, style="List Bullet")
         elif kind == "number":
@@ -266,9 +366,23 @@ def export_pdf(payload: dict[str, Any], output_dir: str | Path) -> Path:
         ("TOPPADDING", (0, 0), (-1, -1), 6), ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
     ]))
     story.extend([summary, Spacer(1, 12), Paragraph("研究问题", h1), Paragraph(_pdf_text(payload.get("query") or "未提供"), body), Paragraph("研究结论", h1)])
-    for kind, text in _lines(str(payload.get("answer") or "")):
+    for kind, text in _markdown_blocks(str(payload.get("answer") or "")):
         if kind.startswith("heading_"):
             story.append(Paragraph(_pdf_text(text), h2))
+        elif kind == "table":
+            widths = _table_widths(text, 4680)
+            pdf_table = Table(
+                [[Paragraph(_pdf_text(cell), body) for cell in row] for row in text],
+                colWidths=[width / 10 for width in widths], repeatRows=1,
+            )
+            pdf_table.setStyle(TableStyle([
+                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#E8ECF8")),
+                ("GRID", (0, 0), (-1, -1), .4, colors.HexColor("#D5DAE5")),
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("LEFTPADDING", (0, 0), (-1, -1), 6), ("RIGHTPADDING", (0, 0), (-1, -1), 6),
+                ("TOPPADDING", (0, 0), (-1, -1), 5), ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+            ]))
+            story.extend([pdf_table, Spacer(1, 8)])
         elif kind in {"bullet", "number"}:
             story.append(Paragraph(_pdf_text(text), bullet, bulletText="•" if kind == "bullet" else "-"))
         else:

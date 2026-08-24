@@ -174,6 +174,11 @@ TEST_CASE_CATALOG: dict[str, CaseDescription] = {
         "通过代表 DOCX 不是空壳文件，核心章节和摘要表均可被 Word 解析。",
         "失败通常表示 Markdown 转换、报告章节或 Word 表格生成发生回归。",
     ),
+    "tests/test_report_export.py::test_docx_report_converts_markdown_table_to_native_word_table": _description(
+        "验证研究结论中的 Markdown 管道表格会转换为真正的 Word 表格，而不是显示竖线源码。",
+        "通过代表表头、数据行和列结构可被 Word 正确解析，表格能够正常换行和跨页。",
+        "失败表示下载的 DOCX 仍会显示 Markdown 表格源码或产生错列布局。",
+    ),
     "tests/test_report_export.py::test_pdf_report_is_reopenable_and_multipage": _description(
         "验证 PDF 报告能够被标准 PDF 解析器重新打开，并包含结论页与证据页。",
         "通过代表 PDF 文件结构完整、不是损坏或零字节下载。",
