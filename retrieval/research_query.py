@@ -14,6 +14,8 @@ GENERIC_SEARCH_TERMS = {
     "survey", "technology", "trend", "trends",
 }
 DOMAIN_REWRITES = (
+    (("harness engineering", "agent harness", "harness工程", "harness 工程"),
+     "LLM agent harness engineering scaffolding runtime infrastructure workflow orchestration evaluation"),
     (("aigc", "ai generated content", "ai-generated content", "人工智能生成内容"),
      "AIGC artificial intelligence generated content generative AI content generation"),
     (("sft", "supervised fine-tuning", "supervised finetuning", "监督微调"),
@@ -49,7 +51,14 @@ def normalized_research_topic(state: dict[str, Any]) -> str:
 def build_research_search_query(state: dict[str, Any], objective: str = "") -> str:
     topic = normalized_research_topic(state)
     objective_text = str(objective or "").casefold()
-    if "aigc" in topic.casefold() or "artificial intelligence generated content" in topic.casefold():
+    if "harness" in topic.casefold():
+        if any(term in objective_text for term in ("边界", "workflow", "协作", "编排")):
+            suffix = "agent workflow orchestration state machine task graph execution pipeline"
+        elif any(term in objective_text for term in ("评测", "沙箱", "工具", "可观测", "失败")):
+            suffix = "agent evaluation harness tool sandbox observability policy failure recovery"
+        else:
+            suffix = "agent harness scaffolding runtime infrastructure engineering architecture"
+    elif "aigc" in topic.casefold() or "artificial intelligence generated content" in topic.casefold():
         if any(term in objective_text for term in ("安全", "风险", "检测", "版权", "评测")):
             suffix = "AI-generated content evaluation safety detection watermarking provenance"
         elif any(term in objective_text for term in ("方向", "应用", "场景", "多模态")):
@@ -98,3 +107,46 @@ def document_matches_topic(document: dict[str, Any], terms: set[str]) -> bool:
     if "sft" in terms:
         return "sft" in tokens or "supervised fine-tuning" in text
     return bool(terms & tokens)
+
+
+def required_topic_groups(state: dict[str, Any]) -> dict[str, tuple[str, ...]]:
+    """Return hard semantic coverage groups for ambiguity-prone engineering terms."""
+    combined = " ".join((
+        str(state.get("query") or ""),
+        str(state.get("rewritten_query") or ""),
+        str((state.get("research_analysis") or {}).get("topic") or ""),
+    )).casefold()
+    if "harness" not in combined:
+        return {}
+    groups = {
+        "agent": ("agent", "language agent", "llm agent"),
+        "harness": (
+            "harness", "scaffolding", "agent runtime", "runtime infrastructure",
+            "evaluation infrastructure", "evaluation framework", "tool sandbox",
+        ),
+    }
+    if "workflow" in combined or "流程" in combined or "orchestration" in combined:
+        groups["workflow"] = (
+            "workflow", "orchestration", "state machine", "execution graph",
+            "task graph", "pipeline",
+        )
+    return groups
+
+
+def topic_group_coverage(
+    documents: list[dict[str, Any]], groups: dict[str, tuple[str, ...]]
+) -> dict[str, Any]:
+    covered = []
+    for name, aliases in groups.items():
+        if any(
+            any(alias in f"{doc.get('title', '')} {doc.get('content', '')}".casefold() for alias in aliases)
+            for doc in documents
+        ):
+            covered.append(name)
+    missing = [name for name in groups if name not in covered]
+    return {
+        "enabled": bool(groups), "required_groups": list(groups),
+        "covered_groups": covered, "missing_groups": missing,
+        "coverage_pct": round(len(covered) / len(groups) * 100, 2) if groups else 0.0,
+        "passed": bool(groups) and not missing,
+    }

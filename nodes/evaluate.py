@@ -12,7 +12,10 @@ from core.llm_usage import (
 from prompts.evaluator import EVALUATOR_TEMPLATE
 from prompts.contracts import get_prompt_version, wrap_untrusted_evidence
 from retrieval.comparison import comparison_coverage, comparison_targets
-from retrieval.research_query import core_topic_terms, document_matches_topic
+from retrieval.research_query import (
+    core_topic_terms, document_matches_topic, required_topic_groups,
+    topic_group_coverage,
+)
 
 
 def get_llm():
@@ -33,6 +36,10 @@ def rule_based_score(state: AgentState) -> float:
 
     if not documents:
         return 0.0
+
+    hard_coverage = topic_group_coverage(documents, required_topic_groups(state))
+    if hard_coverage["enabled"] and not hard_coverage["passed"]:
+        return 0.58 if hard_coverage["covered_groups"] else 0.4
 
     targets = comparison_targets(query, state.get("task_type", ""))
     coverage = comparison_coverage(documents, targets)
@@ -160,9 +167,14 @@ def evaluate_node(state: AgentState) -> AgentState:
 
     targets = comparison_targets(state.get("query", ""), state.get("task_type", ""))
     comparison_check = comparison_coverage(state.get("documents", []), targets)
+    topic_coverage = topic_group_coverage(
+        state.get("documents", []), required_topic_groups(state)
+    )
     failure_type = ""
     if comparison_check["enabled"] and not comparison_check["passed"]:
         failure_type = "source_coverage_missing"
+    elif topic_coverage["enabled"] and not topic_coverage["passed"]:
+        failure_type = "topic_coverage_missing"
     elif score < 0.7:
         failure_type = "quality_below_threshold"
 
@@ -174,5 +186,6 @@ def evaluate_node(state: AgentState) -> AgentState:
         "retrieval_evaluation": {
             "failure_type": failure_type,
             "comparison_coverage": comparison_check,
+            "topic_coverage": topic_coverage,
         },
     }

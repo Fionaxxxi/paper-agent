@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import re
+import uuid
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
@@ -69,7 +70,7 @@ def _download_pdf(document: dict[str, Any]) -> tuple[Path | None, dict[str, Any]
         return path, {"status": "cache_hit", "path": str(path)}
 
     limit = settings.FULLTEXT_MAX_PDF_MB * 1024 * 1024
-    temporary = path.with_suffix(".part")
+    temporary = cache_dir / f".{path.stem}.{uuid.uuid4().hex}.part"
     try:
         with requests.get(
             url,
@@ -95,7 +96,12 @@ def _download_pdf(document: dict[str, Any]) -> tuple[Path | None, dict[str, Any]
         temporary.replace(path)
         return path, {"status": "downloaded", "path": str(path), "bytes": size}
     except Exception as error:
-        temporary.unlink(missing_ok=True)
+        try:
+            temporary.unlink(missing_ok=True)
+        except OSError:
+            # Windows may briefly keep a failed streaming download locked.
+            # Cleanup must never break the abstract-level degradation path.
+            pass
         return None, {"status": "failed", "reason": f"{type(error).__name__}: {error}"}
 
 

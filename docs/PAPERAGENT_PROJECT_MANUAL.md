@@ -72,6 +72,7 @@ PaperAgent 将这些问题拆成可观察、可测试的工程节点，以代码
 | 本地全文 RAG | 已完成 | PDF Chunk、BM25、MPNet Dense、RRF、置信度门控 Hybrid |
 | 在线论文全文研究 | 已完成 | 深度任务自动获取可信开放 PDF、项目内缓存、分页分块、按问题召回并保留页码 |
 | 宽泛领域探索 | 已完成 | 科研缩写规范化、L2 概览路由、差异化子查询和 arXiv/OpenAlex 多源检索 |
+| Harness 工程研究 | 已完成 | Harness/Scaffolding/Runtime 术语映射、Workflow 关系检索、核心概念覆盖门与定向 Replan |
 | Research Agent | 已完成 | L1/L2/L3 分级、Brief、Plan、Schedule、Evidence、Coverage |
 | 幻觉抑制 | 已完成 v1 | Retrieval Gate、Citation、Claim-Evidence、PDF Grounding、Answer Verify |
 | 有限 Agent Loop | 已完成 | Retrieval Replan ≤1、Answer Reflection ≤1 |

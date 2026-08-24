@@ -83,6 +83,23 @@ def rule_analyze(query: str) -> ResearchAnalysis:
     directions = [signal for signal in DIRECTION_SIGNALS if signal in lowered]
     compare = any(signal in lowered for signal in COMPARE_SIGNALS)
     features, complexity_score = extract_complexity_features(query)
+    if "harness" in lowered and any(term in lowered for term in ("agent", "智能体")):
+        return ResearchAnalysis(
+            intent="research_comparison" if "workflow" in lowered else "research_direction",
+            task_level="L2", topic=query,
+            objectives=[
+                "界定 Agent Harness 的工程职责与代表实现",
+                "分析 Harness 与 Workflow Orchestration 的边界和协作关系",
+                "梳理评测、沙箱、工具治理、可观测与失败恢复证据",
+            ],
+            evaluation_dimensions=["运行时", "Workflow 编排", "工具治理", "评测与可观测", "失败恢复"],
+            primary_skill="paper_compare", secondary_skills=["research_direction"],
+            requires_multiple_sources=True, confidence=0.9,
+            reason="规则识别到 Agent Harness 工程概念及 Workflow 关系任务",
+            complexity_features={**features, "multi_source_need": 1.0},
+            complexity_score=max(complexity_score, 0.4),
+            complexity_decision_basis="harness_engineering_policy_l2",
+        )
     deep_policy = len(deep) >= 2 or (deep and compare) or complexity_score >= 0.65
     if deep_policy:
         return ResearchAnalysis(

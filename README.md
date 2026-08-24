@@ -26,6 +26,7 @@ PaperAgent 面向需要进行论文检索、方法比较、研究综述和 PDF �
 
 - **研究流程自动化：** 使用 LangGraph 将复杂问题组织为澄清、分级、规划、检索、证据覆盖、生成和验证节点；支持 L1/L2/L3 分级、有依赖子任务并行，以及最多一次 Replan 和 Reflection。
 - **领域探索与术语理解：** 将 AIGC、SFT 等科研缩写展开为标准英文检索概念；“有什么可参考”等宽泛请求进入 L2 多源概览，分别检索代表方法、应用方向和评测安全，避免一次模糊搜索产生跨领域噪声。
+- **Agent Harness 工程研究：** 将 Harness 映射为 Agent Scaffolding、Runtime、Evaluation Infrastructure 和 Workflow Orchestration，分别检索运行时、编排及工具治理证据；核心概念覆盖门阻止通用 Agent 论文冒充 Harness 证据。
 - **混合知识检索：** 支持 Personal、Online、Hybrid 三种范围，联合个人 PDF 全文与 arXiv、OpenAlex、Crossref、Semantic Scholar；深度任务会从可信在线 PDF 下载全文、按页分块并定向召回方法/实验/局限证据，Local RAG 使用 BM25、MPNet Dense Retrieval、RRF 和置信度门控。
 - **证据约束生成：** 统一 Evidence Store 保存论文身份、来源、页码和任务映射；Coverage、Citation、Claim-Evidence、PDF Grounding 和 Answer Verification 共同限制无依据结论。
 - **论文多模态阅读：** 按问题自动选择关键页，通过 `qwen3.5-ocr` 提取架构图、实验表、曲线和公式信息，再由主模型结合 PDF 文本生成并验证回答。

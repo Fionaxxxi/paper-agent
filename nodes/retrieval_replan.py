@@ -36,6 +36,7 @@ def build_retrieval_replan(state: AgentState) -> dict[str, Any]:
     score = float(state.get("retrieval_score", 0.0))
     evaluation = state.get("retrieval_evaluation", {})
     comparison = evaluation.get("comparison_coverage", {})
+    topic_coverage = evaluation.get("topic_coverage", {})
 
     if any(code in TRANSIENT_TOOL_ERRORS for code in codes):
         failure_type = "transient_tool_failure"
@@ -48,6 +49,19 @@ def build_retrieval_replan(state: AgentState) -> dict[str, Any]:
         action = "target_missing_comparison_entity"
         replanned_query = f"{' '.join(missing)} architecture method original paper".strip()
         reason = f"比较任务缺少一方证据：{', '.join(missing)}"
+    elif evaluation.get("failure_type") == "topic_coverage_missing":
+        missing = topic_coverage.get("missing_groups", [])
+        failure_type = "topic_coverage_missing"
+        action = "target_missing_topic_groups"
+        expansions = {
+            "agent": "LLM agent",
+            "harness": "agent harness scaffolding runtime evaluation infrastructure",
+            "workflow": "workflow orchestration state machine task graph pipeline",
+        }
+        replanned_query = " ".join(dict.fromkeys(
+            f"{query} {' '.join(expansions.get(name, name) for name in missing)}".split()
+        ))
+        reason = f"核心概念证据未覆盖：{', '.join(missing)}"
     elif not documents:
         failure_type = "empty_results"
         action = "broaden_query"

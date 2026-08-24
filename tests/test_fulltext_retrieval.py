@@ -62,3 +62,23 @@ def test_pdf_download_rejects_non_https_and_untrusted_hosts():
     assert fulltext._safe_pdf_url("https://127.0.0.1/paper.pdf") is False
     assert fulltext._safe_pdf_url("https://evil-arxiv.org/paper.pdf") is False
     assert fulltext._safe_pdf_url("https://arxiv.org/pdf/2404.16130") is True
+
+
+def test_failed_pdf_download_degrades_even_when_windows_cleanup_is_locked(tmp_path, monkeypatch):
+    class FailedResponse:
+        def __enter__(self):
+            raise ConnectionError("network unavailable")
+        def __exit__(self, *args):
+            return False
+
+    monkeypatch.setattr(fulltext.settings, "FULLTEXT_CACHE_DIR", str(tmp_path))
+    monkeypatch.setattr(fulltext.requests, "get", lambda *args, **kwargs: FailedResponse())
+    original_unlink = fulltext.Path.unlink
+    monkeypatch.setattr(fulltext.Path, "unlink", lambda self, **kwargs: (_ for _ in ()).throw(PermissionError("locked")))
+    try:
+        path, status = fulltext._download_pdf(_paper())
+    finally:
+        monkeypatch.setattr(fulltext.Path, "unlink", original_unlink)
+    assert path is None
+    assert status["status"] == "failed"
+    assert "ConnectionError" in status["reason"]

@@ -24,6 +24,36 @@ def _description(
 
 
 TEST_CASE_CATALOG: dict[str, CaseDescription] = {
+    "tests/test_harness_engineering_retrieval.py::test_harness_engineering_is_l2_multi_source_and_preserves_core_terms": _description(
+        "验证 Harness/Agent/Workflow 问题进入 L2 多源研究，查询改写保留三个核心概念。",
+        "行业工程术语不会被通用 Agent 改写覆盖，任务成本保持在 L2 边界。",
+        "Harness 或 Workflow 约束可能在进入论文源前丢失。",
+    ),
+    "tests/test_harness_engineering_retrieval.py::test_harness_plan_builds_runtime_workflow_and_governance_queries": _description(
+        "验证 Harness 研究计划分别检索运行时、Workflow 编排和工具治理/可观测性。",
+        "三个研究维度形成不同查询，不会退化成一次通用 Agent 搜索。",
+        "规划去重或泛化可能造成关键工程维度没有证据。",
+    ),
+    "tests/test_harness_engineering_retrieval.py::test_generic_agent_papers_cannot_pass_harness_topic_coverage": _description(
+        "验证只讨论 Agent 规划、记忆或微调的论文不能通过 Harness 核心概念覆盖门。",
+        "通用 Agent 结果最高只能触发定向 Replan，不会再获得 1.0 假高分。",
+        "不相关论文可能被接受并被模型用于拼接 Harness 结论。",
+    ),
+    "tests/test_harness_engineering_retrieval.py::test_harness_and_workflow_evidence_can_pass_hard_coverage": _description(
+        "验证证据同时覆盖 Agent、Harness/Runtime 和 Workflow/Orchestration 后可以通过门控。",
+        "质量门既能拦截缺失概念，也不会阻断真正相关的跨论文证据。",
+        "硬约束可能过严，导致合格 Harness 研究结果被误拒绝。",
+    ),
+    "tests/test_harness_engineering_retrieval.py::test_missing_harness_groups_receive_targeted_single_replan": _description(
+        "验证缺失 Harness 或 Workflow 证据时只执行一次按缺失概念扩展的 Replan。",
+        "失败恢复针对可观察缺口，不再盲目追加 survey/review。",
+        "重试可能重复原错误查询或进入无界检索循环。",
+    ),
+    "tests/test_harness_engineering_retrieval.py::test_harness_online_scope_uses_arxiv_and_openalex": _description(
+        "验证 Harness 工程研究在 Online 范围同时使用 arXiv 与 OpenAlex。",
+        "工程术语的多种学术表达获得双源召回，降低单源措辞偏差。",
+        "多源规划要求可能未传递到实际检索路由。",
+    ),
     "tests/test_aigc_exploration.py::test_aigc_exploration_is_l2_multi_source_research_not_simple_qa": _description(
         "验证“AIGC 有什么可参考”被识别为需要方向综合的 L2 多源研究，而不是单一事实问答。",
         "宽泛领域探索会进入受控研究规划，同时不升级成成本更高的 L3 完整报告。",
@@ -63,6 +93,11 @@ TEST_CASE_CATALOG: dict[str, CaseDescription] = {
         "验证全文下载仅允许 HTTPS 学术域名，拒绝本机地址、HTTP 和伪造相似域名。",
         "自动 PDF 获取具备明确的 SSRF 与来源边界。",
         "恶意论文链接可能让服务访问内网或不可信下载地址。",
+    ),
+    "tests/test_fulltext_retrieval.py::test_failed_pdf_download_degrades_even_when_windows_cleanup_is_locked": _description(
+        "验证 PDF 网络失败且 Windows 暂时锁定下载临时文件时，主流程仍能降级使用摘要。",
+        "临时文件清理异常不会覆盖原始网络错误，也不会使整个研究请求崩溃。",
+        "单篇 PDF 下载失败可能穿透失败恢复并终止全部多源检索。",
     ),
     "tests/test_answer_quality_ab.py::test_answer_quality_dataset_is_frozen_and_representative": _description(
         "验证最终回答质量集冻结为16题，并均衡覆盖方法比较、单篇总结、多论文综合和证据不足。",

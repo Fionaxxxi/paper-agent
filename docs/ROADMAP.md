@@ -16,6 +16,8 @@ PaperAgent 后续不再以“增加更多论文问答功能”为主目标，而
 
 2026-08-24 已修复宽泛 AIGC 探索误阻断：规则分析将“有什么可供参考/有哪些方向/从哪里入手”识别为 L2 方向研究并要求多源，而不是 L1 单次问答；查询规范化将 AIGC 展开为 Artificial Intelligence Generated Content、Generative AI 和 Content Generation；Planner 固定生成代表方法、多模态应用、评测安全三类差异化子查询；Online 路由执行 arXiv + OpenAlex 后再进入全文证据链。真实无 LLM 验证召回 AIGC 综合综述、扩散生成和视频生成论文，下载 3 篇全文并形成 9 个页码 Chunk，不再返回 AGN 天文学噪声。新增 4 项用例，相关回归 31 项通过。
 
+2026-08-24 已修复 Harness 工程检索假阳性：原流程因通用 Agent 改写丢失 Harness/Workflow，并复用旧缓存后将五篇泛 Agent 论文错误评为 1.0。现将该问题固定路由为 L2 多源研究，查询规范化保留 Harness Engineering、Agent Scaffolding、Runtime Infrastructure、Workflow Orchestration 和 Evaluation；Planner 分别生成运行时、编排、工具沙箱/可观测性/失败恢复三类查询。新增硬性 Topic Coverage，证据必须覆盖 Agent、Harness 和 Workflow 概念组；缺失时评分低于 0.7，并执行唯一一次针对缺失组的 Replan。真实多源测试命中《From Prompts to Contracts: Harness Engineering for Auditable Enterprise LLM Agents》《LLM Agents for Interactive Workflow Provenance》和 Harness Engineering 综述，核心概念覆盖 100%、检索评分 0.90，3 篇全文形成 9 个页码 Chunk。测试同时发现并修复 Windows 锁定 `.part` 临时文件时清理异常破坏摘要降级的问题；现在每次下载使用唯一临时文件，清理失败不再中断请求。
+
 ```text
 复杂研究意图
 → 结构化 Research Analysis
