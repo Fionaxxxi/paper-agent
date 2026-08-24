@@ -24,6 +24,21 @@ def _description(
 
 
 TEST_CASE_CATALOG: dict[str, CaseDescription] = {
+    "tests/test_intent_router.py::test_classifies_greeting_plus_capability_request_as_local_identity": _description(
+        "验证“你好，介绍一下你能做什么”等问候加能力介绍请求走本地身份响应。",
+        "复合系统请求不会进入论文检索或调用模型。",
+        "能力介绍可能被当成研究问题并检索无关论文。",
+    ),
+    "tests/test_intent_router.py::test_local_capability_response_clears_previous_research_execution_state": _description(
+        "验证本地能力回答清空上一轮文档、工具、重试、证据、QA Skill 和 Token 指标。",
+        "Checkpoint 只保留会话上下文，不会把旧执行态展示为当前请求结果。",
+        "页面可能显示 arXiv、7 条证据或旧 Token，造成当前请求调用论文流程的假象。",
+    ),
+    "tests/test_graph_integration.py::test_capability_intro_ends_before_retrieval_and_clears_metrics": _description(
+        "验证完整 LangGraph 在能力介绍后直接结束，不执行澄清、规划、检索、生成或评测节点。",
+        "端到端路径保持零工具、零模型和零 Token。",
+        "节点级识别虽正确，但主图仍可能错误连接到研究流程。",
+    ),
     "tests/test_prompt_cache_retrieval.py::test_prompt_cache_term_beats_generic_agent_rewrite_and_uses_l2": _description(
         "验证 Prompt Cache 明确技术短语优先于通用 Agent 改写，并进入 L2 多源研究。",
         "Prompt Cache、Prefix Cache 和 KV Cache 约束完整进入检索，不再被改写成规划/记忆。",

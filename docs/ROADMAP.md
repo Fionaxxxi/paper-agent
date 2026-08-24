@@ -20,6 +20,8 @@ PaperAgent 后续不再以“增加更多论文问答功能”为主目标，而
 
 2026-08-24 已修复 Prompt Cache 被通用缓存错误回答：原问题“Agent 中的 Prompt Cache 是什么，怎么用”被通用 Agent 规则改写为 Planning/Memory/Tool Learning，随后命中旧的五篇缓存论文并错误评分 1.0。现将明确技术短语置于通用 Agent 规则之前，规范化为 Prompt Caching、Automatic Prefix Caching、KV Cache、Inference Serving；任务升级为 L2 多源研究，并分别检索概念/基准、Radix/Prefix/KV 实现和 Agent Context/成本优化。缓存读取新增语义门：命中后先验证核心概念，不覆盖则记录 `cache_rejection` 并穿透 arXiv/OpenAlex。真实验证 `cache_hit=False`、Prompt Cache 覆盖 100%、评分 0.90，返回 Multi-Agent KV Cache、Prefix Caching 与 Agentic Serving 论文，不再复用通用 Agent 五篇结果。
 
+2026-08-24 已修复复合问候误入论文检索：`你好，先简单介绍一下你能做什么` 原先因 Intent Router 仅接受完全匹配的短问候，被错误标为 research，执行两轮 arXiv 检索并返回 AIGC 旧误检中的天文学论文。现增加受限的能力/身份表达模式，只在 60 字以内且明确询问系统能力时本地短路；`你好，请比较 RAG 和 GraphRAG` 仍进入研究流程。本地返回会确定性清空 Documents、Tools、Retry、Evidence Store、QA Skill、LLM Usage 和 Token，页面固定显示 `local_response / local / 0 evidence / 0 LLM / 0 Token`。真实服务层验证仅运行 Intent Router，总耗时约 0.13 秒。
+
 ```text
 复杂研究意图
 → 结构化 Research Analysis

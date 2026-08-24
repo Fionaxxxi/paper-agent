@@ -133,6 +133,20 @@ def test_smalltalk_ends_before_all_rag_and_llm_nodes(instrumented_graph):
     assert result["paper_metadata"]["short_circuited"] is True
 
 
+def test_capability_intro_ends_before_retrieval_and_clears_metrics(instrumented_graph):
+    graph, calls = instrumented_graph
+    result = graph.invoke({
+        "query": "你好，先简单介绍一下你能做什么。",
+        "documents": [{"title": "stale"}], "tools_used": ["arxiv"],
+        "retry_count": 1, "llm_call_count": 1, "token_usage": 419,
+    })
+    assert calls == []
+    assert result["task_type"] == "smalltalk"
+    assert result["documents"] == [] and result["tools_used"] == []
+    assert result["llm_call_count"] == 0 and result["token_usage"] == 0
+    assert result["paper_metadata"]["retrieval_source"] == "local"
+
+
 def test_ambiguous_reference_ends_before_research_and_retrieval(instrumented_graph):
     """多个上下文候选时主图返回澄清问题，不进入后续研究节点。"""
     graph, calls = instrumented_graph

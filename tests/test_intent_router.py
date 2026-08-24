@@ -19,6 +19,18 @@ def test_classifies_identity_questions_without_an_llm(query):
 
 
 @pytest.mark.parametrize(
+    "query",
+    [
+        "你好，先简单介绍一下你能做什么。",
+        "您好，可以介绍一下你的主要能力吗？",
+        "请说明一下你可以帮我做什么",
+    ],
+)
+def test_classifies_greeting_plus_capability_request_as_local_identity(query):
+    assert classify_input_intent({"query": query}) == "identity"
+
+
+@pytest.mark.parametrize(
     "state",
     [
         {"query": "hi, find recent RAG papers"},
@@ -51,3 +63,21 @@ def test_smalltalk_result_is_local_and_preserves_existing_state_metadata():
     assert result["token_usage"] == 0
     assert result["paper_metadata"]["conversation_id"] == "conversation-1"
     assert result["paper_metadata"]["short_circuited"] is True
+
+
+def test_local_capability_response_clears_previous_research_execution_state():
+    result = intent_router_node({
+        "query": "你好，先简单介绍一下你能做什么。",
+        "documents": [{"title": "stale"}], "tools_used": ["arxiv_retriever"],
+        "retry_count": 1, "retry_query": "stale survey", "retrieval_score": 0.5,
+        "llm_call_count": 1, "token_usage": 419,
+        "evidence_store": {"enabled": True, "evidence_count": 7},
+        "paper_metadata": {"skill_used": "qa", "retrieval_source": "arxiv"},
+    })
+    assert result["input_intent"] == "identity"
+    assert result["documents"] == [] and result["tools_used"] == []
+    assert result["retry_count"] == 0 and result["retry_query"] == ""
+    assert result["llm_call_count"] == 0 and result["token_usage"] == 0
+    assert result["evidence_store"]["evidence_count"] == 0
+    assert result["paper_metadata"]["skill_used"] == "local_response"
+    assert result["paper_metadata"]["retrieval_source"] == "local"
