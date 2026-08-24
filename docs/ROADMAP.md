@@ -14,6 +14,8 @@ PaperAgent 后续不再以“增加更多论文问答功能”为主目标，而
 
 2026-08-24 已完成在线全文研究链路：L2/L3、论文比较、综述、批判及明确要求方法/实验/消融/局限的请求，不再只使用数据源摘要。系统对最多 3 篇可信开放 PDF 执行受限下载（HTTPS 学术域名、25 MB 上限、45 秒超时），缓存于 `data/cache/online_papers`，用 pypdf 保留页码、固定窗口分块，并以 BM25 为当前问题选取每篇最多 3 个全文证据块。全文块携带论文链接、页码、Chunk ID 和 `fulltext_chunk` 标记进入 Evidence Store；下载或解析失败时保留原摘要降级。比较任务上下文由每篇 700 字符调整为可容纳 1400 字符标准全文块。代表性真实验证成功下载并解析 GraphRAG 论文，命中第 11、2、10 页；新增定向测试 4 项，相关回归合计 19 项通过。
 
+2026-08-24 已修复宽泛 AIGC 探索误阻断：规则分析将“有什么可供参考/有哪些方向/从哪里入手”识别为 L2 方向研究并要求多源，而不是 L1 单次问答；查询规范化将 AIGC 展开为 Artificial Intelligence Generated Content、Generative AI 和 Content Generation；Planner 固定生成代表方法、多模态应用、评测安全三类差异化子查询；Online 路由执行 arXiv + OpenAlex 后再进入全文证据链。真实无 LLM 验证召回 AIGC 综合综述、扩散生成和视频生成论文，下载 3 篇全文并形成 9 个页码 Chunk，不再返回 AGN 天文学噪声。新增 4 项用例，相关回归 31 项通过。
+
 ```text
 复杂研究意图
 → 结构化 Research Analysis

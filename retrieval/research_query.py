@@ -14,6 +14,8 @@ GENERIC_SEARCH_TERMS = {
     "survey", "technology", "trend", "trends",
 }
 DOMAIN_REWRITES = (
+    (("aigc", "ai generated content", "ai-generated content", "人工智能生成内容"),
+     "AIGC artificial intelligence generated content generative AI content generation"),
     (("sft", "supervised fine-tuning", "supervised finetuning", "监督微调"),
      "SFT supervised fine-tuning large language models"),
     (("reflexion", "反思型agent", "反思型 agent"),
@@ -47,11 +49,18 @@ def normalized_research_topic(state: dict[str, Any]) -> str:
 def build_research_search_query(state: dict[str, Any], objective: str = "") -> str:
     topic = normalized_research_topic(state)
     objective_text = str(objective or "").casefold()
-    if any(term in objective_text for term in ("代表", "筛选", "landscape", "综述")):
+    if "aigc" in topic.casefold() or "artificial intelligence generated content" in topic.casefold():
+        if any(term in objective_text for term in ("安全", "风险", "检测", "版权", "评测")):
+            suffix = "AI-generated content evaluation safety detection watermarking provenance"
+        elif any(term in objective_text for term in ("方向", "应用", "场景", "多模态")):
+            suffix = "text image video multimodal generative models applications survey"
+        else:
+            suffix = "survey foundation models representative methods benchmarks"
+    elif any(term in objective_text for term in ("代表", "筛选", "landscape", "综述")):
         suffix = "survey review benchmark representative approaches"
     elif any(term in objective_text for term in ("比较", "对比", "优缺点", "适用", "技术路线")):
         suffix = "methods comparison evaluation benchmark"
-    elif any(term in objective_text for term in ("空白", "局限", "挑战", "未来", "趋势")):
+    elif any(term in objective_text for term in ("空白", "局限", "挑战", "未来", "趋势", "方向", "应用", "场景")):
         suffix = "limitations challenges open problems future directions"
     else:
         suffix = "recent methods evaluation"

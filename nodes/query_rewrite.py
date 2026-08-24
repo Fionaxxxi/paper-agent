@@ -13,7 +13,9 @@ def query_rewrite_node(state: AgentState) -> AgentState:
 
     targets = comparison_targets(original_query, state.get("task_type", ""))
 
-    if any(term in query for term in ("sft", "supervised fine-tuning", "supervised finetuning", "监督微调")):
+    if any(term in query for term in ("aigc", "ai generated content", "ai-generated content", "人工智能生成内容")):
+        rewritten_query = normalized_research_topic(state)
+    elif any(term in query for term in ("sft", "supervised fine-tuning", "supervised finetuning", "监督微调")):
         rewritten_query = normalized_research_topic(state)
     elif targets == ["GraphRAG", "LightRAG"]:
         rewritten_query = (

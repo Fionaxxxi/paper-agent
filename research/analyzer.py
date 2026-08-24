@@ -7,7 +7,10 @@ from prompts.contracts import get_prompt_version
 from research.contracts import ResearchAnalysis
 
 DEEP_SIGNALS = ("前景", "价值", "趋势", "研究空白", "系统调研", "综述", "代表论文", "open problems", "future directions")
-DIRECTION_SIGNALS = tuple(signal for signal in DEEP_SIGNALS if signal != "代表论文")
+DIRECTION_SIGNALS = tuple(signal for signal in DEEP_SIGNALS if signal != "代表论文") + (
+    "有什么可供参考", "有哪些可供参考", "有什么值得参考", "有哪些值得参考",
+    "有哪些方向", "入门方向", "从哪里入手", "值得关注",
+)
 COMPARE_SIGNALS = ("比较", "对比", "区别", "差异", "compare", " vs ")
 TEMPORAL_SIGNALS = ("最新", "当前", "近年", "近年来", "今年", "趋势", "future", "recent", "since")
 SYNTHESIS_SIGNALS = ("分析", "总结", "梳理", "综述", "报告", "比较", "对比", "路线", "空白")
@@ -93,12 +96,18 @@ def rule_analyze(query: str) -> ResearchAnalysis:
             complexity_decision_basis="feature_policy_l3",
         )
     if compare or directions:
+        is_broad_exploration = bool(directions) and not compare
         return ResearchAnalysis(
             intent="research_comparison" if compare else "research_direction",
             task_level="L2", topic=query,
-            objectives=["检索相关论文", "完成结构化比较" if compare else "总结研究方向"],
+            objectives=(
+                ["检索双方原始论文", "完成结构化比较"]
+                if compare else
+                ["筛选代表方法与论文", "总结主要研究方向与应用场景", "分析评测、安全与可信性问题"]
+            ),
             primary_skill="paper_compare" if compare else "research_direction",
-            confidence=0.85, reason="规则识别到比较或方向分析任务",
+            requires_multiple_sources=is_broad_exploration,
+            confidence=0.85, reason="规则识别到比较或宽泛领域探索任务",
             complexity_features=features, complexity_score=complexity_score,
             complexity_decision_basis="feature_policy_l2",
         )

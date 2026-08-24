@@ -24,6 +24,26 @@ def _description(
 
 
 TEST_CASE_CATALOG: dict[str, CaseDescription] = {
+    "tests/test_aigc_exploration.py::test_aigc_exploration_is_l2_multi_source_research_not_simple_qa": _description(
+        "验证“AIGC 有什么可参考”被识别为需要方向综合的 L2 多源研究，而不是单一事实问答。",
+        "宽泛领域探索会进入受控研究规划，同时不升级成成本更高的 L3 完整报告。",
+        "系统可能用一次模糊搜索回答宽泛问题，或无必要地启动完整深度研究流程。",
+    ),
+    "tests/test_aigc_exploration.py::test_aigc_term_is_expanded_before_academic_search": _description(
+        "验证 AIGC 在访问论文源前展开为 Artificial Intelligence Generated Content 和 Generative AI。",
+        "学术检索使用领域标准术语，不再把 AIGC 错配为 AGN 等无关缩写。",
+        "原始缩写会直接进入搜索接口并产生跨领域噪声。",
+    ),
+    "tests/test_aigc_exploration.py::test_aigc_exploration_builds_distinct_bounded_research_queries": _description(
+        "验证 AIGC 概览生成代表方法、多模态应用、评测安全三条不同且有界的子查询。",
+        "研究概览具有必要覆盖面，Query 去重不会将规划退化成一次检索。",
+        "多个研究目标可能生成相同查询，导致证据覆盖不足。",
+    ),
+    "tests/test_aigc_exploration.py::test_aigc_online_scope_uses_arxiv_and_openalex": _description(
+        "验证宽泛 AIGC 领域探索即使用户选择 Online，也同时使用 arXiv 和 OpenAlex。",
+        "多源要求能传递到检索路由，降低单一搜索接口的召回偏差。",
+        "规划声明需要多源，但执行阶段仍可能只访问 arXiv。",
+    ),
     "tests/test_fulltext_retrieval.py::test_deep_comparison_requires_fulltext_but_simple_lookup_does_not": _description(
         "验证只有比较、综述、批判或明确要求实验/局限等深度任务才触发在线全文。",
         "深度任务获得全文证据，简单找论文仍保持低延迟和低下载成本。",
