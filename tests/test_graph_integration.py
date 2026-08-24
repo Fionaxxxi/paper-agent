@@ -123,11 +123,11 @@ def test_pdf_query_skips_query_planning_and_retrieval(instrumented_graph):
 def test_smalltalk_ends_before_all_rag_and_llm_nodes(instrumented_graph):
     graph, calls = instrumented_graph
 
-    result = graph.invoke({"query": "hi", "retry_count": 0, "token_usage": 0})
+    result = graph.invoke({"query": "你是？", "retry_count": 0, "token_usage": 0})
 
     assert calls == []
     assert result["task_type"] == "smalltalk"
-    assert result["answer"].startswith("你好")
+    assert "PaperAgent" in result["answer"]
     assert result["tools_used"] == []
     assert result["token_usage"] == 0
     assert result["paper_metadata"]["short_circuited"] is True

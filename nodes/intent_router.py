@@ -36,12 +36,15 @@ IDENTITY_MESSAGES = {
     "who are you",
     "what can you do",
     "你是谁",
+    "你是",
     "你能做什么",
     "你可以做什么",
     "你的功能是什么",
 }
 
 CAPABILITY_PATTERNS = (
+    re.compile(r"(?:你|您)(?:到底)?是(?:谁|什么|哪(?:个|种)(?:助手|系统|agent|智能体)?)?"),
+    re.compile(r"(?:介绍|说说|讲讲)(?:一下|下)?(?:你|您)?自己"),
     re.compile(r"(?:你|您).{0,8}(?:能|可以|会).{0,6}(?:做什么|干什么|帮我什么)"),
     re.compile(r"(?:介绍|说说|说明).{0,8}(?:功能|能力|能做什么)"),
     re.compile(r"what (?:can|do) you (?:do|support)"),

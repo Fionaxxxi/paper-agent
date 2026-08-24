@@ -13,7 +13,17 @@ def test_classifies_thanks_without_an_llm(query):
     assert classify_input_intent({"query": query}) == "thanks"
 
 
-@pytest.mark.parametrize("query", ["who are you?", "你是谁？", "你能做什么"])
+@pytest.mark.parametrize(
+    "query",
+    [
+        "who are you?",
+        "你是谁？",
+        "你是？",
+        "您是哪个智能体？",
+        "简单介绍下自己",
+        "你能做什么",
+    ],
+)
 def test_classifies_identity_questions_without_an_llm(query):
     assert classify_input_intent({"query": query}) == "identity"
 
