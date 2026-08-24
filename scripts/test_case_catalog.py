@@ -1424,6 +1424,11 @@ TEST_CASE_CATALOG: dict[str, CaseDescription] = {
         "通过代表用户可以直接打开在线证据，同时本地 Chunk 或危险协议不会变成可执行链接。",
         "失败表示链接功能不可用，或不可信 URL 可能进入前端点击路径。",
     ),
+    "tests/test_demo_page.py::test_demo_page_cache_busts_link_enabled_static_assets": _description(
+        "验证首页为新增证据链接功能使用带版本号的 JavaScript 和样式资源。",
+        "通过代表浏览器刷新后不会继续复用旧版无链接脚本。",
+        "失败表示服务器已有链接字段，但用户界面仍可能被浏览器静态缓存阻挡。",
+    ),
     "tests/test_demo_page.py::test_demo_page_exposes_research_agent_trace_panels": _description(
         "验证FastAPI演示页包含Research工作流、计划、执行波次、Evidence和质量闸门面板。",
         "面试演示可以直接展示研究型Agent的核心执行闭环。",

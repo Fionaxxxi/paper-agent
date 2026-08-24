@@ -44,6 +44,15 @@ def test_demo_page_renders_only_safe_external_evidence_links():
     assert 'rel="noopener noreferrer"' in script
     assert 'externalLink(p.web_url,"打开论文")' in script
     assert 'externalLink(p.pdf_url,"查看 PDF")' in script
+    assert "linkEvidenceReferences(lastAnswer" in script
+    assert "new RegExp" in script
+
+
+def test_demo_page_cache_busts_link_enabled_static_assets():
+    page = TestClient(app).get("/").text
+
+    assert "/static/app.js?v=20260824-links" in page
+    assert "/static/research.css?v=20260824-links" in page
 
 
 def test_demo_page_exposes_research_agent_trace_panels():
@@ -70,7 +79,7 @@ def test_research_conclusion_renders_markdown_as_safe_readable_html():
     script = TestClient(app).get("/static/app.js").text
 
     assert "function renderMarkdown(markdown)" in script
-    assert '$("answer").innerHTML=renderMarkdown(lastAnswer)' in script
+    assert '$("answer").innerHTML=renderMarkdown(linkEvidenceReferences(lastAnswer' in script
     assert "answer-table-wrap" in script
     assert "const inlineMarkdown=value=>esc(value)" in script
 
