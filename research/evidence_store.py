@@ -16,6 +16,21 @@ def _locator(document: dict[str, Any]) -> str:
     return str(document.get("pdf_url") or document.get("url") or document.get("entry_id") or "unlocated")
 
 
+def _external_url(document: dict[str, Any]) -> str:
+    landing = str(document.get("landing_page_url") or document.get("url") or "").strip()
+    if landing.startswith(("http://", "https://")):
+        return landing
+    doi = str(document.get("doi") or "").strip()
+    if doi:
+        normalized = doi.removeprefix("doi:").removeprefix("https://doi.org/").removeprefix("http://doi.org/")
+        return f"https://doi.org/{normalized}"
+    entry_id = str(document.get("entry_id") or "").strip()
+    if entry_id.startswith(("http://", "https://")):
+        return entry_id
+    pdf_url = str(document.get("pdf_url") or "").strip()
+    return pdf_url if pdf_url.startswith(("http://", "https://")) else ""
+
+
 def _evidence_id(document: dict[str, Any]) -> str:
     identity = "|".join((
         str(document.get("title") or ""),
@@ -52,6 +67,7 @@ def build_evidence_store(
             "source": str(document.get("source") or "unknown"),
             "evidence_type": str(document.get("evidence_type") or "paper"),
             "locator": _locator(document),
+            "url": _external_url(document),
             "year": document.get("year"),
             "snippet": str(document.get("content") or "")[:600],
             "score": document.get("retrieval_score", document.get("relevance_score", 0.0)),

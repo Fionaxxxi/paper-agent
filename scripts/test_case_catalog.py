@@ -1414,6 +1414,16 @@ TEST_CASE_CATALOG: dict[str, CaseDescription] = {
         "Web 页面可以展示证据来源和可审计定位信息。",
         "若失败，前端只能展示论文摘要，无法体现全文 RAG 的证据追踪能力。",
     ),
+    "tests/test_demo_page.py::test_online_paper_formatter_exposes_clickable_landing_and_pdf_urls": _description(
+        "验证在线论文 API 响应同时保留论文落地页和 PDF 地址。",
+        "通过代表前端可以分别提供‘打开论文’与‘查看 PDF’，无需用户复制普通文本地址。",
+        "失败表示后端格式化过程丢失在线来源链接，证据无法一键核验。",
+    ),
+    "tests/test_demo_page.py::test_demo_page_renders_only_safe_external_evidence_links": _description(
+        "验证论文列表和 Evidence Store 只把 HTTPS 地址渲染为新窗口外部链接，并设置 noopener/noreferrer。",
+        "通过代表用户可以直接打开在线证据，同时本地 Chunk 或危险协议不会变成可执行链接。",
+        "失败表示链接功能不可用，或不可信 URL 可能进入前端点击路径。",
+    ),
     "tests/test_demo_page.py::test_demo_page_exposes_research_agent_trace_panels": _description(
         "验证FastAPI演示页包含Research工作流、计划、执行波次、Evidence和质量闸门面板。",
         "面试演示可以直接展示研究型Agent的核心执行闭环。",

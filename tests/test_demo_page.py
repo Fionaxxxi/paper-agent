@@ -21,6 +21,31 @@ def test_paper_formatter_keeps_local_rag_evidence_fields():
     assert result[0]["retrieval_score"] == .75
 
 
+def test_online_paper_formatter_exposes_clickable_landing_and_pdf_urls():
+    service = PaperAgentService.__new__(PaperAgentService)
+    result = service.format_papers([{
+        "title": "ReAct",
+        "content": "evidence",
+        "source": "arxiv",
+        "entry_id": "https://arxiv.org/abs/2210.03629",
+        "pdf_url": "https://arxiv.org/pdf/2210.03629",
+    }])
+
+    assert result[0]["web_url"] == "https://arxiv.org/abs/2210.03629"
+    assert result[0]["pdf_url"] == "https://arxiv.org/pdf/2210.03629"
+
+
+def test_demo_page_renders_only_safe_external_evidence_links():
+    script = TestClient(app).get("/static/app.js").text
+
+    assert "safeExternalUrl" in script
+    assert 'url.protocol==="https:"' in script
+    assert 'target="_blank"' in script
+    assert 'rel="noopener noreferrer"' in script
+    assert 'externalLink(p.web_url,"打开论文")' in script
+    assert 'externalLink(p.pdf_url,"查看 PDF")' in script
+
+
 def test_demo_page_exposes_research_agent_trace_panels():
     """作用：演示首页包含研究计划、执行波次、Evidence和质量闸门区域。"""
     response=TestClient(app).get("/")

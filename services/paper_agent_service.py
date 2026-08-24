@@ -323,6 +323,16 @@ class PaperAgentService:
 
         for paper in papers:
             content = paper.get("content", "")
+            doi = str(paper.get("doi") or "").strip()
+            entry_id = str(paper.get("entry_id") or "").strip()
+            web_url = str(paper.get("landing_page_url") or "").strip()
+            if not web_url and doi:
+                normalized_doi = doi.removeprefix("doi:").removeprefix("https://doi.org/").removeprefix("http://doi.org/")
+                web_url = f"https://doi.org/{normalized_doi}"
+            if not web_url and entry_id.startswith(("http://", "https://")):
+                web_url = entry_id
+            if not web_url and paper.get("source") == "arxiv" and entry_id:
+                web_url = f"https://arxiv.org/abs/{entry_id}"
 
             if content and len(content) > 300:
                 content = content[:300] + "...[内容已截断]"
@@ -334,6 +344,9 @@ class PaperAgentService:
                     "year": paper.get("year"),
                     "content": content,
                     "pdf_url": paper.get("pdf_url"),
+                    "web_url": web_url,
+                    "landing_page_url": paper.get("landing_page_url"),
+                    "doi": doi,
                     "entry_id": paper.get("entry_id"),
                     "source": paper.get("source"),
                     "document_id": paper.get("document_id"),

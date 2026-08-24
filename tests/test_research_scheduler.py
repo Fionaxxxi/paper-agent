@@ -46,6 +46,7 @@ def test_evidence_store_deduplicates_and_preserves_provenance():
     store = build_evidence_store(schedule, [document, dict(document)])
     assert store["evidence_count"] == 1
     assert store["evidence"][0]["locator"] == document["pdf_url"]
+    assert store["evidence"][0]["url"] == document["pdf_url"]
     assert store["evidence"][0]["task_ids"]
 
 

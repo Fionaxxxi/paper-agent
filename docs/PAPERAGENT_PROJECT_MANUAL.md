@@ -478,7 +478,7 @@ GraphRAG 对跨论文实体关系、研究脉络和全局主题总结有潜力�
 
 ### 8.4 Evidence Store
 
-所有来源先转成统一证据对象，包含 Evidence ID、论文身份、标题、作者、年份、摘要或 Chunk、URL/DOI、页码、来源类型、对应任务和检索分数。它是 Retrieval 与 Writer 之间的隔离层：Writer 只消费可定位证据，不直接处理供应商原始 JSON。
+所有来源先转成统一证据对象，包含 Evidence ID、论文身份、标题、作者、年份、摘要或 Chunk、URL/DOI、页码、来源类型、对应任务和检索分数。在线论文会统一生成可直接打开的 HTTPS 证据链接，前端分别提供“打开论文”和“查看 PDF”；DOI 转换为 `https://doi.org/...`，本地 Chunk 只显示页码与 Chunk ID。它是 Retrieval 与 Writer 之间的隔离层：Writer 只消费可定位证据，不直接处理供应商原始 JSON。
 
 ### 8.5 Coverage 与质量门控
 
