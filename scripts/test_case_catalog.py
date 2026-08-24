@@ -24,6 +24,36 @@ def _description(
 
 
 TEST_CASE_CATALOG: dict[str, CaseDescription] = {
+    "tests/test_prompt_cache_retrieval.py::test_prompt_cache_term_beats_generic_agent_rewrite_and_uses_l2": _description(
+        "验证 Prompt Cache 明确技术短语优先于通用 Agent 改写，并进入 L2 多源研究。",
+        "Prompt Cache、Prefix Cache 和 KV Cache 约束完整进入检索，不再被改写成规划/记忆。",
+        "通用 Agent 规则可能删除用户真正询问的技术概念。",
+    ),
+    "tests/test_prompt_cache_retrieval.py::test_prompt_cache_plan_builds_concept_mechanism_and_agent_queries": _description(
+        "验证 Prompt Cache 分别生成概念基准、Prefix/KV 实现机制和 Agent 成本优化查询。",
+        "定义、底层机制与工程使用均有独立证据入口。",
+        "多个目标可能退化成同一条搜索，导致回答只覆盖局部。",
+    ),
+    "tests/test_prompt_cache_retrieval.py::test_prompt_cache_online_scope_uses_arxiv_and_openalex": _description(
+        "验证 Prompt Cache 工程问题使用 arXiv 与 OpenAlex 两个论文源。",
+        "不同论文术语和索引口径得到交叉召回。",
+        "多源要求可能未传递到实际执行。",
+    ),
+    "tests/test_prompt_cache_retrieval.py::test_generic_agent_cache_is_rejected_and_provider_is_called": _description(
+        "验证缓存论文不覆盖 Prompt Cache 核心概念时，自动拒绝缓存并调用真实论文源。",
+        "缓存只是候选加速层，不能绕过语义覆盖门或阻止在线刷新。",
+        "错误缓存可能永久固定某个问题的错误论文集合。",
+    ),
+    "tests/test_prompt_cache_retrieval.py::test_generic_agent_documents_cannot_pass_prompt_cache_quality_gate": _description(
+        "验证规划、记忆和工具学习等通用 Agent 论文不能通过 Prompt Cache 质量门。",
+        "没有 Prompt/Prefix Cache 证据时评分低于 0.7，并进入恢复流程。",
+        "无关论文可能再次获得 1.0 并被用于生成概念拼接回答。",
+    ),
+    "tests/test_prompt_cache_retrieval.py::test_real_prompt_or_prefix_cache_evidence_can_pass_quality_gate": _description(
+        "验证 Prompt Caching、Prefix Caching 或 Context Caching 真实证据能够通过硬覆盖门。",
+        "门控能拦截假阳性，同时不会误伤术语不同但语义正确的论文。",
+        "覆盖规则可能过窄，导致正确的 Prefix Cache 论文被错误阻断。",
+    ),
     "tests/test_harness_engineering_retrieval.py::test_harness_engineering_is_l2_multi_source_and_preserves_core_terms": _description(
         "验证 Harness/Agent/Workflow 问题进入 L2 多源研究，查询改写保留三个核心概念。",
         "行业工程术语不会被通用 Agent 改写覆盖，任务成本保持在 L2 边界。",

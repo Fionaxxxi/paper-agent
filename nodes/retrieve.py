@@ -9,6 +9,7 @@ from retrieval.cache import load_cached_papers, save_cached_papers
 from retrieval.metadata_resolver import extract_arxiv_ids, normalize_doi
 from retrieval.reranker import rerank_documents_with_stats
 from retrieval.research_query import filter_documents_by_year
+from retrieval.research_query import required_topic_groups, topic_group_coverage
 from retrieval.result_merger import merge_documents_with_stats
 from retrieval.comparison import (
     comparison_coverage,
@@ -291,15 +292,20 @@ def retrieve_from_source(
     """Retrieve one query from one provider with a source-scoped cache."""
 
     cached_papers = load_cached_papers(query, source=source)
+    cache_rejection = ""
     if cached_papers is not None:
-        return {
-            "papers": cached_papers,
-            "provider": source,
-            "retrieval_source": "cache",
-            "cache_hit": True,
-            "tools_used": [f"{source}_cache_retriever"],
-            "tool_execution": {},
-        }
+        cached_documents = convert_papers_to_documents(cached_papers, source)
+        coverage = topic_group_coverage(
+            cached_documents, required_topic_groups({**state, "rewritten_query": query})
+        )
+        if not coverage["enabled"] or coverage["passed"]:
+            return {
+                "papers": cached_papers, "provider": source,
+                "retrieval_source": "cache", "cache_hit": True,
+                "cache_validation": coverage,
+                "tools_used": [f"{source}_cache_retriever"], "tool_execution": {},
+            }
+        cache_rejection = "topic_coverage_missing:" + ",".join(coverage["missing_groups"])
 
     try:
         capability = (
@@ -360,6 +366,7 @@ def retrieve_from_source(
         "provider": source,
         "retrieval_source": source,
         "cache_hit": False,
+        "cache_rejection": cache_rejection,
         "tools_used": [f"{source}_retriever", tool_name],
         "tool_execution": {
             **_tool_execution_metadata(tool_result),
@@ -594,6 +601,7 @@ def retrieve_by_query(query: str, state: AgentState) -> Dict[str, Any]:
             "retrieval_source": result["retrieval_source"],
             "cache_hit": result["cache_hit"],
             "paper_count": len(result["papers"]),
+            "cache_rejection": result.get("cache_rejection", ""),
         }
         for result in source_results
     ]

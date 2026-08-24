@@ -18,6 +18,8 @@ PaperAgent 后续不再以“增加更多论文问答功能”为主目标，而
 
 2026-08-24 已修复 Harness 工程检索假阳性：原流程因通用 Agent 改写丢失 Harness/Workflow，并复用旧缓存后将五篇泛 Agent 论文错误评为 1.0。现将该问题固定路由为 L2 多源研究，查询规范化保留 Harness Engineering、Agent Scaffolding、Runtime Infrastructure、Workflow Orchestration 和 Evaluation；Planner 分别生成运行时、编排、工具沙箱/可观测性/失败恢复三类查询。新增硬性 Topic Coverage，证据必须覆盖 Agent、Harness 和 Workflow 概念组；缺失时评分低于 0.7，并执行唯一一次针对缺失组的 Replan。真实多源测试命中《From Prompts to Contracts: Harness Engineering for Auditable Enterprise LLM Agents》《LLM Agents for Interactive Workflow Provenance》和 Harness Engineering 综述，核心概念覆盖 100%、检索评分 0.90，3 篇全文形成 9 个页码 Chunk。测试同时发现并修复 Windows 锁定 `.part` 临时文件时清理异常破坏摘要降级的问题；现在每次下载使用唯一临时文件，清理失败不再中断请求。
 
+2026-08-24 已修复 Prompt Cache 被通用缓存错误回答：原问题“Agent 中的 Prompt Cache 是什么，怎么用”被通用 Agent 规则改写为 Planning/Memory/Tool Learning，随后命中旧的五篇缓存论文并错误评分 1.0。现将明确技术短语置于通用 Agent 规则之前，规范化为 Prompt Caching、Automatic Prefix Caching、KV Cache、Inference Serving；任务升级为 L2 多源研究，并分别检索概念/基准、Radix/Prefix/KV 实现和 Agent Context/成本优化。缓存读取新增语义门：命中后先验证核心概念，不覆盖则记录 `cache_rejection` 并穿透 arXiv/OpenAlex。真实验证 `cache_hit=False`、Prompt Cache 覆盖 100%、评分 0.90，返回 Multi-Agent KV Cache、Prefix Caching 与 Agentic Serving 论文，不再复用通用 Agent 五篇结果。
+
 ```text
 复杂研究意图
 → 结构化 Research Analysis

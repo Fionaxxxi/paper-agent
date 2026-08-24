@@ -83,6 +83,21 @@ def rule_analyze(query: str) -> ResearchAnalysis:
     directions = [signal for signal in DIRECTION_SIGNALS if signal in lowered]
     compare = any(signal in lowered for signal in COMPARE_SIGNALS)
     features, complexity_score = extract_complexity_features(query)
+    if any(term in lowered for term in ("prompt cache", "prompt caching", "提示词缓存")):
+        return ResearchAnalysis(
+            intent="research_qa", task_level="L2", topic=query,
+            objectives=[
+                "界定 Prompt Cache 与 Prefix/KV Cache 的关系",
+                "分析前缀复用、命中条件与推理性能机制",
+                "总结 Prompt Cache 在 Agent 上下文工程中的用法、成本收益与失效边界",
+            ],
+            evaluation_dimensions=["缓存粒度", "命中条件", "延迟", "Token 成本", "Agent 上下文稳定性"],
+            primary_skill="research_direction", requires_multiple_sources=True,
+            confidence=0.92, reason="规则识别到 Prompt Cache 工程机制与 Agent 应用问题",
+            complexity_features={**features, "multi_source_need": 1.0},
+            complexity_score=max(complexity_score, 0.4),
+            complexity_decision_basis="prompt_cache_policy_l2",
+        )
     if "harness" in lowered and any(term in lowered for term in ("agent", "智能体")):
         return ResearchAnalysis(
             intent="research_comparison" if "workflow" in lowered else "research_direction",

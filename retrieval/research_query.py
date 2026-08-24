@@ -14,6 +14,8 @@ GENERIC_SEARCH_TERMS = {
     "survey", "technology", "trend", "trends",
 }
 DOMAIN_REWRITES = (
+    (("prompt cache", "prompt caching", "提示词缓存"),
+     "LLM prompt caching automatic prefix caching KV cache inference serving agent systems"),
     (("harness engineering", "agent harness", "harness工程", "harness 工程"),
      "LLM agent harness engineering scaffolding runtime infrastructure workflow orchestration evaluation"),
     (("aigc", "ai generated content", "ai-generated content", "人工智能生成内容"),
@@ -51,7 +53,16 @@ def normalized_research_topic(state: dict[str, Any]) -> str:
 def build_research_search_query(state: dict[str, Any], objective: str = "") -> str:
     topic = normalized_research_topic(state)
     objective_text = str(objective or "").casefold()
-    if "harness" in topic.casefold():
+    if "prompt cach" in topic.casefold() or "prefix cach" in topic.casefold():
+        if any(term in objective_text for term in ("界定", "定义", "区别", "代表论文")):
+            suffix = "prompt cache survey prefix reuse inference performance benchmarks"
+        elif any(term in objective_text for term in ("机制", "原理", "实现", "kv", "prefix")):
+            suffix = "automatic prefix caching radix tree KV cache serving architecture"
+        elif any(term in objective_text for term in ("agent", "开发", "使用", "工程", "成本")):
+            suffix = "agent context engineering repeated prefix latency cost optimization"
+        else:
+            suffix = "prompt caching inference serving systems"
+    elif "harness" in topic.casefold():
         if any(term in objective_text for term in ("边界", "workflow", "协作", "编排")):
             suffix = "agent workflow orchestration state machine task graph execution pipeline"
         elif any(term in objective_text for term in ("评测", "沙箱", "工具", "可观测", "失败")):
@@ -117,6 +128,13 @@ def required_topic_groups(state: dict[str, Any]) -> dict[str, tuple[str, ...]]:
         str((state.get("research_analysis") or {}).get("topic") or ""),
     )).casefold()
     if "harness" not in combined:
+        if "prompt cache" in combined or "prompt caching" in combined or "prefix caching" in combined:
+            return {
+                "prompt_cache": (
+                    "prompt cache", "prompt caching", "prefix cache", "prefix caching",
+                    "automatic prefix caching", "shared prefix", "context caching",
+                )
+            }
         return {}
     groups = {
         "agent": ("agent", "language agent", "llm agent"),
