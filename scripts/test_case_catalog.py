@@ -329,6 +329,16 @@ TEST_CASE_CATALOG: dict[str, CaseDescription] = {
         "修复 Prompt 包含论文证据，调用次数和 30 个测试 Token 均被准确记录。",
         "Reflection 可能脱离证据生成，或其额外成本没有进入可观测指标。",
     ),
+    "tests/test_answer_reflection.py::test_reflection_does_not_replace_answer_when_model_hits_output_limit": _description(
+        "验证Reflection命中输出长度上限时不得用截断文本覆盖原完整答案。",
+        "保留原答案，并记录rejected_incomplete与finish_reason_length。",
+        "若失败，质量修复反而可能把完整论文回答替换成只剩开头的残句。",
+    ),
+    "tests/test_answer_reflection.py::test_reflection_rejects_materially_shorter_rewrite_without_finish_reason": _description(
+        "验证Provider未返回finish_reason时，仍能通过长度退化门控识别不完整Reflection。",
+        "显著短于原答案的修复结果被拒绝，原回答保持不变。",
+        "若失败，不完整响应可能在缺少停止原因时绕过保护。",
+    ),
     "tests/test_answer_reflection.py::test_second_verification_restores_initial_answer_when_score_does_not_improve": _description(
         "验证修复答案没有提高验证分数时恢复初始答案并按无改善原因停止。",
         "Reflection 不会把原答案改得更差，也不会继续第三轮循环。",

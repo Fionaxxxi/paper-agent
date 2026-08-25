@@ -11,6 +11,21 @@ from nodes.generate import get_llm, truncate_text
 from prompts.contracts import get_prompt_version, wrap_untrusted_evidence
 
 
+def reflection_output_is_complete(
+    previous_answer: str,
+    repaired_answer: str,
+    finish_reason: str = "",
+) -> tuple[bool, str]:
+    """阻止截断或明显缩水的 Reflection 覆盖较完整的原答案。"""
+    if str(finish_reason).casefold() in {"length", "max_tokens"}:
+        return False, "finish_reason_length"
+    previous_length = len(previous_answer.strip())
+    repaired_length = len(repaired_answer.strip())
+    if previous_length >= 300 and repaired_length < max(120, int(previous_length * 0.6)):
+        return False, "materially_shorter_than_original"
+    return True, ""
+
+
 def build_answer_repair_prompt(state: AgentState) -> str:
     verification = state.get("answer_verification", {})
     evidence = "\n\n".join(
@@ -58,6 +73,21 @@ def answer_reflect_node(state: AgentState) -> AgentState:
         )
         usage_update = build_llm_usage_update(state, usage_record)
         repaired_answer = str(response.content or "").strip() or previous_answer
+        complete, rejection_reason = reflection_output_is_complete(
+            previous_answer,
+            repaired_answer,
+            str(usage_record.get("finish_reason", "")),
+        )
+        if not complete:
+            reflection["status"] = "rejected_incomplete"
+            reflection["rejection_reason"] = rejection_reason
+            return {
+                **usage_update,
+                "answer": previous_answer,
+                "answer_before_reflection": previous_answer,
+                "answer_reflection_count": 1,
+                "answer_reflection": reflection,
+            }
         reflection["status"] = "completed"
         return {
             **usage_update,

@@ -98,9 +98,9 @@ def test_unrelated_results_remain_blocked_for_sft_research():
 def test_research_writer_has_bounded_output_budget(monkeypatch):
     from nodes import generate
 
-    monkeypatch.setattr(generate.settings, "GENERATE_MAX_TOKENS", 1800)
+    monkeypatch.setattr(generate.settings, "GENERATE_MAX_TOKENS", 3200)
     monkeypatch.setattr(generate.settings, "GENERATE_THINKING_BUDGET", 400)
     llm = get_llm()
 
-    assert llm.max_tokens == 1800
+    assert llm.max_tokens == 3200
     assert llm.extra_body == {"enable_thinking": True, "thinking_budget": 400}

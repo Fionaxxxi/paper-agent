@@ -92,6 +92,55 @@ def test_reflection_uses_one_tracked_llm_call_and_keeps_evidence_in_prompt(monke
     assert result["token_usage"] == 30
 
 
+def test_reflection_does_not_replace_answer_when_model_hits_output_limit(monkeypatch):
+    original = "## 完整分析\n" + ("GraphRAG 证据充分的完整流程说明。" * 40)
+
+    class TruncatedLLM:
+        def invoke(self, prompt):
+            return SimpleNamespace(
+                content="### 针对 Figure 1 的解释\n\n1. 输入：Source Documents；\n2. 最终",
+                usage_metadata={"input_tokens": 100, "output_tokens": 50, "total_tokens": 150},
+                response_metadata={"finish_reason": "length"},
+            )
+
+    monkeypatch.setattr(reflect_module, "get_llm", lambda: TruncatedLLM())
+    result = reflect_module.answer_reflect_node({
+        "query": "解释这篇论文的架构图",
+        "answer": original,
+        "documents": [{"title": "GraphRAG", "content": "evidence"}],
+        "answer_verification": {"failure_types": ["missing_evidence_reference"], "issues": ["补充引用"]},
+        "llm_usage": [],
+    })
+
+    assert result["answer"] == original
+    assert result["answer_reflection"]["status"] == "rejected_incomplete"
+    assert result["answer_reflection"]["rejection_reason"] == "finish_reason_length"
+
+
+def test_reflection_rejects_materially_shorter_rewrite_without_finish_reason(monkeypatch):
+    original = "完整论文分析。" * 80
+
+    class ShortLLM:
+        def invoke(self, prompt):
+            return SimpleNamespace(
+                content="1. 输入：Source Documents；\n2. 最终",
+                usage_metadata={},
+                response_metadata={},
+            )
+
+    monkeypatch.setattr(reflect_module, "get_llm", lambda: ShortLLM())
+    result = reflect_module.answer_reflect_node({
+        "query": "解释架构图",
+        "answer": original,
+        "documents": [{"title": "GraphRAG", "content": "evidence"}],
+        "answer_verification": {"failure_types": ["answer_too_short"], "issues": []},
+        "llm_usage": [],
+    })
+
+    assert result["answer"] == original
+    assert result["answer_reflection"]["rejection_reason"] == "materially_shorter_than_original"
+
+
 def test_second_verification_restores_initial_answer_when_score_does_not_improve():
     initial = answer_verify_node(
         {"answer": "初始答案", "documents": [{"title": "ReAct"}]}

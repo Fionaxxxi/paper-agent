@@ -66,7 +66,7 @@ class Settings(BaseSettings):
 
     # Generation
     LLM_TIMEOUT: int = 120
-    GENERATE_MAX_TOKENS: int = 1800
+    GENERATE_MAX_TOKENS: int = 3200
     GENERATE_THINKING_BUDGET: int = 400
     MAX_GENERATE_DOCS: int = 3
     DOC_CONTENT_LIMIT: int = 1000
