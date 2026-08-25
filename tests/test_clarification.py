@@ -2,13 +2,16 @@ import nodes.clarification as clarification_module
 from nodes.clarification import clarification_node, validate_candidate
 
 
-def state(query, papers=None, topics=None, pending=None):
+def state(query, papers=None, topics=None, pending=None, selected_document=None):
+    selected_document = selected_document or {}
     return {
         "query": query,
         "pending_clarification": pending or {},
         "paper_metadata": {
             "memory_active_papers": papers or [],
             "memory_active_topics": topics or [],
+            "selected_document_id": selected_document.get("document_id", ""),
+            "selected_document_title": selected_document.get("title", ""),
         },
     }
 
@@ -31,6 +34,23 @@ def test_multiple_candidates_request_clarification_and_short_circuit():
     assert result["documents"] == []
     assert "ReAct" in result["answer"] and "Reflexion" in result["answer"]
     assert result["paper_metadata"]["short_circuited"] is True
+
+
+def test_selected_library_document_overrides_multiple_memory_candidates():
+    """作用：显式点击“基于此论文提问”后，不再被会话历史中的多篇论文干扰。"""
+    result = clarification_node(state(
+        "阅读这篇论文的架构图并标注证据页码。",
+        papers=["Reflexion", "Action Corrections", "03_GraphRAG_From_Local_to_Global"],
+        selected_document={
+            "document_id": "doc-graphrag",
+            "title": "03_GraphRAG_From_Local_to_Global",
+        },
+    ))
+
+    assert result["clarification_required"] is False
+    assert result["resolved_referent"] == "03_GraphRAG_From_Local_to_Global"
+    assert "03_GraphRAG_From_Local_to_Global的架构图" in result["query"]
+    assert result["paper_metadata"]["clarification_resolution_source"] == "selected_document"
 
 
 def test_missing_candidate_requests_explicit_object_name():

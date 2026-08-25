@@ -1684,6 +1684,11 @@ TEST_CASE_CATALOG: dict[str, CaseDescription] = {
         "系统不调用LLM、不检索，也不擅自猜测其中一个对象。",
         "若失败，错误指代会扩散到规划、工具调用和最终报告。",
     ),
+    "tests/test_clarification.py::test_selected_library_document_overrides_multiple_memory_candidates": _description(
+        "验证用户显式选择个人库论文后，该文档优先于会话历史中的多篇候选。",
+        "“这篇论文”零LLM绑定 selected_document，并继续PDF研究流程而不是再次澄清。",
+        "若失败，基于选中论文提问仍会被历史上下文干扰并错误中断。",
+    ),
     "tests/test_clarification.py::test_missing_candidate_requests_explicit_object_name": _description(
         "验证指代存在但记忆中没有候选时要求用户补充论文、方法或模型名称。",
         "无法消解的问题不会作为检索关键词继续执行。",

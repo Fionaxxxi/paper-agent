@@ -225,6 +225,19 @@ def clarification_node(state: AgentState) -> AgentState:
             "clarification_required": False,
             "pending_clarification": {},
         }
+    metadata = state.get("paper_metadata", {})
+    selected_document_title = str(metadata.get("selected_document_title", "")).strip()
+    selected_document_id = str(metadata.get("selected_document_id", "")).strip()
+    # “基于此论文提问”是用户本轮的显式选择，优先级高于会话历史候选。
+    # 序数指代仍按候选顺序解析，避免把“第二篇论文”错误绑定到当前文档。
+    if selected_document_id and selected_document_title and _ordinal_value(query) is None:
+        return _resolved_response(
+            state,
+            query,
+            references,
+            selected_document_title,
+            "selected_document",
+        )
     candidates = clarification_candidates(state, references)
     ordinal = _ordinal_value(query)
     if ordinal is not None:
