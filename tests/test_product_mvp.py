@@ -105,3 +105,63 @@ def test_auth_and_library_api_end_to_end(tmp_path, monkeypatch):
     assert upload.status_code == 201
     assert listed.json()["documents"][0]["title"] == "Agent Memory"
     assert anonymous.status_code == 401
+
+
+def test_library_preview_endpoints_return_owned_pdf_and_searchable_chunks(tmp_path, monkeypatch):
+    monkeypatch.setattr(settings, "PRODUCT_DB_PATH", str(tmp_path / "product.db"))
+    monkeypatch.setattr(settings, "PERSONAL_LIBRARY_FILES_DIR", str(tmp_path / "files"))
+    client = TestClient(app)
+    for email in ("owner@example.com", "other@example.com"):
+        client.post("/auth/register", json={
+            "email": email, "password": "password-123", "display_name": email.split("@")[0]
+        })
+    owner_token = client.post("/auth/login", json={
+        "email": "owner@example.com", "password": "password-123"
+    }).json()["access_token"]
+    other_token = client.post("/auth/login", json={
+        "email": "other@example.com", "password": "password-123"
+    }).json()["access_token"]
+    owner_headers = {"Authorization": f"Bearer {owner_token}"}
+    upload = client.post(
+        "/library/documents?title=Agent%20Memory",
+        content=_pdf_bytes(tmp_path, "Agent memory supports selective context compression."),
+        headers={**owner_headers, "X-Filename": "agent-memory.pdf", "Content-Type": "application/pdf"},
+    )
+    document_id = upload.json()["document"]["document_id"]
+
+    detail = client.get(f"/library/documents/{document_id}", headers=owner_headers)
+    pdf = client.get(f"/library/documents/{document_id}/file", headers=owner_headers)
+    preview_page = client.get(f"/library/documents/{document_id}/pages/1", headers=owner_headers)
+    chunks = client.get(
+        f"/library/documents/{document_id}/chunks?q=selective&page=1&page_size=12",
+        headers=owner_headers,
+    )
+    other_headers = {"Authorization": f"Bearer {other_token}"}
+    collection = client.post(
+        "/library/collections", json={"name": "Agent Architecture"}, headers=owner_headers,
+    )
+    collection_id = collection.json()["collection"]["library_id"]
+    updated = client.patch(
+        f"/library/documents/{document_id}",
+        json={"title": "Agent Memory Systems", "tags": ["agent", "memory"], "library_id": collection_id},
+        headers=owner_headers,
+    )
+
+    assert detail.status_code == 200
+    assert "storage_path" not in detail.json()["document"]
+    assert pdf.status_code == 200 and pdf.content.startswith(b"%PDF")
+    assert pdf.headers["content-type"].startswith("application/pdf")
+    assert "inline" in pdf.headers["content-disposition"]
+    assert preview_page.status_code == 200 and preview_page.content.startswith(b"\x89PNG")
+    assert chunks.status_code == 200 and chunks.json()["total"] == 1
+    assert "selective context compression" in chunks.json()["items"][0]["content"]
+    assert collection.status_code == 201
+    assert updated.json()["document"]["title"] == "Agent Memory Systems"
+    assert updated.json()["document"]["metadata"]["tags"] == ["agent", "memory"]
+    assert updated.json()["document"]["library_id"] == collection_id
+    for suffix in ("", "/file", "/pages/1", "/chunks"):
+        assert client.get(f"/library/documents/{document_id}{suffix}", headers=other_headers).status_code == 404
+    assert client.patch(
+        f"/library/documents/{document_id}",
+        json={"title": "stolen", "tags": [], "library_id": collection_id}, headers=other_headers,
+    ).status_code in {400, 404}

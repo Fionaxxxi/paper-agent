@@ -32,7 +32,7 @@ PaperAgent 面向需要进行论文检索、方法比较、研究综述和 PDF �
 - **混合知识检索：** 支持 Personal、Online、Hybrid 三种范围，联合个人 PDF 全文与 arXiv、OpenAlex、Crossref、Semantic Scholar；深度任务会从可信在线 PDF 下载全文、按页分块并定向召回方法/实验/局限证据，Local RAG 使用 BM25、MPNet Dense Retrieval、RRF 和置信度门控。
 - **证据约束生成：** 统一 Evidence Store 保存论文身份、来源、页码和任务映射；Coverage、Citation、Claim-Evidence、PDF Grounding 和 Answer Verification 共同限制无依据结论。
 - **论文多模态阅读：** 按问题自动选择关键页，通过 `qwen3.5-ocr` 提取架构图、实验表、曲线和公式信息，再由主模型结合 PDF 文本生成并验证回答。
-- **记忆与个人知识：** 提供用户登录、Owner-scoped 个人论文库、会话 Checkpoint、按需 Long-Term Memory RAG 和 Memory Write Gate，避免跨用户数据泄漏及全量记忆污染。
+- **记忆与个人知识：** 提供用户登录、Owner-scoped 个人论文库、论文卡片筛选、原始 PDF 在线预览、分页 Chunk 浏览与文内搜索，以及会话 Checkpoint、按需 Long-Term Memory RAG 和 Memory Write Gate；文件、正文和检索结果均按用户隔离。
 - **工具与 MCP 治理：** Router、Registry、Policy、Executor 统一处理工具选择、参数、权限、超时、重试和错误；实现自建 Paper Catalog MCP，并提供只读 Zotero/GitHub 集成。
 - **受控策略优化：** 从 Badcase 生成 Allowlist 内的 Prompt、Policy、Routing 或 RAG 候选；Promotion Gate 同时检查逐题回归、质量、安全、Token 和 P95 延迟，候选不能自动改代码或上线。
 

@@ -42,6 +42,16 @@ class LoginRequest(BaseModel):
     password: str
 
 
+class LibraryCollectionRequest(BaseModel):
+    name: str = Field(min_length=1, max_length=80)
+
+
+class LibraryDocumentUpdate(BaseModel):
+    title: str = Field(min_length=1, max_length=200)
+    tags: List[str] = Field(default_factory=list, max_length=20)
+    library_id: str = Field(min_length=1, max_length=80)
+
+
 class ReportExportRequest(BaseModel):
     title: str = Field(default="PaperAgent 研究报告", max_length=120)
     query: str = Field(default="", max_length=4000)

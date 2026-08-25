@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="/static/styles.css">
   <link rel="stylesheet" href="/static/research.css?v=20260824-links">
   <link rel="stylesheet" href="/static/modern.css?v=20260824-links">
-  <link rel="stylesheet" href="/static/product.css">
+  <link rel="stylesheet" href="/static/product.css?v=20260825-library-preview">
   <link rel="stylesheet" href="/static/report.css">
 </head>
 <body>
@@ -37,9 +37,21 @@
       <article class="panel library-card">
         <div class="section-title"><span>Personal Paper Library</span><b id="libraryCount">需要登录</b></div>
         <div class="library-upload"><input id="libraryPdf" type="file" accept="application/pdf"><input id="libraryTitle" placeholder="论文标题（可选）"><button id="uploadPaper" class="primary">上传并建立索引</button></div>
+        <div class="collection-toolbar"><select id="libraryCollectionFilter"><option value="">全部 Collection</option></select><input id="newCollectionName" placeholder="新建 Collection 名称"><button id="createCollection">新建</button></div>
+        <div class="library-toolbar"><input id="librarySearch" placeholder="按标题、文件名或标签筛选论文库"><span>点击“查看”可预览 PDF、分页文本和索引 Chunk</span></div>
         <div id="libraryList" class="library-list"><p class="empty">登录后可管理个人论文。</p></div>
       </article>
     </section>
+    <div id="libraryDrawer" class="library-drawer hidden" aria-hidden="true">
+      <button id="libraryDrawerBackdrop" class="library-drawer-backdrop" aria-label="关闭论文详情"></button>
+      <aside class="library-drawer-panel" role="dialog" aria-modal="true" aria-labelledby="libraryDrawerTitle">
+        <header class="library-drawer-header"><div><small>PERSONAL LIBRARY</small><h2 id="libraryDrawerTitle">论文详情</h2><p id="libraryDrawerMeta"></p></div><button id="closeLibraryDrawer" aria-label="关闭">×</button></header>
+        <div class="library-metadata-editor"><input id="editLibraryTitle" placeholder="论文标题"><input id="editLibraryTags" placeholder="标签，用逗号分隔"><select id="editLibraryCollection"></select><button id="saveLibraryMetadata">保存信息</button><span id="metadataSaveStatus"></span></div>
+        <div class="library-tabs" role="tablist"><button class="active" data-library-tab="pdf">PDF 预览</button><button data-library-tab="chunks">文本与 Chunk</button></div>
+        <section id="libraryPdfPanel" class="library-preview-panel"><div class="pdf-preview-toolbar"><button id="previousPdfPage">上一页</button><b id="pdfPageStatus">第 1 页</b><button id="nextPdfPage">下一页</button><a id="openOriginalPdf" target="_blank" rel="noopener noreferrer">打开原始 PDF ↗</a></div><div class="pdf-page-stage"><div id="libraryPdfLoading" class="library-loading">正在安全加载 PDF 页面…</div><img id="libraryPdfPage" alt="个人论文 PDF 页面预览"></div></section>
+        <section id="libraryChunksPanel" class="library-preview-panel hidden"><div class="chunk-toolbar"><input id="chunkSearch" placeholder="在当前论文的提取文本中搜索"><button id="searchChunks">搜索</button><button id="clearChunkSearch">清除</button><b id="chunkCount"></b></div><div id="libraryChunks" class="chunk-list"></div><div class="chunk-pagination"><button id="previousChunks">上一页</button><span id="chunkPage"></span><button id="nextChunks">下一页</button></div></section>
+      </aside>
+    </div>
     <section class="panel composer">
       <div class="examples">
         <button data-query="梳理2023年以来反思型Agent架构的代表论文、方法比较、发展趋势和研究空白">深度研究报告</button>
@@ -124,6 +136,6 @@
       </div>
     </section>
   </main>
-  <script src="/static/app.js?v=20260824-links"></script>
+  <script src="/static/app.js?v=20260825-library-preview"></script>
 </body>
 </html>

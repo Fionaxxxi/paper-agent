@@ -38,7 +38,7 @@ PaperAgent 是一个基于 LangGraph 的研究型论文 Agent：它把用户问�
 | 质量验证 | 已完成 | Citation、Claim-Evidence、PDF Grounding、Answer Verification |
 | 有限 Agent Loop | 已完成 | Retrieval Replan 与 Answer Reflection 均有次数和证据约束 |
 | 会话与长期记忆 | 已完成 v1 | SQLite 会话消息、SQLite Checkpoint、Memory RAG、Write Gate；旧文件仅保留兼容迁移路径 |
-| 个人论文库 | 已完成 MVP | 注册登录、用户隔离、PDF 上传、Personal/Online/Hybrid |
+| 个人论文库 | 已完成可视化浏览 | 注册登录、用户隔离、PDF 上传、论文筛选、原文/Chunk 预览与搜索、Personal/Online/Hybrid |
 | PDF 视觉理解 | 已完成 v2 | 自动关键页、Figure/Table/`ChartAnalysisSkill`/Formula、真实在线测试 |
 | 报告导出 | 已完成 v1 | 中文 Word/PDF 下载，不额外调用 LLM |
 | Web、Docker、CI | 已完成基础版 | 演示页、容器、健康检查、GitHub Actions |

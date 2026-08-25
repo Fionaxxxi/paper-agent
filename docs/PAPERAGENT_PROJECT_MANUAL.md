@@ -79,7 +79,7 @@ PaperAgent 将这些问题拆成可观察、可测试的工程节点，以代码
 | 幻觉抑制 | 已完成 v1 | Retrieval Gate、Citation、Claim-Evidence、PDF Grounding、Answer Verify |
 | 有限 Agent Loop | 已完成 | Retrieval Replan ≤1、Answer Reflection ≤1 |
 | 记忆系统 | 已完成 v1 | SQLite 会话/Checkpoint、Long-Term Memory RAG、Write Gate |
-| 个人论文库 | MVP | 注册登录、Owner 隔离、上传/删除、Personal/Online/Hybrid |
+| 个人论文库 | 可演示产品版 | 注册登录、Owner 隔离、上传/删除、标题筛选、PDF/Chunk 预览、文内搜索、Personal/Online/Hybrid |
 | PDF 多模态 | 已完成 v2 | 自动关键页、Figure/Table/Chart/Formula、OCR + 主模型综合 |
 | 报告导出 | 已完成 v1 | 已生成结论导出 Word/PDF，不增加 LLM 调用 |
 | Web、Docker、CI | 基础版完成 | 研究控制台、Swagger、容器、健康检查、GitHub Actions |
@@ -684,7 +684,16 @@ Smalltalk、一次性改写、随时可重查的简单公开事实和证据不�
 
 ### 12.1 登录与个人论文库
 
-MVP 使用 PBKDF2 密码哈希、服务端不透明 Bearer Token。每个文档绑定 `user_id / library_id / collection_id / document_id`；上传、列表、删除和检索都进行 Owner 过滤，避免其他用户的 Chunk 进入结果。
+MVP 使用 PBKDF2 密码哈希、服务端不透明 Bearer Token。每个文档绑定 `user_id / library_id / collection_id / document_id`；上传、列表、详情、原始 PDF、Chunk、删除和检索都进行 Owner 过滤，避免其他用户读取文件或让私有 Chunk 进入结果。
+
+个人论文库页面不是只有上传入口：论文卡片显示标题、原文件名、Collection、标签、页数、Chunk 数量和上传时间，可按标题/文件名/标签即时筛选，也可新建和筛选 Collection。点击“查看”打开详情抽屉，可修改标题、标签和所属 Collection；PDF 通过 Owner 鉴权后按页渲染，原始文件使用浏览器临时 Blob URL 打开，不公开服务器磁盘路径；“文本与 Chunk”按页展示解析正文、页码和 Chunk ID，并支持当前论文内关键词搜索与分页。关闭抽屉或退出登录时会回收临时 URL。
+
+```text
+GET /library/documents/{document_id}         → 论文元数据（不返回 storage_path）
+GET /library/documents/{document_id}/file    → 仅 Owner 可访问的 inline PDF
+GET /library/documents/{document_id}/pages/N → 跨浏览器稳定显示的安全页面 PNG
+GET /library/documents/{document_id}/chunks  → 仅 Owner 可访问的分页/搜索 Chunk
+```
 
 ### 12.2 报告导出
 

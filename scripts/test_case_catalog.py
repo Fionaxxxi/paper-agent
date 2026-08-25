@@ -2199,6 +2199,11 @@ TEST_CASE_CATALOG: dict[str, CaseDescription] = {
         "代表产品化MVP可以由前端或API客户端完整操作，而不是孤立的数据层。",
         "若失败，认证Token或论文库接口之间存在断链。",
     ),
+    "tests/test_product_mvp.py::test_library_preview_endpoints_return_owned_pdf_and_searchable_chunks": _description(
+        "验证登录用户可以读取自己的论文详情、原始 PDF、页面图片和可搜索 Chunk，并编辑标题、标签与 Collection。",
+        "通过代表论文库浏览管理链路完整，文件、正文与元数据均按 Owner 隔离，其他用户访问统一被拒绝。",
+        "若失败，网页无法管理或预览已上传论文，或存在 PDF、Chunk、Collection、存储路径越权泄露风险。",
+    ),
     "tests/test_product_mvp.py::test_authenticated_hybrid_merges_personal_and_online_evidence": _description(
         "验证登录用户的Hybrid检索合并个人PDF Chunk与arXiv公开论文。",
         "代表Private Knowledge和Public Knowledge已经在同一研究请求中真实执行并统一返回。",

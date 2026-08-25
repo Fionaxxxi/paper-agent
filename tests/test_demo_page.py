@@ -51,8 +51,9 @@ def test_demo_page_renders_only_safe_external_evidence_links():
 def test_demo_page_cache_busts_link_enabled_static_assets():
     page = TestClient(app).get("/").text
 
-    assert "/static/app.js?v=20260824-links" in page
+    assert "/static/app.js?v=20260825-library-preview" in page
     assert "/static/research.css?v=20260824-links" in page
+    assert "/static/product.css?v=20260825-library-preview" in page
 
 
 def test_demo_page_exposes_research_agent_trace_panels():
@@ -137,8 +138,8 @@ def test_demo_page_exposes_auth_library_and_retrieval_scope_controls():
     client = TestClient(app)
     page = client.get("/").text
     script = client.get("/static/app.js").text
-    for marker in ("个人研究空间", "Personal Paper Library", "retrievalScope", "个人库 + 在线"):
+    for marker in ("个人研究空间", "Personal Paper Library", "retrievalScope", "个人库 + 在线", "libraryDrawer", "PDF 预览", "文本与 Chunk", "新建 Collection 名称", "保存信息"):
         assert marker in page
-    for marker in ("paperagent_token", "/auth/login", "/library/documents", "retrieval_scope", "authHeaders"):
+    for marker in ("paperagent_token", "/auth/login", "/library/documents", "/library/collections", "retrieval_scope", "authHeaders", "openLibraryDocument", "loadLibraryPdfPage", "loadDocumentChunks", "saveLibraryMetadata", "URL.createObjectURL"):
         assert marker in script
     assert "/static/product.css" in page

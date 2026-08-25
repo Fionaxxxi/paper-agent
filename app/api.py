@@ -2,10 +2,10 @@ from pathlib import Path
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 
-from app.schemas import ChatRequest, ChatResponse, HealthResponse, LoginRequest, RegisterRequest, ReportExportRequest
+from app.schemas import ChatRequest, ChatResponse, HealthResponse, LibraryCollectionRequest, LibraryDocumentUpdate, LoginRequest, RegisterRequest, ReportExportRequest
 from core.config import settings
 from core.logger import logger
 from core.trace import generate_trace_id
@@ -101,6 +101,89 @@ async def upload_library_pdf(
 @app.get("/library/documents")
 def list_library_documents(user=Depends(current_user)):
     return {"success": True, "documents": personal_library_store().list_documents(user["user_id"])}
+
+
+@app.get("/library/collections")
+def list_library_collections(user=Depends(current_user)):
+    return {"success": True, "collections": personal_library_store().list_libraries(user["user_id"])}
+
+
+@app.post("/library/collections", status_code=201)
+def create_library_collection(request: LibraryCollectionRequest, user=Depends(current_user)):
+    try:
+        return {"success": True, "collection": personal_library_store().create_library(user["user_id"], request.name)}
+    except ValueError as error:
+        raise HTTPException(status_code=409, detail=str(error)) from error
+
+
+@app.get("/library/documents/{document_id}")
+def get_library_document(document_id: str, user=Depends(current_user)):
+    try:
+        document = personal_library_store().get_document(user["user_id"], document_id)
+        return {"success": True, "document": document}
+    except KeyError as error:
+        raise HTTPException(status_code=404, detail="论文不存在或不属于当前用户") from error
+
+
+@app.patch("/library/documents/{document_id}")
+def update_library_document(document_id: str, request: LibraryDocumentUpdate, user=Depends(current_user)):
+    try:
+        document = personal_library_store().update_document(
+            user["user_id"], document_id, title=request.title,
+            tags=request.tags, library_id=request.library_id,
+        )
+        return {"success": True, "document": document}
+    except KeyError as error:
+        raise HTTPException(status_code=404, detail="论文不存在或不属于当前用户") from error
+    except PermissionError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+
+
+@app.get("/library/documents/{document_id}/file")
+def preview_library_document(document_id: str, user=Depends(current_user)):
+    try:
+        path, filename = personal_library_store().get_document_file(user["user_id"], document_id)
+        return FileResponse(
+            path, media_type="application/pdf", filename=filename,
+            content_disposition_type="inline",
+        )
+    except (KeyError, FileNotFoundError) as error:
+        raise HTTPException(status_code=404, detail="论文文件不存在或不属于当前用户") from error
+
+
+@app.get("/library/documents/{document_id}/pages/{page_number}")
+def preview_library_document_page(document_id: str, page_number: int, user=Depends(current_user)):
+    try:
+        import pymupdf
+
+        path, _ = personal_library_store().get_document_file(user["user_id"], document_id)
+        with pymupdf.open(path) as document:
+            if page_number < 1 or page_number > document.page_count:
+                raise HTTPException(status_code=404, detail="PDF 页码不存在")
+            pixmap = document[page_number - 1].get_pixmap(matrix=pymupdf.Matrix(1.45, 1.45), alpha=False)
+            content = pixmap.tobytes("png")
+        return Response(
+            content=content, media_type="image/png",
+            headers={"Cache-Control": "private, max-age=300"},
+        )
+    except HTTPException:
+        raise
+    except (KeyError, FileNotFoundError) as error:
+        raise HTTPException(status_code=404, detail="论文文件不存在或不属于当前用户") from error
+
+
+@app.get("/library/documents/{document_id}/chunks")
+def list_library_document_chunks(
+    document_id: str, page: int = 1, page_size: int = 20,
+    q: str = "", user=Depends(current_user),
+):
+    try:
+        chunks = personal_library_store().list_document_chunks(
+            user["user_id"], document_id, page=page, page_size=page_size, query=q,
+        )
+        return {"success": True, **chunks}
+    except KeyError as error:
+        raise HTTPException(status_code=404, detail="论文不存在或不属于当前用户") from error
 
 
 @app.delete("/library/documents/{document_id}")
