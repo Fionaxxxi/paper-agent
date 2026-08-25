@@ -1,5 +1,6 @@
 import base64
 import hashlib
+import re
 from pathlib import Path
 
 from langchain_core.messages import HumanMessage
@@ -63,6 +64,39 @@ def build_pdf_multimodal_input(prompt: str, image_paths: list[str]):
 
 
 PDF_OCR_PROMPT = """请解析这些论文页面：提取标题、分节、正文、表格、公式、图注和可识别的布局关系。保持原文事实，不做研究结论扩写；无法识别处明确标记。"""
+
+
+_DANGLING_OUTLINE_MARKER = re.compile(
+    r"^\s*(?:#{1,6}\s*)?(?:第\s*)?\d{1,2}(?:\s*[.、:：)])?\s*$"
+)
+
+
+def clean_generated_answer_tail(answer: str) -> tuple[str, dict[str, object]]:
+    """清理长篇回答末尾孤立的章节编号，不触碰正常的数字型短答案。"""
+    cleaned = str(answer or "").rstrip()
+    lines = cleaned.splitlines()
+    non_empty_lines = [line for line in lines if line.strip()]
+    is_structured_long_answer = len(cleaned) >= 300 and len(non_empty_lines) >= 6
+    if (
+        is_structured_long_answer
+        and non_empty_lines
+        and _DANGLING_OUTLINE_MARKER.fullmatch(non_empty_lines[-1])
+    ):
+        dangling_line = non_empty_lines[-1].strip()
+        last_index = max(index for index, line in enumerate(lines) if line.strip())
+        repaired = "\n".join(lines[:last_index]).rstrip()
+        return repaired, {
+            "status": "repaired",
+            "repaired": True,
+            "removed_tail": dangling_line,
+            "reason": "dangling_outline_marker",
+        }
+    return cleaned, {
+        "status": "unchanged",
+        "repaired": False,
+        "removed_tail": "",
+        "reason": "",
+    }
 
 
 def build_pdf_visual_prompt(query: str, skill_name: str, selected_pages: list[int]) -> str:
@@ -303,6 +337,7 @@ def generate_node(state: AgentState) -> AgentState:
             expected_evidence_mode=("ocr_visual" if vision_requested else "text_only")
             if state.get("task_type") == "pdf_reading" else None,
         )
+        answer, tail_cleanup = clean_generated_answer_tail(answer)
         if memory_metadata.get("status") == "valid":
             memory_metadata["source_answer_hash"] = hashlib.sha256(
                 answer.strip().encode("utf-8")
@@ -323,6 +358,7 @@ def generate_node(state: AgentState) -> AgentState:
                 "pdf_visual_page_count": len(state.get("pdf_page_images", [])) if vision_requested else 0,
                 "pdf_visual_evidence": visual_evidence if vision_requested else {},
                 "pdf_structured_output": structured_output,
+                "answer_tail_cleanup": tail_cleanup,
             },
         }
 

@@ -84,7 +84,7 @@ def test_successful_invocation_records_model_node_tokens_and_latency():
             "output_tokens": 5,
             "total_tokens": 15,
         },
-        response_metadata={},
+        response_metadata={"finish_reason": "length"},
     )
 
     actual_response, record = invoke_llm_with_usage(
@@ -99,6 +99,7 @@ def test_successful_invocation_records_model_node_tokens_and_latency():
     assert record["model_name"] == "test-model"
     assert record["success"] is True
     assert record["total_tokens"] == 15
+    assert record["finish_reason"] == "length"
     assert record["latency_seconds"] >= 0
 
 

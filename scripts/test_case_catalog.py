@@ -594,6 +594,16 @@ TEST_CASE_CATALOG: dict[str, CaseDescription] = {
         "返回 grounded answer，并记录一次 generate 调用和 120 Token。",
         "最终生成成本、调用次数或答案传递可能出现回归。",
     ),
+    "tests/test_llm_usage_nodes.py::test_generate_removes_only_dangling_outline_marker_from_long_answer": _description(
+        "验证长篇研究回答末尾孤立的章节编号会被安全清理。",
+        "只移除没有正文的末尾编号，并在 answer_tail_cleanup 中记录修复原因。",
+        "页面可能展示模型截断后遗留的空编号，影响报告完整性。",
+    ),
+    "tests/test_llm_usage_nodes.py::test_answer_tail_cleanup_preserves_numeric_short_answer": _description(
+        "验证答案尾部清理不会误删正常的数字型短答案。",
+        "单独回答 7 时保持原文，清理状态为 unchanged。",
+        "过度清洗可能篡改数学、计数或选择题答案。",
+    ),
     "tests/test_llm_usage_nodes.py::test_rule_based_evaluate_does_not_create_an_llm_call": _description(
         "验证关闭 LLM 评估时只使用规则评分且不创建虚假调用记录。",
         "结果包含有效规则评分，但没有 llm_call_count。",

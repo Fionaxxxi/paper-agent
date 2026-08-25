@@ -41,6 +41,7 @@ def build_writer_prompt(base_prompt: str, state: dict[str, Any]) -> str:
 - 在线论文在证据索引中优先使用 `[打开论文](URL)` Markdown 链接；本地 Chunk 只保留页码和 Chunk ID；
 - `repository` 证据只能支持工程实现、依赖和活跃度判断，不能替代论文对方法与实验结论的证明；
 - 综合判断要明确标记为“综合判断”，不能伪装成单篇论文原结论。
+- 必须以完整句子、完整表格或完整结论结束；如果没有内容完成下一章节，不得输出孤立的章节编号或空标题。
 """
 
 

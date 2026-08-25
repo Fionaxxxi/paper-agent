@@ -106,6 +106,10 @@ def invoke_llm_with_usage(
         "latency_seconds": latency_seconds,
         "error_type": "",
         "prompt_version": prompt_version,
+        "finish_reason": str(
+            (getattr(response, "response_metadata", None) or {}).get("finish_reason", "")
+            or (getattr(response, "response_metadata", None) or {}).get("stop_reason", "")
+        ),
     }
     return response, record
 

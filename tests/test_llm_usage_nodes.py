@@ -100,6 +100,37 @@ def test_generate_node_records_usage(monkeypatch):
     assert result["llm_usage"][0]["node_name"] == "generate"
 
 
+def test_generate_removes_only_dangling_outline_marker_from_long_answer(monkeypatch):
+    monkeypatch.setattr(generate_module, "attach_skill_context", lambda state: state)
+    monkeypatch.setattr(generate_module, "get_skill", lambda state: FakeSkill())
+    long_answer = "\n\n".join(
+        [f"## {index}. 分析\n" + ("这是具有证据支持的完整分析内容。" * 8) for index in range(1, 7)]
+    ) + "\n\n7"
+    monkeypatch.setattr(generate_module, "get_llm", lambda: FakeLLM(long_answer))
+
+    result = generate_module.generate_node({
+        "query": "比较两种 Agent 架构",
+        "task_type": "compare",
+        "documents": [{"title": "Agent paper"}],
+        "paper_metadata": {},
+    })
+
+    assert not result["answer"].endswith("7")
+    assert result["paper_metadata"]["answer_tail_cleanup"] == {
+        "status": "repaired",
+        "repaired": True,
+        "removed_tail": "7",
+        "reason": "dangling_outline_marker",
+    }
+
+
+def test_answer_tail_cleanup_preserves_numeric_short_answer():
+    answer, metadata = generate_module.clean_generated_answer_tail("7")
+
+    assert answer == "7"
+    assert metadata["status"] == "unchanged"
+
+
 def test_generate_collects_memory_metadata_in_same_llm_call(monkeypatch):
     monkeypatch.setattr(generate_module, "attach_skill_context", lambda state: state)
     monkeypatch.setattr(generate_module, "get_skill", lambda state: FakeSkill())
