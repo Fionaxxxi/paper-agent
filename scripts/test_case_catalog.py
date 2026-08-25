@@ -1994,6 +1994,11 @@ TEST_CASE_CATALOG: dict[str, CaseDescription] = {
         "代表当前不支持原生结构化输出的主模型偶发格式失败不会中断用户任务。",
         "若失败，一次格式错误可能导致完整回答丢失，或普通PDF请求被错误标记失败。",
     ),
+    "tests/test_pdf_page_analysis.py::test_pdf_structured_parser_removes_truncated_machine_json_tail": _description(
+        "验证模型因输出上限留下未闭合JSON fence时，不向用户泄漏半截机器数据。",
+        "保留完整中文分析，移除末尾JSON残片，并标记truncated_json_block。",
+        "若失败，研究答案末尾会出现components等不完整JSON，看起来像乱码。",
+    ),
     "tests/test_pdf_page_analysis.py::test_chart_structured_parser_preserves_axes_series_and_visual_scope": _description(
         "验证曲线图回答中的坐标轴、系列、趋势和视觉证据页经过Pydantic校验后保存在结构化元数据中。",
         "代表Chart Skill既返回正常中文解释，也能为后续跨论文图表比较提供稳定机器接口。",

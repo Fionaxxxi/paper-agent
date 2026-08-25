@@ -347,6 +347,23 @@ def test_pdf_structured_parser_falls_back_without_losing_readable_answer():
     assert generic_result["status"] == "not_applicable"
 
 
+def test_pdf_structured_parser_removes_truncated_machine_json_tail():
+    answer = (
+        "证据范围：第 4 页。\n\n## GraphRAG 架构解析\n\n"
+        "GraphRAG 从文本切分进入实体关系抽取，再构建社区摘要。\n"
+        "```json\n"
+        '{"target_found": true, "summary": "GraphRAG 流程", "components": ['
+    )
+
+    readable, result = parse_pdf_structured_output(answer, "figure_understanding")
+
+    assert readable.endswith("再构建社区摘要。")
+    assert "```json" not in readable
+    assert '"components"' not in readable
+    assert result["status"] == "invalid"
+    assert result["error"] == "truncated_json_block"
+
+
 def test_chart_structured_parser_preserves_axes_series_and_visual_scope():
     answer = "证据范围：第 4 页；证据模式：OCR/视觉证据与提取文本。曲线前期上升，后期趋稳。\n```json\n" \
         '{"chart_type":"line","x_axis":"Epoch","y_axis":"Accuracy",' \
