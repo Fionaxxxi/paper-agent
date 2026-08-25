@@ -250,6 +250,21 @@ def chat(request: ChatRequest, user=Depends(optional_user)):
 
     if request.retrieval_scope in {"personal", "hybrid"} and not user:
         raise HTTPException(status_code=401, detail="个人库和混合研究需要先登录")
+    pdf_path = request.pdf_path
+    selected_document = None
+    if request.document_id:
+        if not user:
+            raise HTTPException(status_code=401, detail="基于个人论文提问需要先登录")
+        try:
+            document = personal_library_store().get_document(user["user_id"], request.document_id)
+            path, _ = personal_library_store().get_document_file(user["user_id"], request.document_id)
+            pdf_path = str(path)
+            selected_document = {
+                "document_id": document["document_id"],
+                "title": document["title"],
+            }
+        except (KeyError, FileNotFoundError) as error:
+            raise HTTPException(status_code=404, detail="选中的论文不存在或不属于当前用户") from error
 
     if not query:
         logger.warning(
@@ -272,9 +287,10 @@ def chat(request: ChatRequest, user=Depends(optional_user)):
             query=query,
             conversation_id=user["user_id"] if user else request.conversation_id,
             user_id=user["user_id"] if user else None,
-            pdf_path=request.pdf_path,
+            pdf_path=pdf_path,
             pdf_pages=request.pdf_pages,
             retrieval_scope=request.retrieval_scope,
+            selected_document=selected_document,
         )
         trace_id = data.get("trace_id", api_trace_id)
 

@@ -47,6 +47,7 @@ class PaperAgentService:
             pdf_path: str | None = None,
             pdf_pages: list[int] | None = None,
             retrieval_scope: str = "auto",
+            selected_document: dict[str, Any] | None = None,
     ) -> Dict[str, Any]:
         trace_id = generate_trace_id()
         start_time = time.perf_counter()
@@ -106,6 +107,11 @@ class PaperAgentService:
                     else "rendered_text_only" if pdf_page_images
                     else "renderer_unavailable_text_only"
                 )
+
+        selected_document = selected_document or {}
+        active_papers = list(memory_context.active_papers)
+        if selected_document.get("title") and selected_document["title"] not in active_papers:
+            active_papers.insert(0, selected_document["title"])
 
         initial_state = {
             "trace_id": trace_id,
@@ -195,7 +201,10 @@ class PaperAgentService:
                 "memory_total_message_count": memory_context.total_message_count,
                 "memory_compressed_message_count": memory_context.compressed_message_count,
                 "memory_active_topics": memory_context.active_topics,
-                "memory_active_papers": memory_context.active_papers,
+                "memory_active_papers": active_papers,
+                "selected_document_id": selected_document.get("document_id", ""),
+                "selected_document_title": selected_document.get("title", ""),
+                "selected_document_source": "personal_library" if selected_document else "",
                 "langgraph_checkpoint_enabled": settings.LANGGRAPH_CHECKPOINT_ENABLED,
                 "langgraph_thread_id": conversation_id,
                 "pdf_path": pdf_path,
@@ -265,7 +274,7 @@ class PaperAgentService:
                 "memory_total_message_count": memory_context.total_message_count,
                 "memory_compressed_message_count": memory_context.compressed_message_count,
                 "memory_active_topics": memory_context.active_topics,
-                "memory_active_papers": memory_context.active_papers,
+                "memory_active_papers": active_papers,
                 "llm_wiki": wiki_result.as_dict(),
                 "langgraph_checkpoint_enabled": settings.LANGGRAPH_CHECKPOINT_ENABLED,
                 "langgraph_thread_id": conversation_id,
@@ -292,7 +301,7 @@ class PaperAgentService:
                 "memory_metadata": result.get("memory_metadata", {}),
                 "memory_write_gate": result.get("memory_write_gate", {}),
                 "memory_retrieval": result.get("memory_retrieval", {}),
-                "pdf_path": pdf_path,
+                "pdf_path": None if selected_document else pdf_path,
                 "pdf_page_count": result.get("pdf_page_count", pdf_page_count),
                 "pdf_error": result.get("pdf_error", pdf_error),
                 "pdf_selected_pages": result.get("pdf_selected_pages", pdf_selected_pages),
@@ -307,7 +316,7 @@ class PaperAgentService:
             "node_timings": node_timings,
             "trace_id": trace_id,
             "conversation_id": conversation_id,
-            "pdf_path": pdf_path,
+            "pdf_path": None if selected_document else pdf_path,
             "pdf_page_count": result.get("pdf_page_count", pdf_page_count),
             "pdf_selected_pages": result.get("pdf_selected_pages", pdf_selected_pages),
             "pdf_vision_status": result.get("pdf_vision_status", pdf_vision_status),

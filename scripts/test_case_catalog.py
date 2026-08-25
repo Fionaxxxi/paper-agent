@@ -2204,6 +2204,11 @@ TEST_CASE_CATALOG: dict[str, CaseDescription] = {
         "通过代表论文库浏览管理链路完整，文件、正文与元数据均按 Owner 隔离，其他用户访问统一被拒绝。",
         "若失败，网页无法管理或预览已上传论文，或存在 PDF、Chunk、Collection、存储路径越权泄露风险。",
     ),
+    "tests/test_product_mvp.py::test_chat_resolves_owned_document_id_without_exposing_storage_path": _description(
+        "验证基于此论文提问只提交 document_id，后端校验 Owner 后解析内部 PDF，并注入论文标题。",
+        "通过代表“这篇论文”可稳定绑定当前个人文档，响应不会泄露服务器 storage_path，匿名请求被拒绝。",
+        "若失败，指代可能绑定错误论文、要求用户填写本地路径，或向网页暴露私有文件位置。",
+    ),
     "tests/test_product_mvp.py::test_authenticated_hybrid_merges_personal_and_online_evidence": _description(
         "验证登录用户的Hybrid检索合并个人PDF Chunk与arXiv公开论文。",
         "代表Private Knowledge和Public Knowledge已经在同一研究请求中真实执行并统一返回。",

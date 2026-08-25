@@ -46,7 +46,7 @@
       <button id="libraryDrawerBackdrop" class="library-drawer-backdrop" aria-label="关闭论文详情"></button>
       <aside class="library-drawer-panel" role="dialog" aria-modal="true" aria-labelledby="libraryDrawerTitle">
         <header class="library-drawer-header"><div><small>PERSONAL LIBRARY</small><h2 id="libraryDrawerTitle">论文详情</h2><p id="libraryDrawerMeta"></p></div><button id="closeLibraryDrawer" aria-label="关闭">×</button></header>
-        <div class="library-metadata-editor"><input id="editLibraryTitle" placeholder="论文标题"><input id="editLibraryTags" placeholder="标签，用逗号分隔"><select id="editLibraryCollection"></select><button id="saveLibraryMetadata">保存信息</button><span id="metadataSaveStatus"></span></div>
+        <div class="library-metadata-editor"><input id="editLibraryTitle" placeholder="论文标题"><input id="editLibraryTags" placeholder="标签，用逗号分隔"><select id="editLibraryCollection"></select><button id="saveLibraryMetadata">保存信息</button><button id="askAboutLibraryDocument" class="primary">基于此论文提问</button><span id="metadataSaveStatus"></span></div>
         <div class="library-tabs" role="tablist"><button class="active" data-library-tab="pdf">PDF 预览</button><button data-library-tab="chunks">文本与 Chunk</button></div>
         <section id="libraryPdfPanel" class="library-preview-panel"><div class="pdf-preview-toolbar"><button id="previousPdfPage">上一页</button><b id="pdfPageStatus">第 1 页</b><button id="nextPdfPage">下一页</button><a id="openOriginalPdf" target="_blank" rel="noopener noreferrer">打开原始 PDF ↗</a></div><div class="pdf-page-stage"><div id="libraryPdfLoading" class="library-loading">正在安全加载 PDF 页面…</div><img id="libraryPdfPage" alt="个人论文 PDF 页面预览"></div></section>
         <section id="libraryChunksPanel" class="library-preview-panel hidden"><div class="chunk-toolbar"><input id="chunkSearch" placeholder="在当前论文的提取文本中搜索"><button id="searchChunks">搜索</button><button id="clearChunkSearch">清除</button><b id="chunkCount"></b></div><div id="libraryChunks" class="chunk-list"></div><div class="chunk-pagination"><button id="previousChunks">上一页</button><span id="chunkPage"></span><button id="nextChunks">下一页</button></div></section>
@@ -60,6 +60,7 @@
         <button data-query="Agent 的规划、记忆和工具使用分别有什么作用？">Agent 架构</button>
       </div>
       <div class="composer-title"><small>START A RESEARCH RUN</small><h2>今天想研究什么？</h2><p>简单问题走快速路径，复杂问题自动进入有界 Research Graph。</p></div>
+      <div id="selectedDocumentContext" class="selected-document-context hidden"><div><small>当前论文上下文</small><b id="selectedDocumentTitle"></b><span>“这篇论文”“它”等指代将绑定到此文档</span></div><button id="clearSelectedDocument">取消选择</button></div>
       <label for="query">研究问题</label>
       <textarea id="query" rows="4" placeholder="输入检索、总结、比较或研究方向问题…">ReAct 如何结合推理与行动？</textarea>
       <div class="fields">

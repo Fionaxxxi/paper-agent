@@ -688,6 +688,18 @@ MVP 使用 PBKDF2 密码哈希、服务端不透明 Bearer Token。每个文档�
 
 个人论文库页面不是只有上传入口：论文卡片显示标题、原文件名、Collection、标签、页数、Chunk 数量和上传时间，可按标题/文件名/标签即时筛选，也可新建和筛选 Collection。点击“查看”打开详情抽屉，可修改标题、标签和所属 Collection；PDF 通过 Owner 鉴权后按页渲染，原始文件使用浏览器临时 Blob URL 打开，不公开服务器磁盘路径；“文本与 Chunk”按页展示解析正文、页码和 Chunk ID，并支持当前论文内关键词搜索与分页。关闭抽屉或退出登录时会回收临时 URL。
 
+点击“基于此论文提问”后，前端只记录公开的 `document_id/title` 并在研究输入区展示“当前论文上下文”。提交 `/chat` 时不发送服务器路径；API 用当前 Bearer 用户校验 `document_id`，在服务内部解析 PDF，并把标题作为唯一活动论文注入 Clarification。于是“阅读这篇论文的架构图”会确定性改写为当前论文，不额外调用意图消解 LLM；取消选择、删除论文或退出登录会清除绑定。匿名或其他用户使用该 ID 均被拒绝，API 响应中的 `pdf_path` 保持为空。
+
+```text
+论文详情 → 基于此论文提问
+→ 前端 selected document_id（不含磁盘路径）
+→ /chat + Bearer Token
+→ Owner 校验与内部 PDF 解析
+→ selected_document_title 注入 AgentState
+→ Clarification 将“这篇论文”绑定为唯一候选
+→ PDF 选页 / 视觉理解 / Grounding / 带页码回答
+```
+
 ```text
 GET /library/documents/{document_id}         → 论文元数据（不返回 storage_path）
 GET /library/documents/{document_id}/file    → 仅 Owner 可访问的 inline PDF

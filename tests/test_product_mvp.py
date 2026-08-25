@@ -165,3 +165,48 @@ def test_library_preview_endpoints_return_owned_pdf_and_searchable_chunks(tmp_pa
         f"/library/documents/{document_id}",
         json={"title": "stolen", "tags": [], "library_id": collection_id}, headers=other_headers,
     ).status_code in {400, 404}
+
+
+def test_chat_resolves_owned_document_id_without_exposing_storage_path(tmp_path, monkeypatch):
+    monkeypatch.setattr(settings, "PRODUCT_DB_PATH", str(tmp_path / "product.db"))
+    monkeypatch.setattr(settings, "PERSONAL_LIBRARY_FILES_DIR", str(tmp_path / "files"))
+    client = TestClient(app)
+    client.post("/auth/register", json={
+        "email": "reader@example.com", "password": "password-123", "display_name": "Reader"
+    })
+    login = client.post("/auth/login", json={
+        "email": "reader@example.com", "password": "password-123"
+    })
+    headers = {"Authorization": f"Bearer {login.json()['access_token']}"}
+    upload = client.post(
+        "/library/documents?title=GraphRAG",
+        content=_pdf_bytes(tmp_path, "GraphRAG builds community summaries."),
+        headers={**headers, "X-Filename": "graphrag.pdf", "Content-Type": "application/pdf"},
+    )
+    document_id = upload.json()["document"]["document_id"]
+    captured = {}
+
+    def fake_chat(**kwargs):
+        captured.update(kwargs)
+        return {
+            "answer": "基于所选 GraphRAG 论文回答。", "task_type": "pdf_reading",
+            "retrieval_score": 1.0, "tools_used": [], "papers": [],
+            "paper_metadata": {"selected_document_id": document_id}, "node_timings": {},
+            "trace_id": "trace-selected", "conversation_id": kwargs["conversation_id"],
+            "pdf_path": None, "pdf_page_count": 1, "pdf_selected_pages": [1],
+            "pdf_vision_status": "rendered_text_only",
+        }
+
+    monkeypatch.setattr("app.api.paper_agent_service.chat", fake_chat)
+    response = client.post("/chat", headers=headers, json={
+        "query": "解释这篇论文的架构图", "document_id": document_id,
+        "pdf_pages": [1], "retrieval_scope": "personal",
+    })
+
+    assert response.status_code == 200
+    assert captured["selected_document"] == {"document_id": document_id, "title": "GraphRAG"}
+    assert captured["pdf_path"].endswith("graphrag.pdf")
+    assert response.json()["data"]["pdf_path"] is None
+    assert client.post("/chat", json={
+        "query": "解释这篇论文", "document_id": document_id,
+    }).status_code == 401

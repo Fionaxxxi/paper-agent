@@ -13,6 +13,10 @@ class ChatRequest(BaseModel):
         default=None,
         description="本地 PDF 文件路径，用于 PDF 论文阅读分析",
     )
+    document_id: Optional[str] = Field(
+        default=None,
+        description="当前用户个人论文库中的文档 ID；服务端校验 Owner 后解析 PDF",
+    )
     pdf_pages: List[int] = Field(
         default_factory=list,
         description="需要重点分析的 PDF 页码，按 1 开始，最多 3 页",
@@ -24,8 +28,10 @@ class ChatRequest(BaseModel):
 
     @model_validator(mode="after")
     def validate_pdf_page_selection(self):
-        if self.pdf_pages and not self.pdf_path:
-            raise ValueError("指定 pdf_pages 时必须同时提供 pdf_path")
+        if self.pdf_path and self.document_id:
+            raise ValueError("pdf_path 与 document_id 不能同时指定")
+        if self.pdf_pages and not (self.pdf_path or self.document_id):
+            raise ValueError("指定 pdf_pages 时必须同时提供 pdf_path 或 document_id")
         if any(isinstance(page, bool) or page < 1 for page in self.pdf_pages):
             raise ValueError("pdf_pages 必须是从 1 开始的正整数")
         return self

@@ -138,8 +138,8 @@ def test_demo_page_exposes_auth_library_and_retrieval_scope_controls():
     client = TestClient(app)
     page = client.get("/").text
     script = client.get("/static/app.js").text
-    for marker in ("个人研究空间", "Personal Paper Library", "retrievalScope", "个人库 + 在线", "libraryDrawer", "PDF 预览", "文本与 Chunk", "新建 Collection 名称", "保存信息"):
+    for marker in ("个人研究空间", "Personal Paper Library", "retrievalScope", "个人库 + 在线", "libraryDrawer", "PDF 预览", "文本与 Chunk", "新建 Collection 名称", "保存信息", "基于此论文提问", "当前论文上下文"):
         assert marker in page
-    for marker in ("paperagent_token", "/auth/login", "/library/documents", "/library/collections", "retrieval_scope", "authHeaders", "openLibraryDocument", "loadLibraryPdfPage", "loadDocumentChunks", "saveLibraryMetadata", "URL.createObjectURL"):
+    for marker in ("paperagent_token", "/auth/login", "/library/documents", "/library/collections", "retrieval_scope", "document_id:selectedResearchDocument", "authHeaders", "openLibraryDocument", "selectResearchDocument", "loadLibraryPdfPage", "loadDocumentChunks", "saveLibraryMetadata", "URL.createObjectURL"):
         assert marker in script
     assert "/static/product.css" in page
